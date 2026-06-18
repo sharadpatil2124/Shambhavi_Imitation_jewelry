@@ -136,6 +136,9 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/enquiries', enquiryRoutes);
 
+// Favicon ignore route to prevent log spamming 404 errors
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+
 // Root Ping Test Route
 app.get('/', (req, res) => {
   res.json({
