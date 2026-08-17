@@ -56,7 +56,7 @@ export default function ReturnRefundPolicy() {
           <div className="space-y-3 mt-2 pl-2">
             <p>
               <strong>Step 1: File Your Claim</strong><br />
-              Email our concierge desk at <a href="mailto:returns@shambhaviimitation.com" className="text-gold-600 font-semibold hover:underline">returns@shambhaviimitation.com</a> or message us on WhatsApp ({formattedPhone}) within 48 hours of delivery, attaching 2-3 clear photographs of the defect or jewelry condition.
+              Email our concierge desk at <a href="mailto:kadamshambhavi1@gmail.com" className="text-gold-600 font-semibold hover:underline">kadamshambhavi1@gmail.com</a> or message us on WhatsApp ({formattedPhone}) within 48 hours of delivery, attaching 2-3 clear photographs of the defect or jewelry condition.
             </p>
             <p>
               <strong>Step 2: Courier Collection Setup</strong><br />
@@ -84,7 +84,7 @@ export default function ReturnRefundPolicy() {
 
         <div className="border-t border-gold-100 pt-6">
           <p className="font-medium text-primary">
-            If you need immediate support with a pending exchange request, please connect directly with our returns concierge on WhatsApp or email <a href="mailto:returns@shambhaviimitation.com" className="text-gold-600 font-semibold hover:underline">returns@shambhaviimitation.com</a>.
+            If you need immediate support with a pending exchange request, please connect directly with our returns concierge on WhatsApp or email <a href="mailto:kadamshambhavi1@gmail.com" className="text-gold-600 font-semibold hover:underline">kadamshambhavi1@gmail.com</a>.
           </p>
         </div>
 

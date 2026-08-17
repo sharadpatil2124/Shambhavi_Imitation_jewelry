@@ -34,9 +34,9 @@ export default function ProductCard({ product, onQuickView }) {
   };
 
   return (
-    <div className="group bg-white border border-gold-200/80 overflow-hidden luxury-shadow luxury-shadow-hover flex flex-col h-full relative">
+    <div className="group bg-white dark:bg-[#0c0a06] border border-gold-200/50 overflow-hidden relative transition-all duration-500 hover:shadow-xl hover:-translate-y-1.5 hover:border-gold-500/60 flex flex-col h-full select-none">
       {/* Product Image and Overlay Actions */}
-      <div className="relative aspect-square overflow-hidden bg-[#faf9f6] select-none">
+      <div className="relative aspect-square overflow-hidden bg-[#faf9f6] dark:bg-[#12100b] select-none">
         
         {/* Badges */}
         <div className="absolute top-3 left-3 z-10 flex flex-col space-y-1.5 pointer-events-none">
@@ -46,7 +46,7 @@ export default function ProductCard({ product, onQuickView }) {
             </span>
           )}
           {product.isNewArrival && (
-            <span className="bg-primary text-white text-[9px] font-bold tracking-widest uppercase px-2 py-1">
+            <span className="bg-primary dark:bg-gold-950/80 dark:border dark:border-gold-800 text-white text-[9px] font-bold tracking-widest uppercase px-2 py-1">
               New Arrival
             </span>
           )}
@@ -60,13 +60,13 @@ export default function ProductCard({ product, onQuickView }) {
         {/* Wishlist Button */}
         <button
           onClick={handleWishlistToggle}
-          className="absolute top-3 right-3 z-10 bg-white/90 hover:bg-white text-primary hover:text-red-500 p-2.5 shadow-md transition-all duration-300 hover:scale-115"
+          className="absolute top-3 right-3 z-10 bg-white/95 dark:bg-[#100d07]/90 hover:bg-white text-primary hover:text-red-500 p-2.5 shadow-md transition-all duration-300 hover:scale-110 border border-gold-200/30 cursor-pointer"
           aria-label="Add to Wishlist"
         >
           {isWishlisted ? (
             <FaHeart className="text-red-500 w-4 h-4 sm:w-4.5 sm:h-4.5" />
           ) : (
-            <FiHeart className="text-primary w-4 h-4 sm:w-4.5 sm:h-4.5 hover:text-red-500" />
+            <FiHeart className="text-primary dark:text-gold-300 w-4 h-4 sm:w-4.5 sm:h-4.5 hover:text-red-500" />
           )}
         </button>
 
@@ -76,7 +76,7 @@ export default function ProductCard({ product, onQuickView }) {
             src={getImageUrl(product.images[0])}
             alt={product.name}
             loading="lazy"
-            className="w-full h-full object-cover object-center transform group-hover:scale-108 transition-transform duration-700 ease-out"
+            className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-700 ease-out"
           />
           {product.images[1] && (
             <img
@@ -89,10 +89,10 @@ export default function ProductCard({ product, onQuickView }) {
         </Link>
 
         {/* Desktop Quick View Overlay Action */}
-        <div className="absolute inset-0 bg-black/25 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none group-hover:pointer-events-auto">
+        <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none group-hover:pointer-events-auto">
           <button
             onClick={() => onQuickView(product)}
-            className="bg-white hover:bg-gold-500 hover:text-white text-primary px-5 py-3 font-semibold text-xs tracking-widest uppercase shadow-xl flex items-center space-x-2 transform translate-y-4 group-hover:translate-y-0 transition-all duration-350 cursor-pointer"
+            className="bg-white hover:bg-gold-500 hover:text-white dark:bg-[#100d07] dark:text-gold-200 dark:hover:bg-gold-500 dark:hover:text-white text-primary px-5 py-3 font-semibold text-xs tracking-widest uppercase shadow-xl flex items-center space-x-2 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 border border-gold-300/40 cursor-pointer"
           >
             <FiEye size={14} />
             <span>Quick View</span>
@@ -101,16 +101,16 @@ export default function ProductCard({ product, onQuickView }) {
       </div>
 
       {/* Product Content Details */}
-      <div className="p-4 sm:p-5 flex flex-col flex-grow">
+      <div className="p-4 sm:p-5 flex flex-col flex-grow dark:bg-[#0c0a06]">
         {/* Category */}
-        <span className="text-[10px] uppercase tracking-widest font-semibold text-gold-600 mb-1">
+        <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-gold-600 mb-1 block text-left">
           {typeof product.category === 'object' ? product.category?.name : product.category}
         </span>
 
         {/* Title */}
         <Link
           to={`/product/${productId}`}
-          className="font-serif text-sm sm:text-base font-semibold text-primary hover:text-gold-600 transition-colors duration-200 line-clamp-1 mb-2"
+          className="font-serif text-sm sm:text-base font-bold text-primary dark:text-white hover:text-gold-600 dark:hover:text-gold-400 transition-colors duration-200 line-clamp-1 mb-2 text-left"
         >
           {product.name}
         </Link>
@@ -122,22 +122,22 @@ export default function ProductCard({ product, onQuickView }) {
               <FaStar
                 key={i}
                 size={11}
-                className={i < Math.floor(product.rating) ? 'text-amber-400' : 'text-gray-200'}
+                className={i < Math.floor(product.rating) ? 'text-amber-400' : 'text-gray-200 dark:text-gold-950/60'}
               />
             ))}
           </div>
-          <span className="text-[10px] text-secondary font-medium">({product.reviewsCount})</span>
+          <span className="text-[10px] text-secondary dark:text-gold-300 font-medium">({product.reviewsCount})</span>
         </div>
 
         {/* Price & Add to Cart */}
-        <div className="mt-auto flex items-center justify-between pt-2 border-t border-gold-200/60">
-          <div className="flex flex-col">
+        <div className="mt-auto flex items-center justify-between pt-3 border-t border-gold-200/40 dark:border-gold-950/60">
+          <div className="flex flex-col text-left">
             <div className="flex items-center space-x-2">
-              <span className="font-sans text-sm sm:text-base font-bold text-primary">
+              <span className="font-sans text-sm sm:text-base font-bold text-transparent bg-clip-text bg-gradient-to-r from-gold-600 to-gold-800 dark:from-gold-300 dark:to-gold-500">
                 ₹{product.price.toLocaleString('en-IN')}
               </span>
               {product.originalPrice > product.price && (
-                <span className="font-sans text-xs text-secondary line-through">
+                <span className="font-sans text-xs text-secondary dark:text-gray-400 line-through">
                   ₹{product.originalPrice.toLocaleString('en-IN')}
                 </span>
               )}
@@ -146,7 +146,7 @@ export default function ProductCard({ product, onQuickView }) {
 
           <button
             onClick={handleAddToCart}
-            className="bg-white hover:bg-primary border border-gold-400 hover:border-primary text-gold-800 hover:text-white p-2.5 sm:px-3 sm:py-2 transition-all duration-300 hover:scale-105 flex items-center space-x-1.5 font-sans text-xs font-semibold cursor-pointer"
+            className="bg-primary hover:bg-gold-500 text-white hover:text-primary py-2 px-3 border border-primary hover:border-gold-500 transition-all duration-300 flex items-center space-x-1.5 font-sans text-xs font-semibold cursor-pointer dark:bg-gold-600 dark:border-gold-600 dark:text-primary dark:hover:bg-white dark:hover:border-white"
             title="Add to Cart"
           >
             <FiShoppingBag size={14} />

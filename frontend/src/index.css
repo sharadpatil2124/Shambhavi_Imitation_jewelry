@@ -152,3 +152,218 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
+/* Homepage Slider Redesign Custom Animations */
+.slide-active .animate-tagline {
+  animation: slide-up-fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: 150ms;
+  opacity: 0;
+}
+.slide-active .animate-title {
+  animation: slide-up-fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: 300ms;
+  opacity: 0;
+}
+.slide-active .animate-desc {
+  animation: slide-up-fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: 450ms;
+  opacity: 0;
+}
+.slide-active .animate-button {
+  animation: slide-up-fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: 600ms;
+  opacity: 0;
+}
+.slide-active .animate-bg-ken-burns {
+  animation: ken-burns 8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+@keyframes slide-up-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ken-burns {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.08);
+  }
+}
+
+/* Luxury Theme helpers */
+.luxury-card {
+  background-color: #ffffff;
+  border: 1px solid rgba(191, 160, 84, 0.25);
+  box-shadow: 0 4px 20px -6px rgba(18, 18, 18, 0.04);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.luxury-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(191, 160, 84, 0.7);
+  box-shadow: 0 20px 40px -10px rgba(18, 18, 18, 0.08), 0 4px 20px -4px rgba(191, 160, 84, 0.15);
+}
+
+.dark .luxury-card {
+  background-color: #100d07;
+  border-color: rgba(141, 112, 52, 0.35) !important;
+  box-shadow: none;
+}
+
+.dark .luxury-card:hover {
+  border-color: #bfa054 !important;
+  box-shadow: 0 15px 30px -10px rgba(191, 160, 84, 0.15);
+}
+
+/* Luxury button transitions */
+.luxury-btn-primary {
+  position: relative;
+  background-color: #121212;
+  color: #ffffff;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-size: 0.75rem;
+  padding: 0.875rem 1.75rem;
+  border: 1px solid #121212;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.luxury-btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+  transition: all 0.6s ease;
+}
+
+.luxury-btn-primary:hover::before {
+  left: 100%;
+}
+
+.luxury-btn-primary:hover {
+  background-color: #bfa054;
+  border-color: #bfa054;
+  color: #121212;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px -4px rgba(191, 160, 84, 0.4);
+}
+
+.dark .luxury-btn-primary {
+  background-color: #bfa054;
+  color: #121212;
+  border-color: #bfa054;
+}
+
+.dark .luxury-btn-primary:hover {
+  background-color: #ffffff;
+  border-color: #ffffff;
+  color: #121212;
+  box-shadow: 0 8px 20px -4px rgba(255, 255, 255, 0.25);
+}
+
+.luxury-btn-secondary {
+  position: relative;
+  background-color: transparent;
+  color: #bfa054;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-size: 0.75rem;
+  padding: 0.875rem 1.75rem;
+  border: 1px solid rgba(191, 160, 84, 0.5);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.luxury-btn-secondary:hover {
+  background-color: #bfa054;
+  color: #121212;
+  border-color: #bfa054;
+  transform: translateY(-1px);
+}
+
+.dark .luxury-btn-secondary {
+  color: #eadebe;
+  border-color: rgba(191, 160, 84, 0.4);
+}
+
+.dark .luxury-btn-secondary:hover {
+  background-color: #bfa054;
+  color: #121212;
+  border-color: #bfa054;
+}
+
+/* Luxury Form Inputs */
+.luxury-input {
+  width: 100%;
+  background-color: #faf8f5;
+  border: 1px solid rgba(191, 160, 84, 0.3);
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: #121212;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.luxury-input:focus {
+  border-color: #bfa054;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(191, 160, 84, 0.15);
+}
+
+.dark .luxury-input {
+  background-color: #0c0a06;
+  border-color: rgba(141, 112, 52, 0.4);
+  color: #fcfbf7;
+}
+
+.dark .luxury-input:focus {
+  border-color: #bfa054;
+  background-color: #100d07;
+  box-shadow: 0 0 0 3px rgba(191, 160, 84, 0.1);
+}
+
+/* Divider ornament */
+.luxury-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 2rem 0;
+}
+
+.luxury-divider::before, .luxury-divider::after {
+  content: '';
+  height: 1px;
+  flex-grow: 1;
+  background: linear-gradient(90deg, transparent, rgba(191, 160, 84, 0.4), transparent);
+}
+
+.luxury-divider-dot {
+  width: 6px;
+  height: 6px;
+  transform: rotate(45deg);
+  background-color: #bfa054;
+  margin: 0 1rem;
+}

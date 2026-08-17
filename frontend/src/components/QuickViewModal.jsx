@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { FiX, FiHeart, FiShoppingBag, FiMinus, FiPlus } from 'react-icons/fi';
@@ -32,6 +33,7 @@ export default function QuickViewModal({ product, onClose }) {
 
   const wishlistItems = useSelector((state) => state.wishlist.items);
   const { settings } = useSelector((state) => state.settings);
+  const { isAuthenticated } = useSelector((state) => state.auth);
   const productId = product._id || product.id;
   const isWishlisted = wishlistItems.some((item) => (item._id || item.id) === productId);
 
@@ -53,7 +55,12 @@ export default function QuickViewModal({ product, onClose }) {
   const handleBuyNow = () => {
     dispatch(addToCart({ product, quantity, color: selectedColor, size: selectedSize }));
     onClose();
-    navigate('/checkout');
+    if (!isAuthenticated) {
+      toast.warning("Please Login or Sign Up to purchase items!");
+      navigate('/login?redirect=checkout');
+    } else {
+      navigate('/checkout');
+    }
   };
 
   const handleOrderOnWhatsApp = () => {
@@ -66,28 +73,31 @@ export default function QuickViewModal({ product, onClose }) {
   const handleIncrement = () => setQuantity(prev => prev + 1);
   const handleDecrement = () => setQuantity(prev => (prev > 1 ? prev - 1 : 1));
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 md:p-10 animate-fade-in">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/75 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 md:p-8 lg:p-12 animate-fade-in">
       {/* Backdrop click closer */}
       <div className="absolute inset-0 cursor-default" onClick={onClose}></div>
 
       {/* Modal Card */}
-      <div className="relative w-full max-w-4xl bg-white border border-gold-200/50 rounded-none shadow-2xl overflow-hidden transform animate-scale-up z-10 flex flex-col md:flex-row max-h-[90svh] md:max-h-none overflow-y-auto md:overflow-visible">
+      <div className="relative w-[92%] sm:w-full max-w-3xl bg-white dark:bg-[#0c0a06] border border-gold-300/40 rounded-none shadow-2xl overflow-hidden transform animate-scale-up z-10 flex flex-col md:flex-row max-h-[85vh] md:max-h-[80vh] overflow-y-auto md:overflow-hidden mx-auto">
+        {/* Luxury Gold Corner Frames */}
+        <div className="absolute top-4 left-4 w-4 h-4 border-t border-l border-gold-400/50 pointer-events-none z-10"></div>
+        <div className="absolute bottom-4 right-4 w-4 h-4 border-b border-r border-gold-400/50 pointer-events-none z-10"></div>
         
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 bg-white/80 hover:bg-gold-50 text-primary hover:text-gold-600 p-2 border border-gold-100 z-20 transition-all duration-300"
+          className="absolute top-4 right-4 bg-white/80 dark:bg-[#100d07]/80 hover:bg-gold-50 text-primary dark:text-gray-300 hover:text-gold-600 dark:hover:text-gold-400 p-2 border border-gold-100 dark:border-gold-900/60 z-20 transition-all duration-300 cursor-pointer"
           aria-label="Close modal"
         >
           <FiX size={20} />
         </button>
 
         {/* Left Side: Images & Slider preview */}
-        <div className="w-full md:w-1/2 p-6 flex flex-col justify-center bg-[#faf9f6]">
+        <div className="w-full md:w-1/2 p-6 flex flex-col justify-center bg-[#faf9f6] dark:bg-[#12100b] border-r border-gold-100/10">
           {/* Main Large Image */}
           <div 
-            className="relative aspect-square w-full overflow-hidden border border-gold-100 bg-white mb-4 cursor-zoom-in"
+            className="relative aspect-square w-full overflow-hidden border border-gold-100 dark:border-gold-900/40 bg-white dark:bg-[#0a0907] mb-4 cursor-zoom-in"
             onMouseEnter={() => setIsZoomed(true)}
             onMouseLeave={() => setIsZoomed(false)}
             onMouseMove={handleMouseMove}
@@ -109,8 +119,8 @@ export default function QuickViewModal({ product, onClose }) {
               <button
                 key={index}
                 onClick={() => setActiveImageIndex(index)}
-                className={`w-16 h-16 sm:w-20 sm:h-20 border-2 flex-shrink-0 transition-all duration-300 ${
-                  activeImageIndex === index ? 'border-gold-500 shadow-md' : 'border-gold-100 hover:border-gold-300'
+                className={`w-16 h-16 sm:w-20 sm:h-20 border-2 flex-shrink-0 transition-all duration-300 cursor-pointer ${
+                  activeImageIndex === index ? 'border-gold-500 shadow-md' : 'border-gold-100 dark:border-gold-900/40 hover:border-gold-300'
                 }`}
               >
                 <img src={getImageUrl(img)} alt="thumbnail" className="w-full h-full object-cover" />
@@ -120,16 +130,16 @@ export default function QuickViewModal({ product, onClose }) {
         </div>
 
         {/* Right Side: Product Customizations and Info */}
-        <div className="w-full md:w-1/2 p-6 sm:p-8 flex flex-col justify-between overflow-y-auto max-h-[50svh] md:max-h-[85vh]">
+        <div className="w-full md:w-1/2 p-6 sm:p-8 flex flex-col justify-between overflow-y-auto md:max-h-full dark:bg-[#0c0a06]">
           <div>
             {/* SKU and Category */}
-            <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-widest text-gold-600 mb-2">
+            <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-widest text-gold-600 mb-2">
               <span>{typeof product.category === 'object' ? product.category?.name : product.category}</span>
               <span>SKU: {product.sku}</span>
             </div>
 
             {/* Title */}
-            <h2 className="font-serif text-xl sm:text-2xl font-bold text-primary tracking-wide mb-3 leading-tight">
+            <h2 className="font-serif text-xl sm:text-2xl font-bold text-primary dark:text-white tracking-wide mb-3 leading-tight text-left">
               {product.name}
             </h2>
 
@@ -140,25 +150,25 @@ export default function QuickViewModal({ product, onClose }) {
                   <FaStar
                     key={i}
                     size={13}
-                    className={i < Math.floor(product.rating) ? 'text-amber-400' : 'text-gray-200'}
+                    className={i < Math.floor(product.rating) ? 'text-amber-400' : 'text-gray-200 dark:text-gold-950/60'}
                   />
                 ))}
               </div>
-              <span className="text-xs font-semibold text-primary">{product.rating}</span>
-              <span className="text-xs text-secondary font-medium">({product.reviewsCount} reviews)</span>
+              <span className="text-xs font-semibold text-primary dark:text-gold-200">{product.rating}</span>
+              <span className="text-xs text-secondary dark:text-gray-400 font-medium">({product.reviewsCount} reviews)</span>
             </div>
 
             {/* Pricing Section */}
-            <div className="flex items-baseline space-x-3 mb-6 bg-gold-50/50 p-3 border border-gold-100/30">
-              <span className="font-sans text-2xl font-bold text-primary">
+            <div className="flex items-baseline space-x-3 mb-6 bg-gold-50/40 dark:bg-gold-950/20 p-3 border border-gold-200/30 dark:border-gold-900/30 justify-start">
+              <span className="font-sans text-2xl font-bold text-primary dark:text-white">
                 ₹{product.price.toLocaleString('en-IN')}
               </span>
               {product.originalPrice > product.price && (
                 <>
-                  <span className="font-sans text-sm text-secondary line-through">
+                  <span className="font-sans text-sm text-secondary dark:text-gray-400 line-through">
                     ₹{product.originalPrice.toLocaleString('en-IN')}
                   </span>
-                  <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 uppercase tracking-wide">
+                  <span className="bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400 text-[9px] font-bold px-2 py-0.5 uppercase tracking-wider">
                     {product.discount}% OFF
                   </span>
                 </>
@@ -166,14 +176,14 @@ export default function QuickViewModal({ product, onClose }) {
             </div>
 
             {/* Product Description */}
-            <p className="text-secondary text-sm font-sans leading-relaxed mb-6">
+            <p className="text-secondary dark:text-gray-300 text-sm font-sans leading-relaxed mb-6 text-left">
               {product.description}
             </p>
 
             {/* Color Option Selector */}
             {product.colors && product.colors.length > 0 && (
-              <div className="mb-5">
-                <span className="block text-xs font-bold uppercase tracking-wider text-primary mb-2">
+              <div className="mb-5 text-left">
+                <span className="block text-xs font-bold uppercase tracking-wider text-primary dark:text-white mb-2">
                   Select Color: <span className="text-gold-600 font-semibold">{selectedColor}</span>
                 </span>
                 <div className="flex gap-2">
@@ -183,8 +193,8 @@ export default function QuickViewModal({ product, onClose }) {
                       onClick={() => setSelectedColor(color)}
                       className={`px-3 py-1.5 text-xs font-medium border rounded-none transition-all duration-200 cursor-pointer ${
                         selectedColor === color
-                          ? 'border-gold-600 bg-gold-50 text-gold-800 font-semibold shadow-xs'
-                          : 'border-gray-200 hover:border-gold-300 text-primary bg-white'
+                          ? 'border-gold-600 bg-gold-50 dark:bg-gold-950/40 text-gold-850 dark:text-gold-300 font-semibold shadow-xs'
+                          : 'border-gray-200 dark:border-gold-900/40 hover:border-gold-300 text-primary dark:text-gray-300 bg-white dark:bg-[#100d07]'
                       }`}
                     >
                       {color}
@@ -196,8 +206,8 @@ export default function QuickViewModal({ product, onClose }) {
 
             {/* Size Option Selector */}
             {product.sizes && product.sizes.length > 0 && (
-              <div className="mb-6">
-                <span className="block text-xs font-bold uppercase tracking-wider text-primary mb-2">
+              <div className="mb-6 text-left">
+                <span className="block text-xs font-bold uppercase tracking-wider text-primary dark:text-white mb-2">
                   Select Size: <span className="text-gold-600 font-semibold">{selectedSize}</span>
                 </span>
                 <div className="flex gap-2">
@@ -207,8 +217,8 @@ export default function QuickViewModal({ product, onClose }) {
                       onClick={() => setSelectedSize(size)}
                       className={`px-3 py-1.5 text-xs font-medium border rounded-none transition-all duration-200 cursor-pointer ${
                         selectedSize === size
-                          ? 'border-gold-600 bg-gold-50 text-gold-800 font-semibold shadow-xs'
-                          : 'border-gray-200 hover:border-gold-300 text-primary bg-white'
+                          ? 'border-gold-600 bg-gold-50 dark:bg-gold-950/40 text-gold-850 dark:text-gold-300 font-semibold shadow-xs'
+                          : 'border-gray-200 dark:border-gold-900/40 hover:border-gold-300 text-primary dark:text-gray-300 bg-white dark:bg-[#100d07]'
                       }`}
                     >
                       {size}
@@ -221,22 +231,22 @@ export default function QuickViewModal({ product, onClose }) {
 
           <div>
             {/* Quantity and Cart Actions */}
-            <div className="flex items-center space-x-4 mb-4">
-              <span className="text-xs font-bold uppercase tracking-wider text-primary">Quantity:</span>
-              <div className="flex items-center border border-gold-300 bg-white">
+            <div className="flex items-center space-x-4 mb-4 text-left">
+              <span className="text-xs font-bold uppercase tracking-wider text-primary dark:text-white">Quantity:</span>
+              <div className="flex items-center border border-gold-300 dark:border-gold-900/60 bg-white dark:bg-[#100d07]">
                 <button
                   onClick={handleDecrement}
-                  className="px-3 py-2 text-secondary hover:text-gold-600 transition-colors"
+                  className="px-3 py-2 text-secondary hover:text-gold-600 transition-colors cursor-pointer"
                   aria-label="Decrease quantity"
                 >
                   <FiMinus size={14} />
                 </button>
-                <span className="w-10 text-center font-sans font-bold text-sm text-primary select-none">
+                <span className="w-10 text-center font-sans font-bold text-sm text-primary dark:text-white select-none">
                   {quantity}
                 </span>
                 <button
                   onClick={handleIncrement}
-                  className="px-3 py-2 text-secondary hover:text-gold-600 transition-colors"
+                  className="px-3 py-2 text-secondary hover:text-gold-600 transition-colors cursor-pointer"
                   aria-label="Increase quantity"
                 >
                   <FiPlus size={14} />
@@ -249,7 +259,7 @@ export default function QuickViewModal({ product, onClose }) {
               {/* Add to Cart */}
               <button
                 onClick={handleAddToCart}
-                className="w-full bg-white hover:bg-gold-50 border-2 border-gold-500 text-gold-700 font-bold py-3.5 px-4 text-xs tracking-widest uppercase transition-all duration-300 flex items-center justify-center space-x-2 cursor-pointer"
+                className="w-full bg-transparent hover:bg-gold-500 border-2 border-gold-500 text-gold-700 dark:text-gold-300 hover:text-primary font-bold py-3.5 px-4 text-xs tracking-widest uppercase transition-all duration-300 flex items-center justify-center space-x-2 cursor-pointer"
               >
                 <FiShoppingBag size={15} />
                 <span>Add to Cart</span>
@@ -258,7 +268,7 @@ export default function QuickViewModal({ product, onClose }) {
               {/* Buy Now */}
               <button
                 onClick={handleBuyNow}
-                className="w-full bg-gold-500 hover:bg-gold-600 text-white font-bold py-3.5 px-4 text-xs tracking-widest uppercase transition-all duration-300 flex items-center justify-center space-x-2 cursor-pointer border-2 border-gold-500 hover:border-gold-600"
+                className="w-full bg-primary hover:bg-gold-500 hover:text-primary text-white font-bold py-3.5 px-4 text-xs tracking-widest uppercase transition-all duration-300 flex items-center justify-center space-x-2 cursor-pointer border-2 border-primary hover:border-gold-500 dark:bg-gold-600 dark:border-gold-600 dark:text-primary dark:hover:bg-white dark:hover:border-white"
               >
                 <span>Buy It Now</span>
               </button>
@@ -268,7 +278,7 @@ export default function QuickViewModal({ product, onClose }) {
               {/* Order on WhatsApp */}
               <button
                 onClick={handleOrderOnWhatsApp}
-                className="w-full bg-[#25d366] hover:bg-[#20ba5a] text-white font-bold py-3 px-4 text-xs tracking-widest uppercase transition-all duration-300 flex items-center justify-center space-x-2 cursor-pointer"
+                className="w-full bg-[#20ba5a] hover:bg-[#1bb052] text-white font-bold py-3 px-4 text-xs tracking-widest uppercase transition-all duration-300 flex items-center justify-center space-x-2 cursor-pointer"
               >
                 <FaWhatsapp size={16} />
                 <span>Order on WhatsApp</span>
@@ -277,7 +287,7 @@ export default function QuickViewModal({ product, onClose }) {
               {/* Wishlist toggle */}
               <button
                 onClick={handleWishlistToggle}
-                className="w-full border border-gray-200 hover:border-red-400 text-primary hover:text-red-500 font-semibold py-3 px-4 text-xs tracking-widest uppercase transition-all duration-300 flex items-center justify-center space-x-2 cursor-pointer bg-white"
+                className="w-full border border-gold-300/40 hover:border-red-400 text-primary dark:text-gray-300 hover:text-red-500 font-semibold py-3 px-4 text-xs tracking-widest uppercase transition-all duration-300 flex items-center justify-center space-x-2 cursor-pointer bg-white dark:bg-[#100d07]"
               >
                 {isWishlisted ? (
                   <>
@@ -286,7 +296,7 @@ export default function QuickViewModal({ product, onClose }) {
                   </>
                 ) : (
                   <>
-                    <FiHeart size={14} />
+                    <FiHeart size={14} className="dark:text-gold-400" />
                     <span>Add to Wishlist</span>
                   </>
                 )}
@@ -296,6 +306,7 @@ export default function QuickViewModal({ product, onClose }) {
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

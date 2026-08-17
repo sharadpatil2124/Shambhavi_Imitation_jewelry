@@ -2,7 +2,13 @@ import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import Cart from '../models/Cart.js';
 import User from '../models/userModel.js';
-import { sendOrderConfirmationEmail } from '../utils/sendEmail.js';
+import {
+  sendOrderConfirmationEmail,
+  sendOrderCancellationEmail,
+  sendOrderRefundEmail,
+  sendOrderDeliveryEmail,
+  sendCancellationRejectedEmail
+} from '../utils/sendEmail.js';
 
 // @desc    Create new order
 // @route   POST /api/orders
@@ -195,6 +201,7 @@ export const updateOrderStatus = async (req, res, next) => {
     const status = req.body.status || req.body.orderStatus;
     const courierName = req.body.courierName;
     const trackingNumber = req.body.trackingNumber || req.body.trackingId;
+    const rejectionReason = req.body.rejectionReason;
 
     const order = await Order.findById(req.params.id);
     if (!order) {
@@ -202,6 +209,56 @@ export const updateOrderStatus = async (req, res, next) => {
       throw new Error('Order not found');
     }
 
+    const previousStatus = order.orderStatus;
+
+    // A. Check if Admin is approving cancellation (changing to Cancelled)
+    if (status === 'Cancelled' && previousStatus !== 'Cancelled') {
+      // 1. Restore product inventory stocks
+      for (const item of order.orderItems) {
+        const product = await Product.findById(item.product);
+        if (product) {
+          product.stock += item.quantity;
+          await product.save();
+        }
+      }
+
+      order.orderStatus = 'Cancelled';
+      await order.save();
+
+      // 2. Send order cancellation email to user
+      if (order.shippingAddress && order.shippingAddress.email) {
+        sendOrderCancellationEmail(order.shippingAddress.email, order).catch(err => {
+          console.error('⚠️ [Cancellation Email Error]:', err.message);
+        });
+      }
+
+      return res.json({
+        success: true,
+        message: 'Order cancelled by Admin and inventory stock restored',
+        order
+      });
+    }
+
+    // B. Check if Admin is rejecting a cancellation request
+    if (previousStatus === 'Cancellation Requested' && status !== 'Cancelled') {
+      order.orderStatus = status || 'Processing';
+      await order.save();
+
+      // Send rejection notification email to user
+      if (order.shippingAddress && order.shippingAddress.email) {
+        sendCancellationRejectedEmail(order.shippingAddress.email, order, rejectionReason || 'Order is already being processed').catch(err => {
+          console.error('⚠️ [Rejection Email Error]:', err.message);
+        });
+      }
+
+      return res.json({
+        success: true,
+        message: `Cancellation request declined. Order status updated to: ${order.orderStatus}`,
+        order
+      });
+    }
+
+    // C. Regular status updates (Delivered, Shipped, etc.)
     order.orderStatus = status || order.orderStatus;
     
     if (courierName) order.courierName = courierName;
@@ -212,8 +269,15 @@ export const updateOrderStatus = async (req, res, next) => {
 
     if (status === 'Delivered') {
       order.isPaid = true;
-      order.paidAt = Date.now();
+      order.paidAt = order.paidAt || Date.now();
       order.deliveredAt = Date.now();
+
+      // Send delivery notification email
+      if (order.shippingAddress && order.shippingAddress.email) {
+        sendOrderDeliveryEmail(order.shippingAddress.email, order).catch(err => {
+          console.error('⚠️ [Delivery Email Error]:', err.message);
+        });
+      }
     }
 
     await order.save();
@@ -228,11 +292,12 @@ export const updateOrderStatus = async (req, res, next) => {
   }
 };
 
-// @desc    Cancel order
+// @desc    Request order cancellation (Customer)
 // @route   PUT /api/orders/:id/cancel
 // @access  Private
 export const cancelOrder = async (req, res, next) => {
   try {
+    const { reason } = req.body;
     const order = await Order.findById(req.params.id);
     if (!order) {
       res.status(404);
@@ -245,27 +310,24 @@ export const cancelOrder = async (req, res, next) => {
       throw new Error('Access denied: Unauthorized action');
     }
 
-    if (order.orderStatus === 'Delivered' || order.orderStatus === 'Dispatched') {
+    if (order.orderStatus === 'Delivered' || order.orderStatus === 'Dispatched' || order.orderStatus === 'Shipped') {
       res.status(400);
       throw new Error('Cannot cancel order: Item has already been dispatched/delivered');
     }
 
-    // 1. Restore product inventory stocks
-    for (const item of order.orderItems) {
-      const product = await Product.findById(item.product);
-      if (product) {
-        product.stock += item.quantity;
-        await product.save();
-      }
+    if (order.orderStatus === 'Cancelled') {
+      res.status(400);
+      throw new Error('Order has already been cancelled');
     }
 
-    // 2. Set Status
-    order.orderStatus = 'Cancelled';
+    // Set Status to Cancellation Requested & save reason
+    order.orderStatus = 'Cancellation Requested';
+    order.cancellationReason = reason || 'No reason provided';
     await order.save();
 
     res.json({
       success: true,
-      message: 'Order cancelled successfully and stock inventory restored',
+      message: 'Cancellation request submitted to admin for review',
       order
     });
   } catch (error) {
@@ -294,10 +356,15 @@ export const refundOrder = async (req, res, next) => {
       throw new Error('Cannot process refund: Order payment status is unpaid');
     }
 
-    // Process refund logic here (e.g. via Razorpay API refund call)
-    // For now we will mock update the database status
     order.orderStatus = 'Refunded';
     await order.save();
+
+    // Send refund confirmation email
+    if (order.shippingAddress && order.shippingAddress.email) {
+      sendOrderRefundEmail(order.shippingAddress.email, order).catch(err => {
+        console.error('⚠️ [Refund Email Error]:', err.message);
+      });
+    }
 
     res.json({
       success: true,

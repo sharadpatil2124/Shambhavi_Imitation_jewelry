@@ -68,7 +68,7 @@ export default function TermsConditions() {
 
         <div className="border-t border-gold-100 pt-6">
           <p className="font-medium text-primary">
-            If you have questions regarding our e-commerce terms or want to query commercial usage licences, please write to our legal team at <a href="mailto:legal@shambhaviimitation.com" className="text-gold-600 font-semibold hover:underline">legal@shambhaviimitation.com</a>.
+            If you have questions regarding our e-commerce terms or want to query commercial usage licences, please write to our legal team at <a href="mailto:kadamshambhavi1@gmail.com" className="text-gold-600 font-semibold hover:underline">kadamshambhavi1@gmail.com</a>.
           </p>
         </div>
 

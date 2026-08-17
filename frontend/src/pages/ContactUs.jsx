@@ -74,7 +74,7 @@ export default function ContactUs() {
                 <div className="text-left">
                   <strong className="block text-xs font-bold uppercase tracking-wider text-primary mb-1">Corporate Boutique</strong>
                   <span className="text-secondary text-sm leading-relaxed block">
-                    {settings?.address || 'Shambhavi Imitation, Jubilee Hills Road No. 36, Hyderabad, Telangana, 500033'}
+                    {settings?.address || 'Shambhavi Imitation Shop, A/p Kurani, Tal. Kagal, Dist. Kolhapur, Maharashtra - 416219'}
                   </span>
                 </div>
               </li>
@@ -156,7 +156,7 @@ export default function ContactUs() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter email address"
+                  placeholder="Enter Email Address"
                   className="w-full bg-[#faf9f6] border border-gold-300 py-3 px-4 text-sm font-sans focus:border-gold-500 outline-none"
                 />
               </div>

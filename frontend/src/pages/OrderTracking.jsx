@@ -169,53 +169,57 @@ export default function OrderTracking() {
     <div className="max-w-4xl mx-auto px-4 py-10 animate-fade-in text-left">
       
       {/* Page Header */}
-      <div className="border-b border-gold-100 pb-4 mb-8 text-center select-none">
+      <div className="border-b border-gold-100 dark:border-gold-950/60 pb-4 mb-8 text-center select-none">
         <span className="text-[10px] font-bold tracking-[0.3em] text-gold-600 uppercase mb-2 block font-sans">
           REAL-TIME SHIPMENTS
         </span>
-        <h1 className="font-serif text-3xl font-bold tracking-wide text-primary m-0">
+        <h1 className="font-serif text-3xl font-bold tracking-wide text-primary dark:text-white m-0">
           Track Your Order
         </h1>
-        <p className="text-secondary text-xs sm:text-sm max-w-md mx-auto leading-normal mt-2">
+        <p className="text-secondary dark:text-gray-300 text-xs sm:text-sm max-w-md mx-auto leading-normal mt-2">
           Monitor your jewelry shipment. Enter your unique order code below to track delivery updates.
         </p>
       </div>
 
       {/* Query Search Form */}
-      <div className="bg-white border border-gold-200/60 p-6 shadow-sm mb-10">
-        <form onSubmit={handleTrackSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+      <div className="bg-white dark:bg-[#0c0a06] border border-gold-200/50 dark:border-gold-900/40 p-6 shadow-sm mb-10 relative">
+        {/* Luxury Gold Corner Frames */}
+        <div className="absolute top-4 left-4 w-4 h-4 border-t border-l border-gold-400/50 pointer-events-none z-10"></div>
+        <div className="absolute bottom-4 right-4 w-4 h-4 border-b border-r border-gold-400/50 pointer-events-none z-10"></div>
+
+        <form onSubmit={handleTrackSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end relative z-20">
           <div className="md:col-span-1">
-            <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-2">Order ID</label>
+            <label className="block text-xs font-bold text-secondary dark:text-gray-400 uppercase tracking-wider mb-2">Order ID</label>
             <input
               type="text"
               required
               placeholder="e.g. ORD-99120"
               value={orderIdInput}
               onChange={(e) => setOrderIdInput(e.target.value)}
-              className="w-full bg-[#faf9f6] border border-gold-300 py-3 px-4 text-sm font-mono focus:border-gold-500 outline-none uppercase"
+              className="w-full bg-[#faf9f6] dark:bg-[#100d07] border border-gold-300 dark:border-gold-900/60 py-3 px-4 text-sm font-mono focus:border-gold-500 text-primary dark:text-white outline-none uppercase"
             />
           </div>
           <div className="md:col-span-1">
-            <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-2">Customer Email</label>
+            <label className="block text-xs font-bold text-secondary dark:text-gray-400 uppercase tracking-wider mb-2">Customer Email</label>
             <input
               type="email"
-              placeholder="devi.sharan@example.com"
+              placeholder="Enter Email Address"
               value={emailInput}
               onChange={(e) => setEmailInput(e.target.value)}
-              className="w-full bg-[#faf9f6] border border-gold-300 py-3 px-4 text-sm font-sans focus:border-gold-500 outline-none"
+              className="w-full bg-[#faf9f6] dark:bg-[#100d07] border border-gold-300 dark:border-gold-900/60 py-3 px-4 text-sm font-sans focus:border-gold-500 text-primary dark:text-white outline-none"
             />
           </div>
           <button
             type="submit"
-            className="bg-primary hover:bg-gold-600 text-white font-bold py-3.5 px-6 text-xs tracking-widest uppercase transition-colors cursor-pointer flex items-center justify-center space-x-2"
+            className="bg-primary hover:bg-gold-500 text-white hover:text-primary font-bold py-3.5 px-6 text-xs tracking-widest uppercase transition-colors cursor-pointer flex items-center justify-center space-x-2 border border-primary hover:border-gold-500 dark:bg-gold-600 dark:border-gold-600 dark:text-primary dark:hover:bg-white dark:hover:border-white"
           >
             <FiSearch />
             <span>Track Progress</span>
           </button>
         </form>
-        <div className="mt-3 text-center sm:text-left select-none">
-          <span className="text-[10px] text-secondary font-medium">
-            Demo Tip: Try searching for pre-populated code <strong className="text-gold-700 font-mono">ORD-99120</strong> (In Transit) or <strong className="text-gold-700 font-mono">ORD-99827</strong> (Delivered).
+        <div className="mt-3 text-center sm:text-left select-none relative z-20">
+          <span className="text-[10px] text-secondary dark:text-gray-400 font-medium">
+            Demo Tip: Try searching for pre-populated code <strong className="text-gold-700 dark:text-gold-400 font-mono">ORD-99120</strong> (In Transit) or <strong className="text-gold-700 dark:text-gold-400 font-mono">ORD-99827</strong> (Delivered).
           </span>
         </div>
       </div>
@@ -223,26 +227,29 @@ export default function OrderTracking() {
       {/* Query Search Results */}
       {isSearched && (
         queriedOrder ? (
-          <div className="bg-white border border-gold-200 p-6 sm:p-8 shadow-sm space-y-8">
-            
+          <div className="bg-white dark:bg-[#0c0a06] border border-gold-200/50 dark:border-gold-900/40 p-6 sm:p-8 shadow-sm space-y-8 relative">
+            {/* Luxury Gold Corner Frames */}
+            <div className="absolute top-4 left-4 w-4 h-4 border-t border-l border-gold-400/50 pointer-events-none z-10"></div>
+            <div className="absolute bottom-4 right-4 w-4 h-4 border-b border-r border-gold-400/50 pointer-events-none z-10"></div>
+
             {/* Order status card headers */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-gold-100 font-sans text-xs text-secondary font-medium">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-gold-100 dark:border-gold-950/60 font-sans text-xs text-secondary dark:text-gray-300 font-medium relative z-20">
               <div className="space-y-1 text-left">
-                <span>Order Status: <strong className="text-gold-700 font-bold uppercase">{queriedOrder.status}</strong></span>
-                <span className="block">SF Tracking ID: <strong className="text-primary font-mono">{queriedOrder.trackingId}</strong></span>
+                <span>Order Status: <strong className="text-gold-700 dark:text-gold-400 font-bold uppercase">{queriedOrder.status}</strong></span>
+                <span className="block">SF Tracking ID: <strong className="text-primary dark:text-gold-300 font-mono">{queriedOrder.trackingId}</strong></span>
               </div>
               <div className="mt-2 sm:mt-0 text-left sm:text-right">
                 <span>Placed Date: <strong>{queriedOrder.date}</strong></span>
-                <span className="block">Grand Total: <strong className="text-primary font-bold">₹{queriedOrder.total.toLocaleString('en-IN')}</strong></span>
+                <span className="block">Grand Total: <strong className="text-primary dark:text-white font-bold">₹{queriedOrder.total.toLocaleString('en-IN')}</strong></span>
               </div>
             </div>
 
             {/* Stepper Progress Bar */}
-            <div className="py-6 select-none">
+            <div className="py-6 select-none relative z-20">
               <div className="relative flex items-center justify-between w-full">
                 
                 {/* Horizontal progress bar backgrounds */}
-                <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 bg-gray-100 z-0"></div>
+                <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 bg-gray-100 dark:bg-gold-950/40 z-0"></div>
                 <div 
                   className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-gold-500 z-0 transition-all duration-500"
                   style={{ width: `${(getActiveStep(queriedOrder.status) / 3) * 100}%` }}
@@ -261,14 +268,14 @@ export default function OrderTracking() {
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
                         isActive 
                           ? 'bg-gold-500 border-gold-500 text-white shadow-md' 
-                          : 'bg-white border-gray-200 text-secondary'
+                          : 'bg-white dark:bg-[#100d07] border-gray-200 dark:border-gold-900/40 text-secondary dark:text-gray-400'
                       }`}>
                         {step.icon}
                       </div>
-                      <span className={`text-[10px] sm:text-xs font-bold mt-2.5 ${isActive ? 'text-primary' : 'text-secondary'}`}>
+                      <span className={`text-[10px] sm:text-xs font-bold mt-2.5 ${isActive ? 'text-primary dark:text-gold-200' : 'text-secondary dark:text-gray-400'}`}>
                         {step.label}
                       </span>
-                      <span className="text-[8px] sm:text-[9px] text-secondary font-medium mt-0.5 hidden sm:block">
+                      <span className="text-[8px] sm:text-[9px] text-secondary dark:text-gray-500 font-medium mt-0.5 hidden sm:block">
                         {step.desc}
                       </span>
                     </div>
@@ -279,19 +286,19 @@ export default function OrderTracking() {
             </div>
 
             {/* Shipment Items Table */}
-            <div className="border-t border-gold-100 pt-6">
-              <h4 className="font-serif text-sm font-bold text-primary mb-4">Shipment Manifest</h4>
+            <div className="border-t border-gold-100 dark:border-gold-950/60 pt-6 relative z-20">
+              <h4 className="font-serif text-sm font-bold text-primary dark:text-white mb-4">Shipment Manifest</h4>
               <div className="space-y-4">
                 {queriedOrder.items.map((item, index) => (
                   <div key={index} className="flex items-center justify-between text-xs sm:text-sm">
                     <div className="flex items-center space-x-3 max-w-[80%]">
-                      <img src={getImageUrl(item.image)} alt={item.name} className="w-12 h-12 object-cover border border-gold-100" />
+                      <img src={getImageUrl(item.image)} alt={item.name} className="w-12 h-12 object-cover border border-gold-100 dark:border-gold-900/40" />
                       <div className="text-left">
-                        <span className="font-serif font-bold text-primary line-clamp-1">{item.name}</span>
-                        <span className="text-xs text-secondary font-medium">Quantity: {item.quantity} | Price: ₹{item.price.toLocaleString('en-IN')}</span>
+                        <span className="font-serif font-bold text-primary dark:text-white line-clamp-1">{item.name}</span>
+                        <span className="text-xs text-secondary dark:text-gray-400 font-medium">Quantity: {item.quantity} | Price: ₹{item.price.toLocaleString('en-IN')}</span>
                       </div>
                     </div>
-                    <span className="font-bold text-primary font-sans">
+                    <span className="font-bold text-primary dark:text-white font-sans">
                       ₹{(item.price * item.quantity).toLocaleString('en-IN')}
                     </span>
                   </div>
@@ -300,16 +307,16 @@ export default function OrderTracking() {
             </div>
 
             {/* Support section */}
-            <div className="border-t border-gold-100 pt-6 bg-gold-50/20 p-4 border border-gold-100/30 flex flex-col sm:flex-row items-center justify-between gap-4 select-none">
+            <div className="border-t border-gold-100 dark:border-gold-950/60 pt-6 bg-gold-50/20 dark:bg-gold-950/10 p-4 border border-gold-100/30 dark:border-gold-900/40 flex flex-col sm:flex-row items-center justify-between gap-4 select-none relative z-20">
               <div className="text-left">
-                <span className="text-xs font-bold text-primary uppercase block">Need instant logistics help?</span>
-                <span className="text-[11px] text-secondary font-medium">Connect directly with our courier liaison team on WhatsApp.</span>
+                <span className="text-xs font-bold text-primary dark:text-white uppercase block">Need instant logistics help?</span>
+                <span className="text-[11px] text-secondary dark:text-gray-400 font-medium">Connect directly with our courier liaison team on WhatsApp.</span>
               </div>
               <a
-                href={`https://wa.me/${settings?.contactPhone ? settings.contactPhone.replace(/\D/g, '') : '917083874227'}?text=Hi%20Shambhavi%20Imitation!%20I%20would%20like%20updates%20on%20my%20order%20ID%20${queriedOrder.id}.`}
+                href={`https://wa.me/${settings?.contactPhone ? settings.contactPhone.replace(/\D/g, '') : '917083874227'}?text=Hi%20Shambhavi%20Imitation!%20I%20would%20like%2520updates%252520on%25252520my%2525252520order%252525252520ID%25252525252520${queriedOrder.id}.`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-[#25d366] hover:bg-[#20ba5a] text-white font-bold py-2.5 px-5 text-[10px] tracking-widest uppercase transition-colors"
+                className="bg-[#20ba5a] hover:bg-[#1bb052] text-white font-bold py-2.5 px-5 text-[10px] tracking-widest uppercase transition-colors cursor-pointer"
               >
                 Query via WhatsApp
               </a>
@@ -317,10 +324,14 @@ export default function OrderTracking() {
 
           </div>
         ) : (
-          <div className="bg-white border border-gold-200 p-12 text-center select-none">
-            <h3 className="font-serif text-lg font-bold text-primary mb-2">Order Not Located</h3>
-            <p className="text-secondary text-sm font-sans mb-0">
-              We couldn't locate any records matching Order ID <strong className="text-primary font-mono">"{orderIdInput}"</strong>. Please ensure the code is correct and try again.
+          <div className="bg-white dark:bg-[#0c0a06] border border-gold-200/50 dark:border-gold-900/40 p-12 text-center select-none relative">
+            {/* Luxury Gold Corner Frames */}
+            <div className="absolute top-4 left-4 w-4 h-4 border-t border-l border-gold-400/50 pointer-events-none z-10"></div>
+            <div className="absolute bottom-4 right-4 w-4 h-4 border-b border-r border-gold-400/50 pointer-events-none z-10"></div>
+            
+            <h3 className="font-serif text-lg font-bold text-primary dark:text-white mb-2 relative z-20">Order Not Located</h3>
+            <p className="text-secondary dark:text-gray-300 text-sm font-sans mb-0 relative z-20">
+              We couldn't locate any records matching Order ID <strong className="text-primary dark:text-gold-300 font-mono">"{orderIdInput}"</strong>. Please ensure the code is correct and try again.
             </p>
           </div>
         )

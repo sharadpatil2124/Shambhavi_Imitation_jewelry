@@ -176,6 +176,7 @@ export default function AdminProfile() {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
+                  placeholder="Enter Email Address"
                   className="w-full bg-[#faf9f6] border border-gold-300 py-2.5 pl-10 pr-4 text-xs focus:border-gold-500 outline-none"
                 />
               </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { loginUser } from '../store/authSlice';
 import adminService from '../services/adminService';
 import { FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
@@ -88,7 +88,7 @@ export default function AdminLogin() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@shambhavi.com"
+                placeholder="Enter Email Address"
                 className="w-full bg-[#faf9f6] border border-gold-300 py-3 pl-12 pr-4 text-sm font-sans focus:border-gold-500 outline-none transition-all duration-300"
               />
             </div>
@@ -116,6 +116,14 @@ export default function AdminLogin() {
               >
                 {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
               </button>
+            </div>
+            <div className="text-right mt-2">
+              <Link
+                to="/forgot-password"
+                className="text-xs font-sans text-gold-600 hover:text-gold-700 hover:underline font-semibold transition-colors"
+              >
+                Forgot Password?
+              </Link>
             </div>
           </div>
 

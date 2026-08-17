@@ -191,6 +191,7 @@ export default function AdminSettings() {
                     name="contactEmail"
                     value={formData.contactEmail}
                     onChange={handleChange}
+                    placeholder="Enter Email Address"
                     className="w-full bg-[#faf9f6] border border-gold-300 p-2.5 focus:border-gold-500 outline-none"
                   />
                 </div>

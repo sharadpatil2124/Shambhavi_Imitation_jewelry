@@ -233,7 +233,12 @@ export default function ProductDetails() {
 
   const handleBuyNow = () => {
     dispatch(addToCart({ product, quantity, color: selectedColor, size: selectedSize }));
-    navigate('/checkout');
+    if (!isAuthenticated) {
+      toast.warning("Please Login or Sign Up to purchase items!");
+      navigate('/login?redirect=checkout');
+    } else {
+      navigate('/checkout');
+    }
   };
 
   const handleOrderOnWhatsApp = () => {
@@ -272,10 +277,13 @@ export default function ProductDetails() {
       </div>
 
       {/* 2. Main Product Info Layout */}
-      <div className="flex flex-col lg:flex-row gap-12 bg-white border border-gold-200/50 p-6 sm:p-8 lg:p-10 shadow-sm mb-16 dark:bg-[#090805] dark:border-gold-900/60">
+      <div className="flex flex-col lg:flex-row gap-12 bg-white dark:bg-[#0c0a06] border border-gold-200/50 dark:border-gold-900/40 p-6 sm:p-8 lg:p-10 shadow-sm mb-16 relative">
+        {/* Luxury Gold Corner Frames */}
+        <div className="absolute top-4 left-4 w-4 h-4 border-t border-l border-gold-400/50 pointer-events-none z-10"></div>
+        <div className="absolute bottom-4 right-4 w-4 h-4 border-b border-r border-gold-400/50 pointer-events-none z-10"></div>
         
         {/* Left Side: Image Selector Galleries */}
-        <div className="w-full lg:w-1/2 flex flex-col md:flex-row gap-4">
+        <div className="w-full lg:w-1/2 flex flex-col md:flex-row gap-4 relative z-20">
           
           {/* Thumbnails vertical stack for desktop/large screens */}
           <div className="flex flex-row md:flex-col gap-2.5 order-2 md:order-1 overflow-x-auto md:overflow-y-auto md:w-20 md:h-[450px]">
@@ -284,7 +292,7 @@ export default function ProductDetails() {
                 key={idx}
                 onClick={() => setActiveImageIndex(idx)}
                 className={`w-14 h-14 md:w-20 md:h-20 border-2 flex-shrink-0 transition-all duration-300 cursor-pointer ${
-                  activeImageIndex === idx ? 'border-gold-500 shadow-sm' : 'border-gold-100 hover:border-gold-300'
+                  activeImageIndex === idx ? 'border-gold-500 shadow-sm' : 'border-gold-100 dark:border-gold-900/30 hover:border-gold-300'
                 }`}
               >
                 <img src={getImageUrl(img)} alt="thumbnail" className="w-full h-full object-cover" />
@@ -294,7 +302,7 @@ export default function ProductDetails() {
 
           {/* Large Main Image */}
           <div 
-            className="flex-grow order-1 md:order-2 aspect-square relative bg-[#faf9f6] overflow-hidden border border-gold-100 max-h-[450px] cursor-zoom-in"
+            className="flex-grow order-1 md:order-2 aspect-square relative bg-[#faf9f6] dark:bg-[#12100b] overflow-hidden border border-gold-100 dark:border-gold-900/40 max-h-[450px] cursor-zoom-in"
             onMouseEnter={() => setIsZoomed(true)}
             onMouseLeave={() => setIsZoomed(false)}
             onMouseMove={handleMouseMove}
@@ -317,10 +325,10 @@ export default function ProductDetails() {
         </div>
 
         {/* Right Side: Product Details & Actions */}
-        <div className="w-full lg:w-1/2 flex flex-col justify-between">
+        <div className="w-full lg:w-1/2 flex flex-col justify-between relative z-20">
           <div className="text-left">
             {/* Category / SKU */}
-            <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-widest text-gold-600 mb-3 select-none">
+            <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-widest text-gold-600 mb-3 select-none">
               <span>{categoryName}</span>
               <span>SKU: {product.sku}</span>
             </div>
@@ -337,17 +345,17 @@ export default function ProductDetails() {
                   <FaStar
                     key={i}
                     size={14}
-                    className={i < Math.floor(product.rating || 5) ? 'text-amber-400' : 'text-gray-200'}
+                    className={i < Math.floor(product.rating || 5) ? 'text-amber-400' : 'text-gray-200 dark:text-gold-950/60'}
                   />
                 ))}
               </div>
-              <span className="text-xs font-semibold text-primary dark:text-gold-400">{product.rating || 5}</span>
+              <span className="text-xs font-semibold text-primary dark:text-gold-455">{product.rating || 5}</span>
               <span className="text-xs text-secondary font-medium dark:text-gray-400">({product.reviewsCount || 0} verified customers)</span>
             </div>
 
             {/* Pricing Panel */}
-            <div className="flex items-baseline space-x-3 mb-6 bg-gold-50/50 p-4 border border-gold-100/30 dark:bg-gold-950/10">
-              <span className="font-sans text-3xl font-bold text-primary dark:text-gold-400">
+            <div className="flex items-baseline space-x-3 mb-6 bg-gold-50/40 dark:bg-gold-950/20 p-4 border border-gold-100/35 dark:border-gold-900/35 justify-start">
+              <span className="font-sans text-3xl font-bold text-primary dark:text-white">
                 ₹{product.price?.toLocaleString('en-IN')}
               </span>
               {product.originalPrice > product.price && (
@@ -355,7 +363,7 @@ export default function ProductDetails() {
                   <span className="font-sans text-base text-secondary line-through dark:text-gray-400">
                     ₹{product.originalPrice?.toLocaleString('en-IN')}
                   </span>
-                  <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-1 uppercase tracking-wide">
+                  <span className="bg-red-100 text-red-700 dark:bg-red-955 dark:text-red-400 text-[10px] font-bold px-2.5 py-1 uppercase tracking-wider">
                     {product.discount}% OFF SPECIAL PRICE
                   </span>
                 </>
@@ -380,8 +388,8 @@ export default function ProductDetails() {
                       onClick={() => setSelectedColor(color)}
                       className={`px-3 py-1.5 text-xs font-medium border rounded-none transition-all duration-200 cursor-pointer ${
                         selectedColor === color
-                          ? 'border-gold-600 bg-gold-50 text-gold-800 font-semibold shadow-xs'
-                          : 'border-gray-200 hover:border-gold-300 text-primary bg-white'
+                          ? 'border-gold-600 bg-gold-50 dark:bg-gold-950/40 text-gold-850 dark:text-gold-300 font-semibold shadow-xs'
+                          : 'border-gray-200 dark:border-gold-900/40 hover:border-gold-300 text-primary dark:text-gray-350 bg-white dark:bg-[#100d07]'
                       }`}
                     >
                       {color}
@@ -404,8 +412,8 @@ export default function ProductDetails() {
                       onClick={() => setSelectedSize(size)}
                       className={`px-3 py-1.5 text-xs font-medium border rounded-none transition-all duration-200 cursor-pointer ${
                         selectedSize === size
-                          ? 'border-gold-600 bg-gold-50 text-gold-800 font-semibold shadow-xs'
-                          : 'border-gray-200 hover:border-gold-300 text-primary bg-white'
+                          ? 'border-gold-600 bg-gold-50 dark:bg-gold-950/40 text-gold-850 dark:text-gold-300 font-semibold shadow-xs'
+                          : 'border-gray-200 dark:border-gold-900/40 hover:border-gold-300 text-primary dark:text-gray-350 bg-white dark:bg-[#100d07]'
                       }`}
                     >
                       {size}
@@ -418,9 +426,9 @@ export default function ProductDetails() {
 
           <div>
             {/* Quantity Selector */}
-            <div className="flex items-center space-x-4 mb-6 select-none">
+            <div className="flex items-center space-x-4 mb-6 select-none text-left">
               <span className="text-xs font-bold uppercase tracking-wider text-primary dark:text-white">Quantity:</span>
-              <div className="flex items-center border border-gold-300 bg-white">
+              <div className="flex items-center border border-gold-300 dark:border-gold-900/60 bg-white dark:bg-[#100d07]">
                 <button
                   onClick={handleDecrement}
                   className="px-3.5 py-2 text-secondary hover:text-gold-600 transition-colors cursor-pointer"
@@ -428,7 +436,7 @@ export default function ProductDetails() {
                 >
                   <FiMinus size={14} />
                 </button>
-                <span className="w-12 text-center font-sans font-bold text-sm text-primary">
+                <span className="w-12 text-center font-sans font-bold text-sm text-primary dark:text-white">
                   {quantity}
                 </span>
                 <button
@@ -445,7 +453,7 @@ export default function ProductDetails() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
               <button
                 onClick={handleAddToCart}
-                className="w-full bg-white hover:bg-gold-50 border-2 border-gold-500 text-gold-700 font-bold py-4 px-6 text-xs tracking-widest uppercase transition-all duration-300 flex items-center justify-center space-x-2 cursor-pointer"
+                className="w-full bg-transparent hover:bg-gold-500 border-2 border-gold-500 text-gold-700 dark:text-gold-300 hover:text-primary font-bold py-4 px-6 text-xs tracking-widest uppercase transition-all duration-300 flex items-center justify-center space-x-2 cursor-pointer"
               >
                 <FiShoppingBag size={15} />
                 <span>Add to Cart</span>
@@ -453,7 +461,7 @@ export default function ProductDetails() {
 
               <button
                 onClick={handleBuyNow}
-                className="w-full bg-gold-500 hover:bg-gold-600 text-white font-bold py-4 px-6 text-xs tracking-widest uppercase transition-all duration-300 flex items-center justify-center space-x-2 cursor-pointer border-2 border-gold-500 hover:border-gold-600"
+                className="w-full bg-primary hover:bg-gold-500 hover:text-primary text-white font-bold py-4 px-6 text-xs tracking-widest uppercase transition-all duration-300 flex items-center justify-center space-x-2 cursor-pointer border-2 border-primary hover:border-gold-500 dark:bg-gold-600 dark:border-gold-600 dark:text-primary dark:hover:bg-white dark:hover:border-white"
               >
                 <span>Buy It Now</span>
               </button>
@@ -463,7 +471,7 @@ export default function ProductDetails() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
               <button
                 onClick={handleOrderOnWhatsApp}
-                className="w-full bg-[#25d366] hover:bg-[#20ba5a] text-white font-bold py-3.5 px-6 text-xs tracking-widest uppercase transition-all duration-300 flex items-center justify-center space-x-2 cursor-pointer"
+                className="w-full bg-[#20ba5a] hover:bg-[#1bb052] text-white font-bold py-3.5 px-6 text-xs tracking-widest uppercase transition-all duration-300 flex items-center justify-center space-x-2 cursor-pointer"
               >
                 <FaWhatsapp size={16} />
                 <span>Order on WhatsApp</span>
@@ -471,7 +479,7 @@ export default function ProductDetails() {
 
               <button
                 onClick={handleWishlistToggle}
-                className="w-full border border-gray-200 hover:border-red-400 text-primary hover:text-red-500 font-semibold py-3.5 px-6 text-xs tracking-widest uppercase transition-all duration-300 flex items-center justify-center space-x-2 cursor-pointer bg-white"
+                className="w-full border border-gold-300/40 hover:border-red-400 text-primary dark:text-gray-300 hover:text-red-500 font-semibold py-3.5 px-6 text-xs tracking-widest uppercase transition-all duration-300 flex items-center justify-center space-x-2 cursor-pointer bg-white dark:bg-[#100d07]"
               >
                 {isWishlisted ? (
                   <>
@@ -480,7 +488,7 @@ export default function ProductDetails() {
                   </>
                 ) : (
                   <>
-                    <FiHeart size={14} />
+                    <FiHeart size={14} className="dark:text-gold-400" />
                     <span>Add to Wishlist</span>
                   </>
                 )}
@@ -488,21 +496,21 @@ export default function ProductDetails() {
             </div>
 
             {/* Key Quality Indicators */}
-            <div className="border-t border-gold-100 pt-6 grid grid-cols-3 gap-4 text-center select-none dark:border-gold-900/60">
+            <div className="border-t border-gold-100 dark:border-gold-950/60 pt-6 grid grid-cols-3 gap-4 text-center select-none">
               <div className="flex flex-col items-center">
                 <FiTruck className="text-gold-600 mb-1" size={18} />
                 <span className="text-[10px] font-bold text-primary uppercase tracking-wide dark:text-white">Free Shipping</span>
-                <span className="text-[9px] text-secondary mt-0.5 dark:text-gray-400">On orders &gt; ₹{(settings?.freeShippingThreshold ?? 5000).toLocaleString('en-IN')}</span>
+                <span className="text-[9px] text-secondary mt-0.5 dark:text-gray-405">On orders &gt; ₹{(settings?.freeShippingThreshold ?? 5000).toLocaleString('en-IN')}</span>
               </div>
-              <div className="flex flex-col items-center border-x border-gold-100 dark:border-gold-900/60">
+              <div className="flex flex-col items-center border-x border-gold-100 dark:border-gold-950/60">
                 <FiShield className="text-gold-600 mb-1" size={18} />
                 <span className="text-[10px] font-bold text-primary uppercase tracking-wide dark:text-white">100% Secure</span>
-                <span className="text-[9px] text-secondary mt-0.5 dark:text-gray-400">Encrypted Payments</span>
+                <span className="text-[9px] text-secondary mt-0.5 dark:text-gray-405">Encrypted Payments</span>
               </div>
               <div className="flex flex-col items-center">
                 <FiRefreshCw className="text-gold-600 mb-1" size={18} />
                 <span className="text-[10px] font-bold text-primary uppercase tracking-wide dark:text-white">Easy Returns</span>
-                <span className="text-[9px] text-secondary mt-0.5 dark:text-gray-400">7-day replacement policy</span>
+                <span className="text-[9px] text-secondary mt-0.5 dark:text-gray-405">7-day replacement policy</span>
               </div>
             </div>
 
@@ -512,14 +520,18 @@ export default function ProductDetails() {
       </div>
 
       {/* 3. Customer Reviews Section */}
-      <section className="bg-white border border-gold-200/50 p-6 sm:p-8 lg:p-10 shadow-sm mb-16 dark:bg-[#090805] dark:border-gold-900/60">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 border-b border-gold-100 pb-6 dark:border-gold-900/60">
-          <h3 className="font-serif text-xl font-bold tracking-wide text-primary m-0 dark:text-white">
+      <section className="bg-white dark:bg-[#0c0a06] border border-gold-200/50 dark:border-gold-900/40 p-6 sm:p-8 lg:p-10 shadow-sm mb-16 relative">
+        {/* Luxury Gold Corner Frames */}
+        <div className="absolute top-4 left-4 w-4 h-4 border-t border-l border-gold-400/50 pointer-events-none z-10"></div>
+        <div className="absolute bottom-4 right-4 w-4 h-4 border-b border-r border-gold-400/50 pointer-events-none z-10"></div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 border-b border-gold-100 dark:border-gold-950/60 pb-6 relative z-20">
+          <h3 className="font-serif text-xl font-bold tracking-wide text-primary dark:text-white m-0">
             Customer Reviews ({reviews.length})
           </h3>
           <button
             onClick={() => setShowReviewForm(!showReviewForm)}
-            className="inline-block bg-primary hover:bg-gold-500 text-white font-bold py-2.5 px-6 text-xs tracking-widest uppercase transition-colors cursor-pointer text-center"
+            className="inline-block bg-primary hover:bg-gold-500 text-white hover:text-primary font-bold py-2.5 px-6 text-xs tracking-widest uppercase transition-colors cursor-pointer text-center border border-primary hover:border-gold-500 dark:bg-gold-600 dark:border-gold-600 dark:text-primary dark:hover:bg-white dark:hover:border-white"
           >
             {showReviewForm ? "Cancel Review" : "Write a Review"}
           </button>
@@ -527,13 +539,13 @@ export default function ProductDetails() {
 
         {/* Dynamic Interactive Review Form */}
         {showReviewForm && (
-          <div className="mb-10 p-6 border border-gold-200/85 bg-gold-50/20 dark:bg-gold-950/5 dark:border-gold-800 text-left transition-all duration-300">
-            <h4 className="font-serif text-base font-bold text-primary mb-4 dark:text-white">Share Your Experience</h4>
+          <div className="mb-10 p-6 border border-gold-200/80 dark:border-gold-900/40 bg-gold-50/10 dark:bg-gold-950/10 text-left transition-all duration-300 relative z-20">
+            <h4 className="font-serif text-base font-bold text-primary dark:text-white mb-4">Share Your Experience</h4>
             
             {isAuthenticated ? (
               <form onSubmit={handleReviewSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-2">Your Rating</label>
+                  <label className="block text-xs font-bold text-secondary dark:text-gray-400 uppercase tracking-wider mb-2">Your Rating</label>
                   <div className="flex items-center space-x-1.5 mb-2">
                     {[1, 2, 3, 4, 5].map((starValue) => (
                       <button
@@ -547,11 +559,11 @@ export default function ProductDetails() {
                       >
                         <FaStar
                           size={24}
-                          className={(hoverRating || rating) >= starValue ? 'text-amber-400' : 'text-gray-200 dark:text-gray-700'}
+                          className={(hoverRating || rating) >= starValue ? 'text-amber-400' : 'text-gray-200 dark:text-gray-800'}
                         />
                       </button>
                     ))}
-                    <span className="text-xs font-semibold text-gold-600 ml-2 select-none">
+                    <span className="text-xs font-semibold text-gold-650 ml-2 select-none">
                       {rating === 5 && 'Excellent'}
                       {rating === 4 && 'Very Good'}
                       {rating === 3 && 'Average'}
@@ -562,42 +574,42 @@ export default function ProductDetails() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-2">Review Title</label>
+                  <label className="block text-xs font-bold text-secondary dark:text-gray-400 uppercase tracking-wider mb-2">Review Title</label>
                   <input
                     type="text"
                     value={reviewTitle}
                     onChange={(e) => setReviewTitle(e.target.value)}
                     placeholder="e.g. Absolutely stunning design!"
-                    className="w-full bg-white border border-gold-300 py-3 px-4 text-sm font-sans focus:border-gold-500 outline-none dark:bg-[#0c0b08] dark:border-gold-850 dark:text-white"
+                    className="w-full bg-white dark:bg-[#100d07] border border-gold-300 dark:border-gold-900/60 py-3 px-4 text-sm font-sans focus:border-gold-500 outline-none text-primary dark:text-white"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-2">Detailed Comments</label>
+                  <label className="block text-xs font-bold text-secondary dark:text-gray-400 uppercase tracking-wider mb-2">Detailed Comments</label>
                   <textarea
                     rows={4}
                     required
                     value={reviewComment}
                     onChange={(e) => setReviewComment(e.target.value)}
                     placeholder="Describe the quality, polish, wear comfort, and visual beauty of this imitation masterpiece..."
-                    className="w-full bg-white border border-gold-300 py-3 px-4 text-sm font-sans focus:border-gold-500 outline-none dark:bg-[#0c0b08] dark:border-gold-850 dark:text-white"
+                    className="w-full bg-white dark:bg-[#100d07] border border-gold-300 dark:border-gold-900/60 py-3 px-4 text-sm font-sans focus:border-gold-500 outline-none text-primary dark:text-white"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={submittingReview}
-                  className="bg-primary hover:bg-gold-500 text-white font-bold py-3.5 px-8 text-xs tracking-widest uppercase transition-colors cursor-pointer disabled:opacity-55"
+                  className="bg-primary hover:bg-gold-500 text-white hover:text-primary font-bold py-3.5 px-8 text-xs tracking-widest uppercase transition-colors cursor-pointer disabled:opacity-55 border border-primary hover:border-gold-500 dark:bg-gold-600 dark:border-gold-600 dark:text-primary dark:hover:bg-white dark:hover:border-white"
                 >
                   {submittingReview ? "Submitting..." : "Submit Review"}
                 </button>
               </form>
             ) : (
               <div className="text-center py-6">
-                <p className="text-secondary text-sm mb-4">You must be logged in to leave a review for this jewelry design.</p>
+                <p className="text-secondary dark:text-gray-300 text-sm mb-4">You must be logged in to leave a review for this jewelry design.</p>
                 <Link
                   to="/login"
-                  className="inline-block bg-primary hover:bg-gold-600 text-white font-bold py-3 px-6 text-xs tracking-widest uppercase transition-colors"
+                  className="inline-block bg-primary hover:bg-gold-500 text-white hover:text-primary font-bold py-3 px-6 text-xs tracking-widest uppercase transition-colors border border-primary hover:border-gold-500 dark:bg-gold-600 dark:border-gold-600 dark:text-primary dark:hover:bg-white dark:hover:border-white"
                 >
                   Sign In Securely
                 </Link>
@@ -606,14 +618,14 @@ export default function ProductDetails() {
           </div>
         )}
 
-        <div className="flex flex-col md:flex-row gap-8 items-start mb-10 pb-8 border-b border-gold-100 dark:border-gold-900/60 text-left">
+        <div className="flex flex-col md:flex-row gap-8 items-start mb-10 pb-8 border-b border-gold-100 dark:border-gold-950/60 text-left relative z-20">
           {/* Average Rating Scorecard */}
-          <div className="bg-gold-50/20 border border-gold-200/40 p-6 text-center w-full md:w-56 dark:bg-gold-950/5">
+          <div className="bg-gold-50/15 dark:bg-gold-950/10 border border-gold-200/40 dark:border-gold-900/40 p-6 text-center w-full md:w-56">
             <span className="text-4xl font-serif font-bold text-primary dark:text-white">{product.rating || 5}</span>
-            <div className="flex text-amber-400 justify-center my-2">
-              {[...Array(5)].map((_, i) => <FaStar key={i} size={15} className={i < Math.floor(product.rating || 5) ? 'text-amber-400' : 'text-gray-200'} />)}
+            <div className="flex text-gold-500 justify-center my-2">
+              {[...Array(5)].map((_, i) => <FaStar key={i} size={15} className={i < Math.floor(product.rating || 5) ? 'text-gold-550' : 'text-gray-200 dark:text-gold-950/40'} />)}
             </div>
-            <span className="text-xs text-secondary font-medium block dark:text-gray-400">Out of 5 Stars</span>
+            <span className="text-xs text-secondary dark:text-gray-400 font-medium block">Out of 5 Stars</span>
           </div>
 
           {/* Rating Bars Simulation */}
@@ -625,7 +637,7 @@ export default function ProductDetails() {
               { label: "2 Stars", percentage: getRatingBarPercentage(2), count: ratingCounts[2] },
               { label: "1 Star", percentage: getRatingBarPercentage(1), count: ratingCounts[1] }
             ].map((bar) => (
-              <div key={bar.label} className="flex items-center text-xs text-secondary font-medium dark:text-gray-400">
+              <div key={bar.label} className="flex items-center text-xs text-secondary dark:text-gray-400 font-medium">
                 <span className="w-14 text-left">{bar.label}</span>
                 <div className="flex-grow bg-gray-100 h-2 mx-3 rounded-none overflow-hidden dark:bg-gray-800">
                   <div className="bg-gold-500 h-full" style={{ width: bar.percentage }}></div>
@@ -637,7 +649,7 @@ export default function ProductDetails() {
         </div>
 
         {/* Individual Review list */}
-        <div className="space-y-6 text-left">
+        <div className="space-y-6 text-left relative z-20">
           {reviewsLoading ? (
             <div className="py-8 text-center">
               <div className="w-8 h-8 border-4 border-gold-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
@@ -645,29 +657,29 @@ export default function ProductDetails() {
             </div>
           ) : reviews && reviews.length > 0 ? (
             reviews.map((rev, idx) => (
-              <div key={idx} className="pb-6 border-b border-gray-100 last:border-b-0 last:pb-0 dark:border-gray-800">
+              <div key={idx} className="pb-6 border-b border-gray-100 last:border-b-0 last:pb-0 dark:border-gray-800/80">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-serif text-sm font-bold text-primary dark:text-white">{rev.user?.name || rev.name || "Customer"}</h4>
-                  <span className="text-[10px] text-secondary font-semibold dark:text-gray-400">
+                  <span className="text-[10px] text-secondary dark:text-gray-400 font-semibold">
                     {rev.createdAt ? new Date(rev.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "Recently"}
                   </span>
                 </div>
-                <div className="flex text-amber-400 mb-2">
-                  {[...Array(5)].map((_, i) => <FaStar key={i} size={11} className={i < (rev.rating || 5) ? 'text-amber-400' : 'text-gray-200'} />)}
+                <div className="flex text-gold-500 mb-2">
+                  {[...Array(5)].map((_, i) => <FaStar key={i} size={11} className={i < (rev.rating || 5) ? 'text-gold-550' : 'text-gray-200 dark:text-gold-950/40'} />)}
                 </div>
                 {rev.title && <h5 className="font-serif text-sm font-bold text-primary mb-1 dark:text-white">{rev.title}</h5>}
-                <p className="text-secondary text-sm font-sans leading-relaxed dark:text-gray-300">{rev.comment}</p>
+                <p className="text-secondary dark:text-gray-300 text-sm font-sans leading-relaxed">{rev.comment}</p>
               </div>
             ))
           ) : (
             <div className="py-12 text-center border border-dashed border-gold-200/60 dark:border-gold-900/40">
-              <p className="text-secondary text-sm font-sans mb-4">No reviews yet for this masterpiece.</p>
-              <p className="text-xs text-secondary/60 mb-6">Be the first to share your thoughts and help others make a beautiful choice.</p>
+              <p className="text-secondary dark:text-gray-300 text-sm font-sans mb-4">No reviews yet for this masterpiece.</p>
+              <p className="text-xs text-secondary/60 dark:text-gray-400 mb-6">Be the first to share your thoughts and help others make a beautiful choice.</p>
               <button
                 onClick={() => {
                   setShowReviewForm(true);
                 }}
-                className="bg-primary hover:bg-gold-600 text-white font-bold py-3 px-6 text-xs tracking-widest uppercase transition-colors"
+                className="bg-primary hover:bg-gold-500 text-white hover:text-primary font-bold py-3 px-6 text-xs tracking-widest uppercase transition-colors cursor-pointer border border-primary hover:border-gold-500 dark:bg-gold-600 dark:border-gold-600 dark:text-primary dark:hover:bg-white dark:hover:border-white"
               >
                 Write the First Review
               </button>

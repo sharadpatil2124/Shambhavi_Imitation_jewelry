@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import productService from '../services/productService';
 import adminService from '../services/adminService';
 import { 
@@ -525,17 +526,23 @@ export default function AdminProducts() {
       {/* ========================================================================= */}
       {/* 5. ADD PRODUCT MODAL / DRAWER */}
       {/* ========================================================================= */}
-      {isAddOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white border border-gold-200 shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto rounded-none animate-scale-up">
-            <div className="bg-[#FAF8F2] border-b border-gold-200/55 p-4 flex justify-between items-center sticky top-0 z-10">
+      {isAddOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6 overflow-y-auto">
+          <div className="bg-white border border-gold-200 shadow-2xl max-w-3xl w-full max-h-[88vh] flex flex-col rounded-none animate-scale-up relative my-auto">
+            <div className="bg-[#FAF8F2] border-b border-gold-200/55 p-4 sm:px-6 flex justify-between items-center shrink-0">
               <h3 className="font-serif text-lg font-bold text-primary tracking-wide">Add Jewelry Product</h3>
-              <button onClick={() => setIsAddOpen(false)} className="text-secondary/60 hover:text-primary transition-colors cursor-pointer">
-                <FiX size={18} />
+              <button 
+                type="button"
+                onClick={() => setIsAddOpen(false)} 
+                className="p-2 text-secondary/70 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors cursor-pointer flex items-center justify-center border border-transparent hover:border-red-200"
+                title="Close Window"
+              >
+                <FiX size={22} className="stroke-[2.5]" />
               </button>
             </div>
 
-            <form onSubmit={handleAddSubmit} className="p-6 space-y-5 font-sans text-xs">
+            <form onSubmit={handleAddSubmit} className="flex-1 flex flex-col overflow-hidden">
+              <div className="p-6 space-y-5 font-sans text-xs overflow-y-auto flex-1 text-left">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1.5">Design Name *</label>
@@ -750,12 +757,13 @@ export default function AdminProducts() {
                   </div>
                 )}
               </div>
+              </div>
 
-              <div className="pt-4 border-t border-gold-100 flex justify-end space-x-3">
+              <div className="bg-[#FAF8F2] border-t border-gold-200/55 px-6 py-4 flex justify-end space-x-3 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsAddOpen(false)}
-                  className="bg-transparent hover:bg-gold-50 border border-gold-300 text-gold-700 font-bold py-2.5 px-6 uppercase tracking-wider cursor-pointer"
+                  className="bg-white border border-gold-300 hover:bg-gray-100 text-secondary font-bold py-2.5 px-5 uppercase tracking-wider transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -769,23 +777,30 @@ export default function AdminProducts() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ========================================================================= */}
       {/* 6. EDIT PRODUCT MODAL / DRAWER */}
       {/* ========================================================================= */}
-      {isEditOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white border border-gold-200 shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto rounded-none animate-scale-up">
-            <div className="bg-[#FAF8F2] border-b border-gold-200/55 p-4 flex justify-between items-center sticky top-0 z-10">
+      {isEditOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6 overflow-y-auto">
+          <div className="bg-white border border-gold-200 shadow-2xl max-w-3xl w-full max-h-[88vh] flex flex-col rounded-none animate-scale-up relative my-auto">
+            <div className="bg-[#FAF8F2] border-b border-gold-200/55 p-4 sm:px-6 flex justify-between items-center shrink-0">
               <h3 className="font-serif text-lg font-bold text-primary tracking-wide">Edit Product Attributes</h3>
-              <button onClick={() => setIsEditOpen(false)} className="text-secondary/60 hover:text-primary transition-colors cursor-pointer">
-                <FiX size={18} />
+              <button 
+                type="button"
+                onClick={() => setIsEditOpen(false)} 
+                className="p-2 text-secondary/70 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors cursor-pointer flex items-center justify-center border border-transparent hover:border-red-200"
+                title="Close Window"
+              >
+                <FiX size={22} className="stroke-[2.5]" />
               </button>
             </div>
 
-            <form onSubmit={handleEditSubmit} className="p-6 space-y-5 font-sans text-xs">
+            <form onSubmit={handleEditSubmit} className="flex-1 flex flex-col overflow-hidden">
+              <div className="p-6 space-y-5 font-sans text-xs overflow-y-auto flex-1 text-left">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1.5">Design Name *</label>
@@ -1011,12 +1026,13 @@ export default function AdminProducts() {
                   </div>
                 )}
               </div>
+              </div>
 
-              <div className="pt-4 border-t border-gold-100 flex justify-end space-x-3">
+              <div className="bg-[#FAF8F2] border-t border-gold-200/55 px-6 py-4 flex justify-end space-x-3 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsEditOpen(false)}
-                  className="bg-transparent hover:bg-gold-50 border border-gold-300 text-gold-700 font-bold py-2.5 px-6 uppercase tracking-wider cursor-pointer"
+                  className="bg-white border border-gold-300 hover:bg-gray-100 text-secondary font-bold py-2.5 px-5 uppercase tracking-wider transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -1030,23 +1046,29 @@ export default function AdminProducts() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ========================================================================= */}
       {/* 7. PRODUCT DETAIL PREVIEW MODAL */}
       {/* ========================================================================= */}
-      {isPreviewOpen && selectedProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white border border-gold-200 shadow-2xl max-w-2xl w-full rounded-none animate-scale-up overflow-hidden">
-            <div className="bg-[#FAF8F2] border-b border-gold-200/55 p-4 flex justify-between items-center">
+      {isPreviewOpen && selectedProduct && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6 overflow-y-auto">
+          <div className="bg-white border border-gold-200 shadow-2xl max-w-2xl w-full max-h-[88vh] flex flex-col rounded-none animate-scale-up relative my-auto">
+            <div className="bg-[#FAF8F2] border-b border-gold-200/55 p-4 sm:px-6 flex justify-between items-center shrink-0">
               <span className="text-[10px] font-bold tracking-[0.2em] text-gold-600 uppercase font-sans">Masterpiece Spec Sheet</span>
-              <button onClick={() => setIsPreviewOpen(false)} className="text-secondary/60 hover:text-primary transition-colors cursor-pointer">
-                <FiX size={18} />
+              <button 
+                type="button"
+                onClick={() => setIsPreviewOpen(false)} 
+                className="p-2 text-secondary/70 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors cursor-pointer flex items-center justify-center border border-transparent hover:border-red-200"
+                title="Close Window"
+              >
+                <FiX size={22} className="stroke-[2.5]" />
               </button>
             </div>
 
-            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 text-left font-sans text-xs">
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 text-left font-sans text-xs overflow-y-auto flex-1">
               {/* Left Images Carousel */}
               <div className="space-y-4">
                 <img 
@@ -1109,8 +1131,9 @@ export default function AdminProducts() {
               </div>
             </div>
 
-            <div className="bg-[#FAF8F2] border-t border-gold-150 p-4 flex justify-end">
+            <div className="bg-[#FAF8F2] border-t border-gold-150 p-4 flex justify-end shrink-0">
               <button 
+                type="button"
                 onClick={() => setIsPreviewOpen(false)}
                 className="bg-primary hover:bg-gold-600 text-white font-bold py-2 px-5 uppercase tracking-wider cursor-pointer font-sans text-xs"
               >
@@ -1118,7 +1141,8 @@ export default function AdminProducts() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

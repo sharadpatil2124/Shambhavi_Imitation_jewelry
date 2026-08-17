@@ -9,6 +9,8 @@ import AdminLayout from './layouts/AdminLayout';
 
 // Admin Page Components
 import AdminLogin from './pages/AdminLogin';
+import AdminForgotPassword from './pages/AdminForgotPassword';
+import AdminResetPassword from './pages/AdminResetPassword';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminProducts from './pages/AdminProducts';
 import AdminCategories from './pages/AdminCategories';
@@ -27,6 +29,8 @@ export default function App() {
         <Routes>
           {/* Public Auth Endpoint */}
           <Route path="/login" element={<AdminLogin />} />
+          <Route path="/forgot-password" element={<AdminForgotPassword />} />
+          <Route path="/reset-password" element={<AdminResetPassword />} />
 
           {/* Secure Administrative Console Workspace */}
           <Route element={<AdminProtectedRoute />}>

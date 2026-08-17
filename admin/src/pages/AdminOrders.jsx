@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { 
   fetchOrdersThunk, 
@@ -182,6 +183,7 @@ export default function AdminOrders() {
       case 'Shipped': return <FiTruck className="text-sky-500" />;
       case 'Delivered': return <FiCheckCircle className="text-emerald-500" />;
       case 'Cancelled': return <FiX className="text-red-500" />;
+      case 'Cancellation Requested': return <FiClock className="text-rose-500 animate-pulse" />;
       default: return null;
     }
   };
@@ -223,6 +225,7 @@ export default function AdminOrders() {
               <option value="Shipped">Shipped</option>
               <option value="Delivered">Delivered</option>
               <option value="Cancelled">Cancelled</option>
+              <option value="Cancellation Requested">Cancellation Requested</option>
             </select>
           </div>
 
@@ -316,6 +319,7 @@ export default function AdminOrders() {
                           order.orderStatus === 'Delivered' ? 'bg-green-100 text-green-700' :
                           order.orderStatus === 'Cancelled' ? 'bg-red-100 text-red-700' :
                           order.orderStatus === 'Shipped' ? 'bg-blue-100 text-blue-700' :
+                          order.orderStatus === 'Cancellation Requested' ? 'bg-rose-100 text-rose-700 border border-rose-300 animate-pulse' :
                           'bg-amber-100 text-amber-700'
                         }`}>
                           {getStatusIcon(order.orderStatus)}
@@ -371,24 +375,30 @@ export default function AdminOrders() {
       {/* ========================================================================= */}
       {/* ORDER DETAILS & MODERATION DRAWER / MODAL */}
       {/* ========================================================================= */}
-      {isDetailOpen && selectedOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white border border-gold-200 shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto rounded-none animate-scale-up">
+      {isDetailOpen && selectedOrder && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6 overflow-y-auto">
+          <div className="bg-white border border-gold-200 shadow-2xl max-w-4xl w-full max-h-[88vh] flex flex-col rounded-none animate-scale-up relative my-auto">
             
             {/* Header */}
-            <div className="bg-[#FAF8F2] border-b border-gold-200/55 p-4 flex justify-between items-center sticky top-0 z-10">
+            <div className="bg-[#FAF8F2] border-b border-gold-200/55 p-4 sm:px-6 flex justify-between items-center shrink-0">
               <div>
                 <h3 className="font-serif text-lg font-bold text-primary tracking-wide">
                   Order Management Panel
                 </h3>
                 <p className="text-[10px] font-mono text-secondary/60 mt-0.5">Database ID: {selectedOrder._id}</p>
               </div>
-              <button onClick={() => setIsDetailOpen(false)} className="text-secondary/60 hover:text-primary transition-colors cursor-pointer">
-                <FiX size={18} />
+              <button 
+                type="button"
+                onClick={() => setIsDetailOpen(false)} 
+                className="p-2 text-secondary/70 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors cursor-pointer flex items-center justify-center border border-transparent hover:border-red-200"
+                title="Close Window"
+              >
+                <FiX size={22} className="stroke-[2.5]" />
               </button>
             </div>
 
-            <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-8 text-left font-sans text-xs">
+            <div className="p-6 overflow-y-auto flex-1 text-left font-sans text-xs">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Left Column: Info & Action Controllers */}
               <div className="lg:col-span-2 space-y-6">
                 
@@ -475,6 +485,76 @@ export default function AdminOrders() {
 
               {/* Right Column: Modifier forms & Invoicing */}
               <div className="space-y-6">
+
+                {/* Cancellation Request Alert Box */}
+                {selectedOrder.orderStatus === 'Cancellation Requested' && (
+                  <div className="bg-rose-50 border border-rose-250 p-5 shadow-sm text-left">
+                    <h4 className="font-serif text-xs font-bold text-rose-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      ⚠️ Cancellation Requested
+                    </h4>
+                    <p className="text-xs text-rose-700 leading-relaxed mb-3">
+                      The customer has requested to cancel this order.
+                    </p>
+                    <div className="bg-white border border-rose-100 p-3 mb-4 rounded-sm text-[11px]">
+                      <span className="font-bold text-rose-900 block mb-1">Reason provided:</span>
+                      <p className="text-secondary/80 italic font-medium">"{selectedOrder.cancellationReason || 'No reason provided'}"</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (window.confirm("Are you sure you want to APPROVE this cancellation request? This will restore inventory stock and cancel the order.")) {
+                            setActionLoading(true);
+                            try {
+                              const result = await dispatch(updateOrderStatusThunk({
+                                id: selectedOrder._id,
+                                status: "Cancelled"
+                              })).unwrap();
+                              setSelectedOrder(result);
+                              toast.success("Cancellation request approved successfully!");
+                              loadOrders();
+                            } catch (error) {
+                              toast.error(error || "Failed to approve cancellation request.");
+                            } finally {
+                              setActionLoading(false);
+                            }
+                          }
+                        }}
+                        disabled={actionLoading}
+                        className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 text-xs uppercase tracking-wider cursor-pointer text-center rounded-sm transition-colors"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const reason = window.prompt("Please enter the reason for rejecting the cancellation request (will be emailed to the user):", "Your order has already been packed and processed for shipping.");
+                          if (reason !== null) {
+                            setActionLoading(true);
+                            try {
+                              const result = await dispatch(updateOrderStatusThunk({
+                                id: selectedOrder._id,
+                                status: "Processing",
+                                rejectionReason: reason
+                              })).unwrap();
+                              setSelectedOrder(result);
+                              toast.success("Cancellation request declined and user notified!");
+                              loadOrders();
+                            } catch (error) {
+                              toast.error(error || "Failed to reject cancellation request.");
+                            } finally {
+                              setActionLoading(false);
+                            }
+                          }
+                        }}
+                        disabled={actionLoading}
+                        className="flex-1 bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 text-xs uppercase tracking-wider cursor-pointer text-center rounded-sm transition-colors"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                )}
                 
                 {/* 1. Status modifier control */}
                 <div className="bg-white border border-gold-200/60 p-5 shadow-sm">
@@ -494,6 +574,7 @@ export default function AdminOrders() {
                         <option value="Shipped">Shipped</option>
                         <option value="Delivered">Delivered</option>
                         <option value="Cancelled">Cancelled</option>
+                        <option value="Cancellation Requested">Cancellation Requested</option>
                       </select>
                     </div>
 
@@ -621,10 +702,9 @@ export default function AdminOrders() {
                     <div className="invoice-meta-col" style={{ width: '48%' }}>
                       <span className="invoice-meta-label">Shipped From / Seller</span>
                       <span className="addr-text">
-                        <strong>Shambhavi Imitation Inc.</strong> <br />
-                        Jubilee Hills Complex, Gold Bazaar St, <br />
-                        Mumbai, Maharashtra, 400001 <br />
-                        GSTIN: 27AAAAA1111A1Z1
+                        <strong>Shambhavi Imitation Shop</strong> <br />
+                        A/p Kurani, Tal. Kagal, <br />
+                        Dist. Kolhapur, Pin Code - 416219
                       </span>
                     </div>
                   </div>
@@ -680,9 +760,22 @@ export default function AdminOrders() {
                 </div>
               )}
             </div>
+            </div>
+
+            {/* Footer with Clear Close Action */}
+            <div className="bg-[#FAF8F2] border-t border-gold-200/55 px-6 py-3.5 flex justify-end items-center shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsDetailOpen(false)}
+                className="bg-primary hover:bg-gold-600 text-white font-bold py-2 px-6 text-xs uppercase tracking-wider transition-colors cursor-pointer"
+              >
+                Close Panel
+              </button>
+            </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

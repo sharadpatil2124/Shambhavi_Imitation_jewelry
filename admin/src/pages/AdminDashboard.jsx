@@ -31,7 +31,7 @@ import {
 } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 
-const COLORS = ['#C5A059', '#E5C483', '#D4AF37', '#9A7B43', '#806430', '#D2B48C'];
+const COLORS = ['#F59E0B', '#6366F1', '#3B82F6', '#0EA5E9', '#10B981', '#EF4444', '#F43F5E'];
 
 export default function AdminDashboard() {
   const dispatch = useDispatch();
@@ -61,44 +61,47 @@ export default function AdminDashboard() {
       })).reverse()
     : [];
 
-  const statusPieData = analytics?.orderStatus 
+  const allStatusList = analytics?.orderStatus 
     ? [
-        { name: 'Processing', value: analytics.orderStatus.processing || 0 },
-        { name: 'Dispatched', value: analytics.orderStatus.dispatched || 0 },
-        { name: 'Out For Delivery', value: analytics.orderStatus.outForDelivery || 0 },
-        { name: 'Delivered', value: analytics.orderStatus.delivered || 0 },
-        { name: 'Cancelled', value: analytics.orderStatus.cancelled || 0 }
-      ].filter(item => item.value > 0)
+        { name: 'Pending', value: analytics.orderStatus.pending || 0, color: '#F59E0B' },
+        { name: 'Confirmed', value: analytics.orderStatus.confirmed || 0, color: '#6366F1' },
+        { name: 'Processing', value: analytics.orderStatus.processing || 0, color: '#3B82F6' },
+        { name: 'Shipped', value: analytics.orderStatus.shipped || 0, color: '#0EA5E9' },
+        { name: 'Delivered', value: analytics.orderStatus.delivered || 0, color: '#10B981' },
+        { name: 'Cancelled', value: analytics.orderStatus.cancelled || 0, color: '#EF4444' },
+        { name: 'Cancellation Requested', value: analytics.orderStatus.cancellationRequested || 0, color: '#F43F5E' }
+      ]
     : [];
 
+  const statusPieData = allStatusList.filter(item => item.value > 0);
   const pieDataToRender = statusPieData;
 
   const cards = [
     {
       title: 'Total Revenue',
       value: `₹${(analytics?.counters?.totalRevenue ?? 0).toLocaleString()}`,
-      change: '+18.5% from last month',
+      change: 'Delivered orders revenue only',
       icon: FiDollarSign,
       color: 'bg-amber-500/10 text-gold-600'
     },
     {
       title: 'Total Orders',
       value: analytics?.counters?.totalOrders ?? 0,
-      change: '+12.4% from last week',
+      change: 'Delivered orders count only',
       icon: FiShoppingBag,
       color: 'bg-yellow-500/10 text-gold-600'
     },
     {
       title: 'Active Customers',
       value: analytics?.counters?.totalUsers ?? 0,
-      change: '+8.2% new registrations',
+      change: 'Registered customer database',
       icon: FiUsers,
       color: 'bg-emerald-500/10 text-emerald-600'
     },
     {
       title: 'Total Reviews',
       value: analytics?.counters?.totalReviews ?? 0,
-      change: '4.8 Avg Star Rating',
+      change: 'Submitted product reviews',
       icon: FiStar,
       color: 'bg-blue-500/10 text-blue-600'
     }
@@ -220,11 +223,16 @@ export default function AdminDashboard() {
               )
             )}
           </div>
-          <div className="grid grid-cols-2 gap-2 text-[10px] font-bold uppercase tracking-wider text-secondary/70">
-            {pieDataToRender.map((entry, index) => (
-              <div key={entry.name} className="flex items-center space-x-1.5">
-                <span className="w-2.5 h-2.5 shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }}></span>
-                <span className="truncate">{entry.name}: {entry.value}</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] font-bold uppercase tracking-wider text-secondary/80 pt-3 border-t border-gold-100">
+            {allStatusList.map((item) => (
+              <div key={item.name} className="flex items-center justify-between p-1.5 bg-[#FAF8F2] border border-gold-100/60 rounded-xs">
+                <div className="flex items-center space-x-1.5 truncate">
+                  <span className="w-2.5 h-2.5 shrink-0 rounded-full" style={{ backgroundColor: item.color }}></span>
+                  <span className="truncate">{item.name}</span>
+                </div>
+                <span className="font-mono text-primary font-bold px-1.5 py-0.5 bg-white border border-gold-200 text-xs">
+                  {item.value}
+                </span>
               </div>
             ))}
           </div>

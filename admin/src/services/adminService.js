@@ -6,6 +6,14 @@ const adminService = {
     return await api.post('/auth/login', { email, password });
   },
 
+  forgotPassword: async (email) => {
+    return await api.post('/users/forgot-password', { email });
+  },
+
+  resetPassword: async (email, otp, password) => {
+    return await api.post('/users/reset-password', { email, otp, password });
+  },
+
   updateProfile: async (profileData) => {
     return await api.put('/users/profile', profileData);
   },
@@ -101,8 +109,8 @@ const adminService = {
   getOrderDetails: async (id) => {
     return await api.get(`/orders/${id}`);
   },
-  updateOrderStatus: async (id, status, trackingId = '') => {
-    return await api.put(`/orders/${id}/status`, { orderStatus: status, trackingId });
+  updateOrderStatus: async (id, status, trackingId = '', rejectionReason = '') => {
+    return await api.put(`/orders/${id}/status`, { orderStatus: status, trackingId, rejectionReason });
   },
   refundOrder: async (id) => {
     return await api.put(`/orders/${id}/refund`);

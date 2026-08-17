@@ -12,25 +12,27 @@ import Enquiry from '../models/Enquiry.js';
 // @access  Private/Admin
 export const getDashboardAnalytics = async (req, res, next) => {
   try {
-    // 1. Core counters
+    // 1. Core counters (Total Orders strictly for Delivered orders per user mandate)
     const totalUsers = await User.countDocuments({ role: 'customer', isVerified: true });
     const totalProducts = await Product.countDocuments({});
-    const totalOrders = await Order.countDocuments({});
+    const totalOrders = await Order.countDocuments({ orderStatus: 'Delivered' });
     const totalReviews = await Review.countDocuments({});
 
-    // 2. Compute Total Revenue (Mongoose aggregation)
+    // 2. Compute Total Revenue strictly from Delivered orders
     const revenueStats = await Order.aggregate([
-      { $match: { isPaid: true } },
+      { $match: { orderStatus: 'Delivered' } },
       { $group: { _id: null, totalRevenue: { $sum: '$totalPrice' } } }
     ]);
     const totalRevenue = revenueStats.length > 0 ? revenueStats[0].totalRevenue : 0;
 
-    // 3. Order status segregation
+    // 3. Order status segregation for all 7 statuses
+    const pendingOrders = await Order.countDocuments({ orderStatus: 'Pending' });
+    const confirmedOrders = await Order.countDocuments({ orderStatus: 'Confirmed' });
     const processingOrders = await Order.countDocuments({ orderStatus: 'Processing' });
-    const dispatchedOrders = await Order.countDocuments({ orderStatus: 'Dispatched' });
-    const outForDeliveryOrders = await Order.countDocuments({ orderStatus: 'OutForDelivery' });
+    const shippedOrders = await Order.countDocuments({ orderStatus: 'Shipped' });
     const deliveredOrders = await Order.countDocuments({ orderStatus: 'Delivered' });
     const cancelledOrders = await Order.countDocuments({ orderStatus: 'Cancelled' });
+    const cancellationRequestedOrders = await Order.countDocuments({ orderStatus: 'Cancellation Requested' });
 
     // 4. Low stock inventory warnings (stock < 5)
     const lowStockProducts = await Product.find({ stock: { $lt: 5 } })
@@ -48,11 +50,13 @@ export const getDashboardAnalytics = async (req, res, next) => {
           totalRevenue
         },
         orderStatus: {
+          pending: pendingOrders,
+          confirmed: confirmedOrders,
           processing: processingOrders,
-          dispatched: dispatchedOrders,
-          outForDelivery: outForDeliveryOrders,
+          shipped: shippedOrders,
           delivered: deliveredOrders,
-          cancelled: cancelledOrders
+          cancelled: cancelledOrders,
+          cancellationRequested: cancellationRequestedOrders
         },
         lowStockAlerts: lowStockProducts
       }
@@ -67,9 +71,9 @@ export const getDashboardAnalytics = async (req, res, next) => {
 // @access  Private/Admin
 export const getSalesReport = async (req, res, next) => {
   try {
-    // Aggregation: Group payments by month-year
+    // Aggregation: Group delivered payments by month-year
     const monthlySales = await Order.aggregate([
-      { $match: { isPaid: true } },
+      { $match: { orderStatus: 'Delivered' } },
       {
         $group: {
           _id: {
@@ -117,7 +121,7 @@ export const getCustomerReport = async (req, res, next) => {
 export const getRevenueStats = async (req, res, next) => {
   try {
     const dailyRevenue = await Order.aggregate([
-      { $match: { isPaid: true } },
+      { $match: { orderStatus: 'Delivered' } },
       {
         $group: {
           _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
@@ -126,7 +130,7 @@ export const getRevenueStats = async (req, res, next) => {
         }
       },
       { $sort: { _id: 1 } },
-      { $limit: 30 } // Last 30 active sales days
+      { $limit: 30 }
     ]);
 
     res.json({

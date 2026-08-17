@@ -22,7 +22,10 @@ import mongoose from 'mongoose';
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URI);
+    const conn = await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+    });
 
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
@@ -30,5 +33,13 @@ const connectDB = async () => {
     process.exit(1);
   }
 };
+
+mongoose.connection.on('disconnected', () => {
+  console.warn('⚠️ MongoDB connection lost. Attempting to reconnect...');
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('❌ MongoDB Connection Error:', err.message);
+});
 
 export default connectDB;

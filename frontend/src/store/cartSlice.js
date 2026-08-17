@@ -178,6 +178,36 @@ export const clearCartThunk = createAsyncThunk(
   }
 );
 
+export const mergeCartThunk = createAsyncThunk(
+  'cart/mergeCart',
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      if (!hasAuthToken()) return [];
+      const guestItems = getState().cart.items;
+      if (guestItems.length > 0) {
+        // Merge guest items into database cart
+        for (const item of guestItems) {
+          await api.post('/cart', {
+            productId: item.id,
+            quantity: item.quantity,
+            color: item.selectedColor,
+            size: item.selectedSize
+          });
+        }
+      }
+      
+      // Fetch user's populated cart from database
+      const response = await api.get('/cart');
+      if (response && response.success && response.cart) {
+        return (response.cart.items || []).map(mapDbCartItemToRedux);
+      }
+      return [];
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 const cartSlice = createSlice({
   name: 'cart',
   initialState,
@@ -210,6 +240,10 @@ const cartSlice = createSlice({
       .addCase(clearCartThunk.fulfilled, (state, action) => {
         state.items = action.payload;
         calculateTotals(state);
+      })
+      .addCase(mergeCartThunk.fulfilled, (state, action) => {
+        state.items = action.payload;
+        calculateTotals(state);
       });
   }
 });
@@ -219,5 +253,6 @@ export const addToCart = addToCartThunk;
 export const removeFromCart = removeFromCartThunk;
 export const updateQuantity = updateQuantityThunk;
 export const clearCart = clearCartThunk;
+export const mergeCart = mergeCartThunk;
 
 export default cartSlice.reducer;

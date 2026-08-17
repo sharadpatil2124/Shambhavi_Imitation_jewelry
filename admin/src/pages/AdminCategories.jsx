@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import productService from '../services/productService';
 import adminService from '../services/adminService';
 import { 
@@ -241,13 +242,18 @@ export default function AdminCategories() {
       {/* ========================================================================= */}
       {/* ADD CATEGORY MODAL */}
       {/* ========================================================================= */}
-      {isAddOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white border border-gold-200 shadow-2xl max-w-md w-full rounded-none animate-scale-up">
-            <div className="bg-[#FAF8F2] border-b border-gold-200/55 p-4 flex justify-between items-center">
+      {isAddOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6 overflow-y-auto">
+          <div className="bg-white border border-gold-200 shadow-2xl max-w-md w-full rounded-none animate-scale-up relative my-auto">
+            <div className="bg-[#FAF8F2] border-b border-gold-200/55 p-4 sm:px-5 flex justify-between items-center shrink-0">
               <h3 className="font-serif text-base font-bold text-primary tracking-wide">Create Jewelry Category</h3>
-              <button onClick={() => setIsAddOpen(false)} className="text-secondary/60 hover:text-primary transition-colors cursor-pointer">
-                <FiX size={18} />
+              <button 
+                type="button"
+                onClick={() => setIsAddOpen(false)} 
+                className="p-1.5 text-secondary/70 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors cursor-pointer flex items-center justify-center border border-transparent hover:border-red-200"
+                title="Close Window"
+              >
+                <FiX size={20} className="stroke-[2.5]" />
               </button>
             </div>
 
@@ -322,19 +328,25 @@ export default function AdminCategories() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ========================================================================= */}
       {/* EDIT CATEGORY MODAL */}
       {/* ========================================================================= */}
-      {isEditOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white border border-gold-200 shadow-2xl max-w-md w-full rounded-none animate-scale-up">
-            <div className="bg-[#FAF8F2] border-b border-gold-200/55 p-4 flex justify-between items-center">
+      {isEditOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6 overflow-y-auto">
+          <div className="bg-white border border-gold-200 shadow-2xl max-w-md w-full rounded-none animate-scale-up relative my-auto">
+            <div className="bg-[#FAF8F2] border-b border-gold-200/55 p-4 sm:px-5 flex justify-between items-center shrink-0">
               <h3 className="font-serif text-base font-bold text-primary tracking-wide">Edit Category Details</h3>
-              <button onClick={() => setIsEditOpen(false)} className="text-secondary/60 hover:text-primary transition-colors cursor-pointer">
-                <FiX size={18} />
+              <button 
+                type="button"
+                onClick={() => setIsEditOpen(false)} 
+                className="p-1.5 text-secondary/70 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors cursor-pointer flex items-center justify-center border border-transparent hover:border-red-200"
+                title="Close Window"
+              >
+                <FiX size={20} className="stroke-[2.5]" />
               </button>
             </div>
 
@@ -413,7 +425,8 @@ export default function AdminCategories() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

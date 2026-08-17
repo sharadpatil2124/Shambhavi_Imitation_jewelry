@@ -80,7 +80,7 @@ export default function PrivacyPolicy() {
 
         <div className="border-t border-gold-100 pt-6">
           <p className="font-medium text-primary">
-            If you have questions regarding our data collection policies or wish to request the deletion of your account history, please connect directly with our legal officer at <a href="mailto:privacy@shambhaviimitation.com" className="text-gold-600 font-semibold hover:underline">privacy@shambhaviimitation.com</a>.
+            If you have questions regarding our data collection policies or wish to request the deletion of your account history, please connect directly with our legal officer at <a href="mailto:kadamshambhavi1@gmail.com" className="text-gold-600 font-semibold hover:underline">kadamshambhavi1@gmail.com</a>.
           </p>
         </div>
 

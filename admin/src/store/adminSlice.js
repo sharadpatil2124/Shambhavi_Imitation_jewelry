@@ -148,9 +148,9 @@ export const fetchOrdersThunk = createAsyncThunk(
 
 export const updateOrderStatusThunk = createAsyncThunk(
   'admin/updateOrderStatus',
-  async ({ id, status, trackingId }, { rejectWithValue }) => {
+  async ({ id, status, trackingId, rejectionReason }, { rejectWithValue }) => {
     try {
-      const response = await adminService.updateOrderStatus(id, status, trackingId);
+      const response = await adminService.updateOrderStatus(id, status, trackingId, rejectionReason);
       return response.order;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -181,11 +181,13 @@ const initialState = {
       totalRevenue: 0
     },
     orderStatus: {
+      pending: 0,
+      confirmed: 0,
       processing: 0,
-      dispatched: 0,
-      outForDelivery: 0,
+      shipped: 0,
       delivered: 0,
-      cancelled: 0
+      cancelled: 0,
+      cancellationRequested: 0
     },
     lowStockAlerts: []
   },

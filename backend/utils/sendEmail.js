@@ -201,7 +201,7 @@ const getOrderEmailHtml = (order) => {
 
     <!-- Concierge Footer -->
     <p style="font-size: 13px; line-height: 1.6; color: #4a4a4a; text-align: center; margin-bottom: 30px;">
-      If you have any questions or wish to customize/modify your order, please do not hesitate to contact our concierge team at support@shambhavi-imitation.com or via WhatsApp.
+      If you have any questions or wish to customize/modify your order, please do not hesitate to contact our concierge team at kadamshambhavi1@gmail.com or via WhatsApp.
     </p>
 
     <div style="border-top: 1px solid #f1ebd9; padding-top: 25px; font-size: 11px; color: #888888; line-height: 1.4; text-align: center;">
@@ -253,6 +253,319 @@ export const sendOrderConfirmationEmail = async (to, order) => {
   } catch (error) {
     console.error('\n❌ [BREVO SMTP ERROR] Failed to send order email:', error.message);
     throw new Error(`SMTP email delivery failed: ${error.message}`);
+  }
+};
+
+const getCancellationEmailHtml = (order) => {
+  const itemsHtml = order.orderItems.map(item => `
+    <tr>
+      <td style="padding: 12px; border-bottom: 1px solid #faf9f6; font-size: 14px; color: #121212;">
+        <strong>${item.name}</strong>
+        ${item.color || item.size ? `<br/><span style="font-size: 11px; color: #777;">${item.color ? `Color: ${item.color}` : ''} ${item.size ? `| Size: ${item.size}` : ''}</span>` : ''}
+      </td>
+      <td style="padding: 12px; border-bottom: 1px solid #faf9f6; font-size: 14px; text-align: center; color: #4a4a4a;">
+        ${item.quantity}
+      </td>
+      <td style="padding: 12px; border-bottom: 1px solid #faf9f6; font-size: 14px; text-align: right; color: #4a4a4a;">
+        ₹${item.price.toLocaleString('en-IN')}
+      </td>
+    </tr>
+  `).join('');
+
+  return `
+<div style="background-color: #faf9f6; padding: 40px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #121212;">
+  <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2d7bd; padding: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+    <div style="margin-bottom: 30px; border-bottom: 1px solid #f1ebd9; padding-bottom: 20px; text-align: center;">
+      <span style="font-size: 10px; font-weight: bold; letter-spacing: 0.3em; color: #e53e3e; text-transform: uppercase; display: block; margin-bottom: 5px;">ORDER CANCELLED</span>
+      <h2 style="font-family: Georgia, serif; font-size: 24px; font-weight: bold; color: #121212; margin: 0;">Cancellation Confirmed</h2>
+    </div>
+    
+    <p style="font-size: 14px; line-height: 1.6; color: #4a4a4a; margin-bottom: 25px;">
+      Dear Customer,
+    </p>
+    <p style="font-size: 14px; line-height: 1.6; color: #4a4a4a; margin-bottom: 25px;">
+      We confirm that your order **#${order._id}** has been successfully cancelled as per your request. The items have been returned to our inventory, and any pending checkout hold has been released.
+    </p>
+
+    <!-- Order Summary Card -->
+    <div style="background-color: #faf8f2; border: 1px solid #f1ebd9; padding: 15px 20px; margin-bottom: 30px; border-radius: 4px;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+        <tr>
+          <td style="padding: 4px 0; color: #777;"><strong>Order Number:</strong></td>
+          <td style="padding: 4px 0; text-align: right; color: #121212;">#${order._id}</td>
+        </tr>
+        <tr>
+          <td style="padding: 4px 0; color: #777;"><strong>Cancellation Status:</strong></td>
+          <td style="padding: 4px 0; text-align: right; color: #e53e3e; font-weight: bold;">Cancelled</td>
+        </tr>
+        <tr>
+          <td style="padding: 4px 0; color: #777;"><strong>Total Refundable Amount:</strong></td>
+          <td style="padding: 4px 0; text-align: right; color: #121212; font-weight: bold;">₹${order.totalPrice.toLocaleString('en-IN')}</td>
+        </tr>
+        <tr>
+          <td style="padding: 4px 0; color: #777;"><strong>Refund Details:</strong></td>
+          <td style="padding: 4px 0; text-align: right; color: #4a4a4a;">
+            ${order.paymentMethod === 'Razorpay' 
+              ? 'Our accounts concierge will initiate the refund back to your original source account (takes 5-7 business days).' 
+              : 'N/A (Cash on Delivery Order)'}
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Items Table -->
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+      <thead>
+        <tr style="background-color: #faf8f2; border-bottom: 1px solid #e2d7bd;">
+          <th style="padding: 12px; font-size: 12px; font-weight: bold; text-align: left; color: #bca054; text-transform: uppercase;">Cancelled Item</th>
+          <th style="padding: 12px; font-size: 12px; font-weight: bold; text-align: center; color: #bca054; text-transform: uppercase; width: 60px;">Qty</th>
+          <th style="padding: 12px; font-size: 12px; font-weight: bold; text-align: right; color: #bca054; text-transform: uppercase; width: 100px;">Price</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${itemsHtml}
+      </tbody>
+    </table>
+
+    <!-- Concierge Footer -->
+    <p style="font-size: 13px; line-height: 1.6; color: #4a4a4a; text-align: center; margin-bottom: 30px;">
+      If you did not request this cancellation or have any queries regarding your refund timeline, please connect directly with our helpdesk at kadamshambhavi1@gmail.com.
+    </p>
+
+    <div style="border-top: 1px solid #f1ebd9; padding-top: 25px; font-size: 11px; color: #888888; line-height: 1.4; text-align: center;">
+      <p style="margin: 0 0 5px 0;">Shambhavi Imitation Jewelry</p>
+      <p style="margin: 0;">Crafted with Elegance & Luxury</p>
+    </div>
+  </div>
+</div>
+  `;
+};
+
+export const sendOrderCancellationEmail = async (to, order) => {
+  const clean = (val) => val ? val.replace(/^['"]|['"]$/g, '').trim() : '';
+
+  const host = clean(process.env.BREVO_SMTP_HOST) || 'smtp-relay.brevo.com';
+  const port = parseInt(clean(process.env.BREVO_SMTP_PORT) || '587', 10);
+  const user = clean(process.env.BREVO_SMTP_USER);
+  const pass = clean(process.env.BREVO_SMTP_PASSWORD);
+  const fromEmail = clean(process.env.BREVO_EMAIL_FROM) || 'no-reply@sambhavijewelry.com';
+  const fromName = clean(process.env.BREVO_EMAIL_FROM_NAME) || 'Shambhavi Imitation';
+
+  const subject = `Order Cancelled Successfully (Ref: #${order._id}) - Shambhavi Imitation`;
+  const html = getCancellationEmailHtml(order);
+
+  if (!user || !pass) {
+    throw new Error('SMTP credentials are not configured. Email communication is unavailable.');
+  }
+
+  try {
+    const transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
+      auth: {
+        user,
+        pass,
+      },
+    });
+
+    const mailOptions = {
+      from: `"${fromName}" <${fromEmail}>`,
+      to,
+      subject,
+      html,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    return info;
+  } catch (error) {
+    console.error('\n❌ [BREVO SMTP ERROR] Failed to send cancellation email:', error.message);
+    throw new Error(`SMTP email delivery failed: ${error.message}`);
+  }
+};
+
+const getRefundEmailHtml = (order) => `
+<div style="background-color: #faf9f6; padding: 40px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #121212;">
+  <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2d7bd; padding: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+    <div style="margin-bottom: 30px; border-bottom: 1px solid #f1ebd9; padding-bottom: 20px; text-align: center;">
+      <span style="font-size: 10px; font-weight: bold; letter-spacing: 0.3em; color: #bca054; text-transform: uppercase; display: block; margin-bottom: 5px;">SHAMBHAVI IMITATION</span>
+      <h2 style="font-family: Georgia, serif; font-size: 24px; font-weight: bold; color: #121212; margin: 0;">Payment Refund Processed</h2>
+    </div>
+    <p style="font-size: 14px; line-height: 1.6; color: #4a4a4a; margin-bottom: 25px;">
+      Dear Customer,
+    </p>
+    <p style="font-size: 14px; line-height: 1.6; color: #4a4a4a; margin-bottom: 25px;">
+      We have processed the full payment refund for your order <strong>#${order._id}</strong>. The total amount of <strong>₹${order.totalPrice.toLocaleString('en-IN')}</strong> has been credited/initiated back to your original source payment method.
+    </p>
+    <div style="background-color: #faf8f2; border: 1px solid #f1ebd9; padding: 15px 20px; margin-bottom: 30px; border-radius: 4px;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+        <tr>
+          <td style="padding: 4px 0; color: #777;"><strong>Order Reference:</strong></td>
+          <td style="padding: 4px 0; text-align: right; color: #121212;">#${order._id}</td>
+        </tr>
+        <tr>
+          <td style="padding: 4px 0; color: #777;"><strong>Refund Amount:</strong></td>
+          <td style="padding: 4px 0; text-align: right; color: #bca054; font-weight: bold;">₹${order.totalPrice.toLocaleString('en-IN')}</td>
+        </tr>
+        <tr>
+          <td style="padding: 4px 0; color: #777;"><strong>Status:</strong></td>
+          <td style="padding: 4px 0; text-align: right; color: #2e7d32; font-weight: bold;">Refund Processed</td>
+        </tr>
+      </table>
+    </div>
+    <p style="font-size: 13px; line-height: 1.6; color: #4a4a4a; text-align: center; margin-bottom: 30px;">
+      If you have questions regarding your refund, write to us at kadamshambhavi1@gmail.com.
+    </p>
+    <div style="border-top: 1px solid #f1ebd9; padding-top: 25px; font-size: 11px; color: #888888; line-height: 1.4; text-align: center;">
+      <p style="margin: 0 0 5px 0;">Shambhavi Imitation Jewelry</p>
+      <p style="margin: 0;">Crafted with Elegance & Luxury</p>
+    </div>
+  </div>
+</div>
+`;
+
+export const sendOrderRefundEmail = async (to, order) => {
+  const clean = (val) => val ? val.replace(/^['"]|['"]$/g, '').trim() : '';
+
+  const host = clean(process.env.BREVO_SMTP_HOST) || 'smtp-relay.brevo.com';
+  const port = parseInt(clean(process.env.BREVO_SMTP_PORT) || '587', 10);
+  const user = clean(process.env.BREVO_SMTP_USER);
+  const pass = clean(process.env.BREVO_SMTP_PASSWORD);
+  const fromEmail = clean(process.env.BREVO_EMAIL_FROM) || 'no-reply@sambhavijewelry.com';
+  const fromName = clean(process.env.BREVO_EMAIL_FROM_NAME) || 'Shambhavi Imitation';
+
+  const subject = `Payment Refund Processed (Ref: #${order._id}) - Shambhavi Imitation`;
+  const html = getRefundEmailHtml(order);
+
+  if (!user || !pass) return;
+
+  try {
+    const transporter = nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
+    await transporter.sendMail({ from: `"${fromName}" <${fromEmail}>`, to, subject, html });
+  } catch (error) {
+    console.error('❌ [BREVO SMTP ERROR] Failed to send refund email:', error.message);
+  }
+};
+
+const getDeliveryEmailHtml = (order) => `
+<div style="background-color: #faf9f6; padding: 40px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #121212;">
+  <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2d7bd; padding: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+    <div style="margin-bottom: 30px; border-bottom: 1px solid #f1ebd9; padding-bottom: 20px; text-align: center;">
+      <span style="font-size: 10px; font-weight: bold; letter-spacing: 0.3em; color: #2e7d32; text-transform: uppercase; display: block; margin-bottom: 5px;">DELIVERY CONFIRMED</span>
+      <h2 style="font-family: Georgia, serif; font-size: 24px; font-weight: bold; color: #121212; margin: 0;">Order Delivered Successfully</h2>
+    </div>
+    <p style="font-size: 14px; line-height: 1.6; color: #4a4a4a; margin-bottom: 25px;">
+      Dear Customer,
+    </p>
+    <p style="font-size: 14px; line-height: 1.6; color: #4a4a4a; margin-bottom: 25px;">
+      Your handcrafted jewelry order <strong>#${order._id}</strong> has been delivered! We hope you love your new pieces.
+    </p>
+    <div style="background-color: #faf8f2; border: 1px solid #f1ebd9; padding: 15px 20px; margin-bottom: 30px; border-radius: 4px;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+        <tr>
+          <td style="padding: 4px 0; color: #777;"><strong>Order Number:</strong></td>
+          <td style="padding: 4px 0; text-align: right; color: #121212;">#${order._id}</td>
+        </tr>
+        <tr>
+          <td style="padding: 4px 0; color: #777;"><strong>Delivery Status:</strong></td>
+          <td style="padding: 4px 0; text-align: right; color: #2e7d32; font-weight: bold;">Delivered</td>
+        </tr>
+      </table>
+    </div>
+    <p style="font-size: 13px; line-height: 1.6; color: #4a4a4a; text-align: center; margin-bottom: 30px;">
+      Thank you for choosing Shambhavi Imitation Jewelry! For any assistance, email kadamshambhavi1@gmail.com.
+    </p>
+    <div style="border-top: 1px solid #f1ebd9; padding-top: 25px; font-size: 11px; color: #888888; line-height: 1.4; text-align: center;">
+      <p style="margin: 0 0 5px 0;">Shambhavi Imitation Jewelry</p>
+      <p style="margin: 0;">Crafted with Elegance & Luxury</p>
+    </div>
+  </div>
+</div>
+`;
+
+export const sendOrderDeliveryEmail = async (to, order) => {
+  const clean = (val) => val ? val.replace(/^['"]|['"]$/g, '').trim() : '';
+
+  const host = clean(process.env.BREVO_SMTP_HOST) || 'smtp-relay.brevo.com';
+  const port = parseInt(clean(process.env.BREVO_SMTP_PORT) || '587', 10);
+  const user = clean(process.env.BREVO_SMTP_USER);
+  const pass = clean(process.env.BREVO_SMTP_PASSWORD);
+  const fromEmail = clean(process.env.BREVO_EMAIL_FROM) || 'no-reply@sambhavijewelry.com';
+  const fromName = clean(process.env.BREVO_EMAIL_FROM_NAME) || 'Shambhavi Imitation';
+
+  const subject = `Your Order Has Been Delivered! (Ref: #${order._id}) - Shambhavi Imitation`;
+  const html = getDeliveryEmailHtml(order);
+
+  if (!user || !pass) return;
+
+  try {
+    const transporter = nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
+    await transporter.sendMail({ from: `"${fromName}" <${fromEmail}>`, to, subject, html });
+  } catch (error) {
+    console.error('❌ [BREVO SMTP ERROR] Failed to send delivery email:', error.message);
+  }
+};
+
+const getCancellationRejectedEmailHtml = (order, reason) => `
+<div style="background-color: #faf9f6; padding: 40px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #121212;">
+  <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2d7bd; padding: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+    <div style="margin-bottom: 30px; border-bottom: 1px solid #f1ebd9; padding-bottom: 20px; text-align: center;">
+      <span style="font-size: 10px; font-weight: bold; letter-spacing: 0.3em; color: #bca054; text-transform: uppercase; display: block; margin-bottom: 5px;">CANCELLATION REQUEST UPDATE</span>
+      <h2 style="font-family: Georgia, serif; font-size: 24px; font-weight: bold; color: #121212; margin: 0;">Cancellation Request Declined</h2>
+    </div>
+    <p style="font-size: 14px; line-height: 1.6; color: #4a4a4a; margin-bottom: 25px;">
+      Dear Customer,
+    </p>
+    <p style="font-size: 14px; line-height: 1.6; color: #4a4a4a; margin-bottom: 25px;">
+      Your request to cancel order <strong>#${order._id}</strong> could not be approved at this time. Your order remains active and is being processed for fulfillment.
+    </p>
+    <div style="background-color: #faf8f2; border: 1px solid #f1ebd9; padding: 15px 20px; margin-bottom: 30px; border-radius: 4px;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+        <tr>
+          <td style="padding: 4px 0; color: #777;"><strong>Order Number:</strong></td>
+          <td style="padding: 4px 0; text-align: right; color: #121212;">#${order._id}</td>
+        </tr>
+        <tr>
+          <td style="padding: 4px 0; color: #777;"><strong>Current Status:</strong></td>
+          <td style="padding: 4px 0; text-align: right; color: #bca054; font-weight: bold;">${order.orderStatus}</td>
+        </tr>
+        <tr>
+          <td style="padding: 4px 0; color: #777;"><strong>Admin Note:</strong></td>
+          <td style="padding: 4px 0; text-align: right; color: #e53e3e;">${reason}</td>
+        </tr>
+      </table>
+    </div>
+    <p style="font-size: 13px; line-height: 1.6; color: #4a4a4a; text-align: center; margin-bottom: 30px;">
+      For further questions regarding your order status, please contact kadamshambhavi1@gmail.com.
+    </p>
+    <div style="border-top: 1px solid #f1ebd9; padding-top: 25px; font-size: 11px; color: #888888; line-height: 1.4; text-align: center;">
+      <p style="margin: 0 0 5px 0;">Shambhavi Imitation Jewelry</p>
+      <p style="margin: 0;">Crafted with Elegance & Luxury</p>
+    </div>
+  </div>
+</div>
+`;
+
+export const sendCancellationRejectedEmail = async (to, order, reason) => {
+  const clean = (val) => val ? val.replace(/^['"]|['"]$/g, '').trim() : '';
+
+  const host = clean(process.env.BREVO_SMTP_HOST) || 'smtp-relay.brevo.com';
+  const port = parseInt(clean(process.env.BREVO_SMTP_PORT) || '587', 10);
+  const user = clean(process.env.BREVO_SMTP_USER);
+  const pass = clean(process.env.BREVO_SMTP_PASSWORD);
+  const fromEmail = clean(process.env.BREVO_EMAIL_FROM) || 'no-reply@sambhavijewelry.com';
+  const fromName = clean(process.env.BREVO_EMAIL_FROM_NAME) || 'Shambhavi Imitation';
+
+  const subject = `Update on Cancellation Request (Ref: #${order._id}) - Shambhavi Imitation`;
+  const html = getCancellationRejectedEmailHtml(order, reason);
+
+  if (!user || !pass) return;
+
+  try {
+    const transporter = nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
+    await transporter.sendMail({ from: `"${fromName}" <${fromEmail}>`, to, subject, html });
+  } catch (error) {
+    console.error('❌ [BREVO SMTP ERROR] Failed to send cancellation rejection email:', error.message);
   }
 };
 
