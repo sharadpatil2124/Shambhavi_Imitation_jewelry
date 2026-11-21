@@ -57,8 +57,9 @@ const getEmailConfig = () => {
   const pass = clean(process.env.BREVO_SMTP_PASSWORD || process.env.SMTP_PASS || process.env.EMAIL_PASS || process.env.GMAIL_PASS);
   const fromEmail = clean(process.env.BREVO_EMAIL_FROM || process.env.EMAIL_FROM || process.env.GMAIL_USER) || user || 'kadamshambhavi1@gmail.com';
   const fromName = clean(process.env.BREVO_EMAIL_FROM_NAME || process.env.EMAIL_FROM_NAME) || 'Shambhavi Imitation';
+  const apiKey = clean(process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY);
 
-  return { host, port, user, pass, fromEmail, fromName };
+  return { host, port, user, pass, fromEmail, fromName, apiKey };
 };
 
 const createTransporter = (host, port, user, pass) => {
@@ -94,9 +95,66 @@ const createTransporter = (host, port, user, pass) => {
   });
 };
 
-export const sendOtpEmail = async (to, otp, type) => {
-  const { host, port, user, pass, fromEmail, fromName } = getEmailConfig();
+const sendMailUniversal = async ({ to, subject, html, logType = 'Email' }) => {
+  const { host, port, user, pass, fromEmail, fromName, apiKey } = getEmailConfig();
 
+  // 1. If Brevo HTTP REST API Key (xkeysib-...) is configured: uses Port 443 HTTPS (Never blocked by Render Free Tier)
+  if (apiKey) {
+    try {
+      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'api-key': apiKey,
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+          sender: { name: fromName, email: fromEmail },
+          to: [{ email: to }],
+          subject,
+          htmlContent: html
+        })
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.message || `Brevo HTTPS API responded with status ${response.status}`);
+      }
+
+      console.log(`✅ [Brevo HTTPS API] ${logType} delivered to ${to} (ID: ${data.messageId || 'ok'})`);
+      return { messageId: data.messageId };
+    } catch (err) {
+      console.error(`❌ [Brevo HTTPS API Error] Failed to send ${logType}:`, err.message);
+      throw new Error(`Email delivery failed: ${err.message}`);
+    }
+  }
+
+  // 2. Nodemailer SMTP / Gmail fallback
+  if (!user || !pass) {
+    throw new Error('Email credentials are not configured. Email communication is unavailable.');
+  }
+
+  try {
+    const transporter = createTransporter(host, port, user, pass);
+    const mailOptions = {
+      from: `"${fromName}" <${fromEmail}>`,
+      to,
+      subject,
+      html,
+    };
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`✅ [Email Service] ${logType} delivered to ${to}`);
+    return info;
+  } catch (error) {
+    console.error(`\n❌ [EMAIL SERVICE ERROR] Failed to send ${logType}:`, error.message);
+    if (error.message.includes('timeout') || error.code === 'ETIMEDOUT') {
+      throw new Error('Email delivery failed: Connection timeout. (Render Free Tier blocks outbound SMTP ports 25, 465, and 587. Please add BREVO_API_KEY in Render to send via HTTPS Port 443).');
+    }
+    throw new Error(`Email delivery failed: ${error.message}`);
+  }
+};
+
+export const sendOtpEmail = async (to, otp, type) => {
   const subject = type === 'register' 
     ? 'Verify Your Email Address - Shambhavi Imitation'
     : 'Reset Your Password - Shambhavi Imitation';
@@ -107,27 +165,7 @@ export const sendOtpEmail = async (to, otp, type) => {
 
   console.log(`🔑 [OTP DISPATCH] ${type.toUpperCase()} OTP for ${to}: ${otp}`);
 
-  if (!user || !pass) {
-    throw new Error('SMTP credentials are not configured. Email communication is unavailable.');
-  }
-
-  try {
-    const transporter = createTransporter(host, port, user, pass);
-
-    const mailOptions = {
-      from: `"${fromName}" <${fromEmail}>`,
-      to,
-      subject,
-      html,
-    };
-
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`✅ [Email Service] ${type} OTP email delivered to ${to}`);
-    return info;
-  } catch (error) {
-    console.error('\n❌ [EMAIL SERVICE ERROR] Failed to send email:', error.message);
-    throw new Error(`Email delivery failed: ${error.message}`);
-  }
+  return await sendMailUniversal({ to, subject, html, logType: `${type.toUpperCase()} OTP` });
 };
 
 const getOrderEmailHtml = (order) => {
@@ -247,31 +285,9 @@ const getOrderEmailHtml = (order) => {
 };
 
 export const sendOrderConfirmationEmail = async (to, order) => {
-  const { host, port, user, pass, fromEmail, fromName } = getEmailConfig();
-
   const subject = `Your Order has been Placed Successfully! (Ref: #${order._id}) - Shambhavi Imitation`;
   const html = getOrderEmailHtml(order);
-
-  if (!user || !pass) {
-    throw new Error('SMTP credentials are not configured. Email communication is unavailable.');
-  }
-
-  try {
-    const transporter = createTransporter(host, port, user, pass);
-
-    const mailOptions = {
-      from: `"${fromName}" <${fromEmail}>`,
-      to,
-      subject,
-      html,
-    };
-
-    const info = await transporter.sendMail(mailOptions);
-    return info;
-  } catch (error) {
-    console.error('\n❌ [EMAIL SERVICE ERROR] Failed to send order email:', error.message);
-    throw new Error(`Email delivery failed: ${error.message}`);
-  }
+  return await sendMailUniversal({ to, subject, html, logType: 'Order Confirmation' });
 };
 
 const getCancellationEmailHtml = (order) => {
@@ -360,31 +376,9 @@ const getCancellationEmailHtml = (order) => {
 };
 
 export const sendOrderCancellationEmail = async (to, order) => {
-  const { host, port, user, pass, fromEmail, fromName } = getEmailConfig();
-
   const subject = `Order Cancelled Successfully (Ref: #${order._id}) - Shambhavi Imitation`;
   const html = getCancellationEmailHtml(order);
-
-  if (!user || !pass) {
-    throw new Error('SMTP credentials are not configured. Email communication is unavailable.');
-  }
-
-  try {
-    const transporter = createTransporter(host, port, user, pass);
-
-    const mailOptions = {
-      from: `"${fromName}" <${fromEmail}>`,
-      to,
-      subject,
-      html,
-    };
-
-    const info = await transporter.sendMail(mailOptions);
-    return info;
-  } catch (error) {
-    console.error('\n❌ [EMAIL SERVICE ERROR] Failed to send cancellation email:', error.message);
-    throw new Error(`Email delivery failed: ${error.message}`);
-  }
+  return await sendMailUniversal({ to, subject, html, logType: 'Order Cancellation' });
 };
 
 const getRefundEmailHtml = (order) => `
@@ -428,18 +422,12 @@ const getRefundEmailHtml = (order) => `
 `;
 
 export const sendOrderRefundEmail = async (to, order) => {
-  const { host, port, user, pass, fromEmail, fromName } = getEmailConfig();
-
   const subject = `Payment Refund Processed (Ref: #${order._id}) - Shambhavi Imitation`;
   const html = getRefundEmailHtml(order);
-
-  if (!user || !pass) return;
-
   try {
-    const transporter = createTransporter(host, port, user, pass);
-    await transporter.sendMail({ from: `"${fromName}" <${fromEmail}>`, to, subject, html });
+    return await sendMailUniversal({ to, subject, html, logType: 'Order Refund' });
   } catch (error) {
-    console.error('❌ [EMAIL SERVICE ERROR] Failed to send refund email:', error.message);
+    console.error('❌ Failed to send refund email notice:', error.message);
   }
 };
 
@@ -480,18 +468,12 @@ const getDeliveryEmailHtml = (order) => `
 `;
 
 export const sendOrderDeliveryEmail = async (to, order) => {
-  const { host, port, user, pass, fromEmail, fromName } = getEmailConfig();
-
   const subject = `Your Order Has Been Delivered! (Ref: #${order._id}) - Shambhavi Imitation`;
   const html = getDeliveryEmailHtml(order);
-
-  if (!user || !pass) return;
-
   try {
-    const transporter = createTransporter(host, port, user, pass);
-    await transporter.sendMail({ from: `"${fromName}" <${fromEmail}>`, to, subject, html });
+    return await sendMailUniversal({ to, subject, html, logType: 'Order Delivery' });
   } catch (error) {
-    console.error('❌ [EMAIL SERVICE ERROR] Failed to send delivery email:', error.message);
+    console.error('❌ Failed to send delivery email notice:', error.message);
   }
 };
 
@@ -536,18 +518,12 @@ const getCancellationRejectedEmailHtml = (order, reason) => `
 `;
 
 export const sendCancellationRejectedEmail = async (to, order, reason) => {
-  const { host, port, user, pass, fromEmail, fromName } = getEmailConfig();
-
   const subject = `Update on Cancellation Request (Ref: #${order._id}) - Shambhavi Imitation`;
   const html = getCancellationRejectedEmailHtml(order, reason);
-
-  if (!user || !pass) return;
-
   try {
-    const transporter = createTransporter(host, port, user, pass);
-    await transporter.sendMail({ from: `"${fromName}" <${fromEmail}>`, to, subject, html });
+    return await sendMailUniversal({ to, subject, html, logType: 'Cancellation Rejection' });
   } catch (error) {
-    console.error('❌ [EMAIL SERVICE ERROR] Failed to send cancellation rejection email:', error.message);
+    console.error('❌ Failed to send cancellation rejection email notice:', error.message);
   }
 };
 
@@ -660,19 +636,12 @@ const getShippedEmailHtml = (order) => {
 };
 
 export const sendOrderShippedEmail = async (to, order) => {
-  const { host, port, user, pass, fromEmail, fromName } = getEmailConfig();
-
   const subject = `Your Order Has Been Shipped! (Tracking Ref: #${order.trackingNumber || order.trackingId || order._id}) - Shambhavi Imitation`;
   const html = getShippedEmailHtml(order);
-
-  if (!user || !pass) return;
-
   try {
-    const transporter = createTransporter(host, port, user, pass);
-    await transporter.sendMail({ from: `"${fromName}" <${fromEmail}>`, to, subject, html });
-    console.log(`✅ [Email Service] Shipped tracking email successfully delivered to ${to}`);
+    return await sendMailUniversal({ to, subject, html, logType: 'Order Shipped' });
   } catch (error) {
-    console.error('❌ [EMAIL SERVICE ERROR] Failed to send order shipped email:', error.message);
+    console.error('❌ Failed to send order shipped email notice:', error.message);
   }
 };
 
