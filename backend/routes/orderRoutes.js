@@ -6,13 +6,17 @@ import {
   getOrders,
   updateOrderStatus,
   cancelOrder,
-  refundOrder
+  refundOrder,
+  trackOrderPublicly
 } from '../controllers/orderController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// All order actions require secure authentication sessions
+// Public endpoint for order tracking (Accessible to both guests and customers)
+router.post('/track', trackOrderPublicly);
+
+// All subsequent order management actions require secure authentication sessions
 router.use(protect);
 
 // Customer endpoints

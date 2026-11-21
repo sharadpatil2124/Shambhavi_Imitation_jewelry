@@ -1,6 +1,5 @@
 import nodemailer from 'nodemailer';
 
-// Luxury HTML Email Templates
 const getVerifyEmailHtml = (otp) => `
 <div style="background-color: #faf9f6; padding: 40px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; text-align: center; color: #121212;">
   <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2d7bd; padding: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
@@ -568,4 +567,137 @@ export const sendCancellationRejectedEmail = async (to, order, reason) => {
     console.error('❌ [BREVO SMTP ERROR] Failed to send cancellation rejection email:', error.message);
   }
 };
+
+const getShippedEmailHtml = (order) => {
+  const courier = order.courierName || 'Standard Express Courier';
+  const trackingNum = order.trackingNumber || order.trackingId || 'N/A';
+  
+  let trackingUrl = `http://localhost:5175/order-tracking?orderId=${order._id}`;
+  const cLower = courier.toLowerCase();
+  if (cLower.includes('delhivery')) {
+    trackingUrl = `https://www.delhivery.com/track/package/${trackingNum}`;
+  } else if (cLower.includes('blue dart') || cLower.includes('bluedart')) {
+    trackingUrl = `https://www.bluedart.com/tracking?trackNumber=${trackingNum}`;
+  } else if (cLower.includes('dtdc')) {
+    trackingUrl = `https://www.dtdc.in/`;
+  } else if (cLower.includes('shiprocket')) {
+    trackingUrl = `https://shiprocket.co/tracking/${trackingNum}`;
+  } else if (cLower.includes('ekart')) {
+    trackingUrl = `https://ekartlogistics.com/shipmenttrack/${trackingNum}`;
+  }
+
+  const itemsHtml = (order.orderItems || []).map(item => `
+    <tr>
+      <td style="padding: 12px; border-bottom: 1px solid #faf9f6; font-size: 14px; color: #121212;">
+        <strong>${item.name}</strong>
+        ${item.color || item.size ? `<br/><span style="font-size: 11px; color: #777;">${item.color ? `Color: ${item.color}` : ''} ${item.size ? `| Size: ${item.size}` : ''}</span>` : ''}
+      </td>
+      <td style="padding: 12px; border-bottom: 1px solid #faf9f6; font-size: 14px; text-align: center; color: #4a4a4a;">
+        ${item.quantity}
+      </td>
+      <td style="padding: 12px; border-bottom: 1px solid #faf9f6; font-size: 14px; text-align: right; color: #4a4a4a;">
+        ₹${item.price?.toLocaleString('en-IN') || item.price}
+      </td>
+    </tr>
+  `).join('');
+
+  return `
+<div style="background-color: #faf9f6; padding: 40px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #121212;">
+  <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2d7bd; padding: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+    <div style="margin-bottom: 30px; border-bottom: 1px solid #f1ebd9; padding-bottom: 20px; text-align: center;">
+      <span style="font-size: 10px; font-weight: bold; letter-spacing: 0.3em; color: #bca054; text-transform: uppercase; display: block; margin-bottom: 5px;">SHAMBHAVI IMITATION</span>
+      <h2 style="font-family: Georgia, serif; font-size: 24px; font-weight: bold; color: #121212; margin: 0;">Your Order is On Its Way! 🚚</h2>
+    </div>
+    
+    <p style="font-size: 14px; line-height: 1.6; color: #4a4a4a; margin-bottom: 20px;">
+      Dear Customer,
+    </p>
+    <p style="font-size: 14px; line-height: 1.6; color: #4a4a4a; margin-bottom: 25px;">
+      Great news! Your handcrafted jewelry order <strong>#${order._id}</strong> has been carefully packed and dispatched through our trusted logistics partner.
+    </p>
+
+    <!-- Tracking Card -->
+    <div style="background-color: #faf8f2; border: 2px solid #bca054; padding: 20px; margin-bottom: 30px; border-radius: 6px; text-align: center;">
+      <span style="font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.15em; color: #856404; display: block; margin-bottom: 8px;">Delivery Dispatch Summary</span>
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 16px; text-align: left;">
+        <tr>
+          <td style="padding: 6px 0; color: #666;"><strong>Courier Partner:</strong></td>
+          <td style="padding: 6px 0; text-align: right; color: #121212; font-weight: bold;">${courier}</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0; color: #666;"><strong>Tracking Number (AWB):</strong></td>
+          <td style="padding: 6px 0; text-align: right; color: #bca054; font-weight: bold; font-family: monospace; font-size: 15px;">${trackingNum}</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0; color: #666;"><strong>Status:</strong></td>
+          <td style="padding: 6px 0; text-align: right; color: #0284c7; font-weight: bold;">In Transit / Shipped</td>
+        </tr>
+      </table>
+      
+      <a href="${trackingUrl}" target="_blank" style="display: inline-block; background-color: #bca054; color: #ffffff; text-decoration: none; font-weight: bold; padding: 12px 28px; border-radius: 4px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 5px;">
+        Track Your Package &rarr;
+      </a>
+    </div>
+
+    <!-- Items in Shipment -->
+    <h3 style="font-family: Georgia, serif; font-size: 15px; font-weight: bold; color: #121212; margin-bottom: 12px; border-bottom: 1px solid #f1ebd9; padding-bottom: 6px;">Shipment Contents</h3>
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+      <thead>
+        <tr style="background-color: #faf8f2; border-bottom: 1px solid #e2d7bd;">
+          <th style="padding: 10px; font-size: 11px; font-weight: bold; text-align: left; color: #bca054; text-transform: uppercase;">Item</th>
+          <th style="padding: 10px; font-size: 11px; font-weight: bold; text-align: center; color: #bca054; text-transform: uppercase;">Qty</th>
+          <th style="padding: 10px; font-size: 11px; font-weight: bold; text-align: right; color: #bca054; text-transform: uppercase;">Price</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${itemsHtml}
+      </tbody>
+    </table>
+
+    <!-- Shipping Destination -->
+    <div style="margin-bottom: 30px; background-color: #faf9f6; padding: 15px; border-left: 3px solid #bca054;">
+      <h4 style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: #121212; margin: 0 0 8px 0;">Destination Address</h4>
+      <p style="font-size: 13px; line-height: 1.5; color: #4a4a4a; margin: 0;">
+        ${order.shippingAddress?.street || ''}, ${order.shippingAddress?.city || ''}, ${order.shippingAddress?.state || ''} - ${order.shippingAddress?.pincode || ''}<br/>
+        <strong>Recipient Phone:</strong> ${order.shippingAddress?.phone || ''}
+      </p>
+    </div>
+
+    <p style="font-size: 12px; line-height: 1.6; color: #777777; text-align: center; margin-bottom: 30px;">
+      Please ensure someone is available at the delivery location to receive the parcel. For any delivery queries, reach us at kadamshambhavi1@gmail.com.
+    </p>
+
+    <div style="border-top: 1px solid #f1ebd9; padding-top: 25px; font-size: 11px; color: #888888; line-height: 1.4; text-align: center;">
+      <p style="margin: 0 0 5px 0;">Shambhavi Imitation Jewelry</p>
+      <p style="margin: 0;">Crafted with Elegance & Luxury</p>
+    </div>
+  </div>
+</div>
+  `;
+};
+
+export const sendOrderShippedEmail = async (to, order) => {
+  const clean = (val) => val ? val.replace(/^['"]|['"]$/g, '').trim() : '';
+
+  const host = clean(process.env.BREVO_SMTP_HOST) || 'smtp-relay.brevo.com';
+  const port = parseInt(clean(process.env.BREVO_SMTP_PORT) || '587', 10);
+  const user = clean(process.env.BREVO_SMTP_USER);
+  const pass = clean(process.env.BREVO_SMTP_PASSWORD);
+  const fromEmail = clean(process.env.BREVO_EMAIL_FROM) || 'no-reply@sambhavijewelry.com';
+  const fromName = clean(process.env.BREVO_EMAIL_FROM_NAME) || 'Shambhavi Imitation';
+
+  const subject = `Your Order Has Been Shipped! (Tracking Ref: #${order.trackingNumber || order.trackingId || order._id}) - Shambhavi Imitation`;
+  const html = getShippedEmailHtml(order);
+
+  if (!user || !pass) return;
+
+  try {
+    const transporter = nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
+    await transporter.sendMail({ from: `"${fromName}" <${fromEmail}>`, to, subject, html });
+    console.log(`✅ [Brevo SMTP] Shipped tracking email successfully delivered to ${to}`);
+  } catch (error) {
+    console.error('❌ [BREVO SMTP ERROR] Failed to send order shipped email:', error.message);
+  }
+};
+
 

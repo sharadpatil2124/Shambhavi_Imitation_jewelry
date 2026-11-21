@@ -8,8 +8,7 @@ console.log('Connecting to database...');
 mongoose.connect(process.env.MONGO_URI)
   .then(async () => {
     console.log('✅ Connected successfully.');
-    
-    // Find all settings documents
+
     const allSettings = await Settings.find({});
     console.log(`Found ${allSettings.length} settings documents.`);
     for (const s of allSettings) {

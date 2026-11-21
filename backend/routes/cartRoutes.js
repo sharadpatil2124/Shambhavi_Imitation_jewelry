@@ -9,7 +9,6 @@ import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// All cart actions are protected behind JWT authentication
 router.use(protect);
 
 router.route('/')

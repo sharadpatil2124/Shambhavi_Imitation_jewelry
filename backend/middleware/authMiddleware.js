@@ -1,7 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/userModel.js';
 
-// Protect routes - Verify JWT token in Authorization Header
 export const protect = async (req, res, next) => {
   let token;
 
@@ -9,10 +8,8 @@ export const protect = async (req, res, next) => {
     try {
       token = req.headers.authorization.split(' ')[1];
 
-      // Decode JWT token payload
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      // Fetch user from DB and attach to req object (excluding password)
       req.user = await User.findById(decoded.id).select('-password');
       if (!req.user) {
         return res.status(401).json({ success: false, message: 'Not authorized: User account not found.' });
@@ -32,7 +29,6 @@ export const protect = async (req, res, next) => {
   }
 };
 
-// Admin authorization - Check if user is administrator
 export const admin = (req, res, next) => {
   if (req.user && (req.user.isAdmin || req.user.role === 'admin')) {
     next();

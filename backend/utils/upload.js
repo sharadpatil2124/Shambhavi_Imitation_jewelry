@@ -3,13 +3,11 @@ import path from 'path';
 import fs from 'fs';
 import imagekit from '../config/imagekit.js';
 
-// Ensure uploads folder exists
 const uploadDir = 'uploads/';
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Multer Disk Storage Configuration
 const storage = multer.diskStorage({
   destination(req, file, cb) {
     cb(null, uploadDir);
@@ -22,7 +20,6 @@ const storage = multer.diskStorage({
   }
 });
 
-// File validation filter (Images only)
 function checkFileType(file, cb) {
   const filetypes = /jpg|jpeg|png|webp|avif/;
   const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
@@ -37,20 +34,18 @@ function checkFileType(file, cb) {
 
 export const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // Max file size limit: 5MB
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter(req, file, cb) {
     checkFileType(file, cb);
   }
 });
 
-// Resilient ImageKit Upload Service
 export const uploadToImageKit = async (filePath, folder = '/sambhavi-imitation') => {
   try {
-    // If ImageKit keys are not configured, simulate local server upload paths
     if (!process.env.IMAGEKIT_PUBLIC_KEY || !process.env.IMAGEKIT_PRIVATE_KEY) {
       console.warn('⚠️  ImageKit keys missing. Falling back to local static URL paths.');
       const absolutePath = filePath.replace(/\\/g, '/');
-      return `/${absolutePath}`; // Fallback local URL
+      return `/${absolutePath}`;
     }
 
     const fileStream = fs.createReadStream(filePath);
@@ -63,7 +58,6 @@ export const uploadToImageKit = async (filePath, folder = '/sambhavi-imitation')
       tags: ['sambhavi-imitation']
     });
 
-    // Delete temp file from local system
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }
@@ -71,11 +65,9 @@ export const uploadToImageKit = async (filePath, folder = '/sambhavi-imitation')
     return result.url;
   } catch (error) {
     console.error(`❌ ImageKit Upload Error: ${error.message}`);
-    // Safe fallback to avoid breaking requests
     const absolutePath = filePath.replace(/\\/g, '/');
     return `/${absolutePath}`;
   }
 };
 
-// Keep backward-compatible alias
 export const uploadToCloudinary = uploadToImageKit;

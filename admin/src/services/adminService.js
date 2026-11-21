@@ -109,11 +109,11 @@ const adminService = {
   getOrderDetails: async (id) => {
     return await api.get(`/orders/${id}`);
   },
-  updateOrderStatus: async (id, status, trackingId = '', rejectionReason = '') => {
-    return await api.put(`/orders/${id}/status`, { orderStatus: status, trackingId, rejectionReason });
+  updateOrderStatus: async (id, status, trackingId = '', rejectionReason = '', courierName = '') => {
+    return await api.put(`/orders/${id}/status`, { orderStatus: status, trackingId, rejectionReason, courierName });
   },
-  refundOrder: async (id) => {
-    return await api.put(`/orders/${id}/refund`);
+  refundOrder: async (id, data = {}) => {
+    return await api.put(`/orders/${id}/refund`, data);
   }
 };
 

@@ -12,25 +12,33 @@ import Enquiry from '../models/Enquiry.js';
 // @access  Private/Admin
 export const getDashboardAnalytics = async (req, res, next) => {
   try {
-    // 1. Core counters (Total Orders strictly for Delivered orders per user mandate)
+    // 1. Core counters (Total Orders strictly for Delivered orders excluding refunded per user mandate)
     const totalUsers = await User.countDocuments({ role: 'customer', isVerified: true });
     const totalProducts = await Product.countDocuments({});
-    const totalOrders = await Order.countDocuments({ orderStatus: 'Delivered' });
+    const totalOrders = await Order.countDocuments({ orderStatus: 'Delivered', isRefunded: { $ne: true } });
     const totalReviews = await Review.countDocuments({});
 
-    // 2. Compute Total Revenue strictly from Delivered orders
+    // 2. Compute Total Revenue strictly from active Delivered orders (refunded orders auto-deducted)
     const revenueStats = await Order.aggregate([
-      { $match: { orderStatus: 'Delivered' } },
+      { $match: { orderStatus: 'Delivered', isRefunded: { $ne: true } } },
       { $group: { _id: null, totalRevenue: { $sum: '$totalPrice' } } }
     ]);
     const totalRevenue = revenueStats.length > 0 ? revenueStats[0].totalRevenue : 0;
 
-    // 3. Order status segregation for all 7 statuses
+    // Compute Refund Statistics
+    const refundStats = await Order.aggregate([
+      { $match: { $or: [{ orderStatus: 'Refunded' }, { isRefunded: true }] } },
+      { $group: { _id: null, totalRefunded: { $sum: { $ifNull: ['$refundAmount', '$totalPrice'] } }, count: { $sum: 1 } } }
+    ]);
+    const totalRefunded = refundStats.length > 0 ? refundStats[0].totalRefunded : 0;
+    const refundedOrders = refundStats.length > 0 ? refundStats[0].count : 0;
+
+    // 3. Order status segregation for all statuses including Refunded
     const pendingOrders = await Order.countDocuments({ orderStatus: 'Pending' });
     const confirmedOrders = await Order.countDocuments({ orderStatus: 'Confirmed' });
     const processingOrders = await Order.countDocuments({ orderStatus: 'Processing' });
-    const shippedOrders = await Order.countDocuments({ orderStatus: 'Shipped' });
-    const deliveredOrders = await Order.countDocuments({ orderStatus: 'Delivered' });
+    const shippedOrders = await Order.countDocuments({ orderStatus: { $in: ['Shipped', 'Dispatched'] } });
+    const deliveredOrders = await Order.countDocuments({ orderStatus: 'Delivered', isRefunded: { $ne: true } });
     const cancelledOrders = await Order.countDocuments({ orderStatus: 'Cancelled' });
     const cancellationRequestedOrders = await Order.countDocuments({ orderStatus: 'Cancellation Requested' });
 
@@ -47,7 +55,9 @@ export const getDashboardAnalytics = async (req, res, next) => {
           totalProducts,
           totalOrders,
           totalReviews,
-          totalRevenue
+          totalRevenue,
+          totalRefunded,
+          refundedOrders
         },
         orderStatus: {
           pending: pendingOrders,
@@ -56,7 +66,8 @@ export const getDashboardAnalytics = async (req, res, next) => {
           shipped: shippedOrders,
           delivered: deliveredOrders,
           cancelled: cancelledOrders,
-          cancellationRequested: cancellationRequestedOrders
+          cancellationRequested: cancellationRequestedOrders,
+          refunded: refundedOrders
         },
         lowStockAlerts: lowStockProducts
       }
@@ -71,9 +82,9 @@ export const getDashboardAnalytics = async (req, res, next) => {
 // @access  Private/Admin
 export const getSalesReport = async (req, res, next) => {
   try {
-    // Aggregation: Group delivered payments by month-year
+    // Aggregation: Group active delivered payments by month-year (excluding refunded)
     const monthlySales = await Order.aggregate([
-      { $match: { orderStatus: 'Delivered' } },
+      { $match: { orderStatus: 'Delivered', isRefunded: { $ne: true } } },
       {
         $group: {
           _id: {
@@ -121,7 +132,7 @@ export const getCustomerReport = async (req, res, next) => {
 export const getRevenueStats = async (req, res, next) => {
   try {
     const dailyRevenue = await Order.aggregate([
-      { $match: { orderStatus: 'Delivered' } },
+      { $match: { orderStatus: 'Delivered', isRefunded: { $ne: true } } },
       {
         $group: {
           _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },

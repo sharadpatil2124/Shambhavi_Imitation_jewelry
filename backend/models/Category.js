@@ -13,7 +13,7 @@ const categorySchema = new mongoose.Schema({
     trim: true
   },
   image: {
-    type: String, // Cloudinary category thumbnail URL
+    type: String,
     required: [true, 'Please upload a category catalog cover image']
   },
   slug: {
@@ -26,7 +26,6 @@ const categorySchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Pre-save hook to generate clean URL slug
 categorySchema.pre('save', function (next) {
   if (this.isModified('name')) {
     this.slug = this.name

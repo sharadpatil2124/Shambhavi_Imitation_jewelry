@@ -4,9 +4,10 @@ import { useNavigate, Link } from 'react-router-dom';
 import { updateProfile, logoutUser } from '../store/authSlice';
 import { clearCart } from '../store/cartSlice';
 import { clearWishlist } from '../store/wishlistSlice';
-import { FiShoppingBag, FiUser, FiMapPin, FiLogOut, FiEdit2, FiCheck, FiKey } from 'react-icons/fi';
+import { FiShoppingBag, FiUser, FiMapPin, FiLogOut, FiEdit2, FiCheck, FiKey, FiPrinter } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import api from '../services/api';
+import { generateRefundPDF } from '../utils/refundPdf';
 
 export default function MyAccount() {
   const dispatch = useDispatch();
@@ -273,7 +274,9 @@ export default function MyAccount() {
                               ? 'bg-green-100 text-green-700 dark:bg-green-950/45 dark:text-green-400'
                               : order.orderStatus === "Shipped" || order.orderStatus === "Dispatched"
                               ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/45 dark:text-blue-450'
-                              : order.orderStatus === "Cancelled" || order.orderStatus === "Refunded"
+                              : order.orderStatus === "Refunded"
+                              ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/45 dark:text-purple-300 border border-purple-200 dark:border-purple-800'
+                              : order.orderStatus === "Cancelled"
                               ? 'bg-red-100 text-red-700 dark:bg-red-950/45 dark:text-red-400'
                               : order.orderStatus === "Cancellation Requested"
                               ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/45 dark:text-amber-300 border border-amber-300'
@@ -309,10 +312,26 @@ export default function MyAccount() {
                           <span className="font-mono text-primary dark:text-white font-bold">{order.trackingNumber || order.trackingId || 'Pending'}</span>
                         </div>
 
-                        <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-3">
                           <span className="text-sm font-sans font-medium text-secondary dark:text-gray-300">
                             Total: <strong className="text-gold-700 dark:text-gold-400 font-bold text-base">₹{order.totalPrice.toLocaleString('en-IN')}</strong>
                           </span>
+                          {(order.orderStatus === 'Refunded' || order.isRefunded) && (
+                            <div className="flex items-center space-x-2">
+                              <span className="text-[11px] font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 rounded-xs border border-purple-200 dark:border-purple-800">
+                                Refund: ₹{(order.refundAmount || order.totalPrice).toLocaleString('en-IN')}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => generateRefundPDF(order)}
+                                className="inline-flex items-center space-x-1 text-purple-700 dark:text-purple-300 hover:text-white hover:bg-purple-700 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 px-2 py-0.5 rounded-xs text-[10px] font-bold uppercase tracking-wider cursor-pointer transition-colors"
+                                title="Download Official Refund Receipt PDF"
+                              >
+                                <FiPrinter size={11} />
+                                <span>Refund PDF</span>
+                              </button>
+                            </div>
+                          )}
                           {order.orderStatus !== 'Delivered' && 
                            order.orderStatus !== 'Dispatched' && 
                            order.orderStatus !== 'Shipped' && 

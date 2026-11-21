@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import adminService from '../services/adminService';
+import adminService from '../services/adminService.js';
 
 // Thunks
 export const fetchDashboardAnalytics = createAsyncThunk(
@@ -148,9 +148,9 @@ export const fetchOrdersThunk = createAsyncThunk(
 
 export const updateOrderStatusThunk = createAsyncThunk(
   'admin/updateOrderStatus',
-  async ({ id, status, trackingId, rejectionReason }, { rejectWithValue }) => {
+  async ({ id, status, trackingId, rejectionReason, courierName }, { rejectWithValue }) => {
     try {
-      const response = await adminService.updateOrderStatus(id, status, trackingId, rejectionReason);
+      const response = await adminService.updateOrderStatus(id, status, trackingId, rejectionReason, courierName);
       return response.order;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -160,9 +160,11 @@ export const updateOrderStatusThunk = createAsyncThunk(
 
 export const refundOrderThunk = createAsyncThunk(
   'admin/refundOrder',
-  async (id, { rejectWithValue }) => {
+  async (payload, { rejectWithValue }) => {
     try {
-      const response = await adminService.refundOrder(id);
+      const id = typeof payload === 'string' ? payload : payload.id;
+      const data = typeof payload === 'object' ? { amount: payload.amount, reason: payload.reason } : {};
+      const response = await adminService.refundOrder(id, data);
       return response.order;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -178,7 +180,9 @@ const initialState = {
       totalProducts: 0,
       totalOrders: 0,
       totalReviews: 0,
-      totalRevenue: 0
+      totalRevenue: 0,
+      totalRefunded: 0,
+      refundedOrders: 0
     },
     orderStatus: {
       pending: 0,
@@ -187,7 +191,8 @@ const initialState = {
       shipped: 0,
       delivered: 0,
       cancelled: 0,
-      cancellationRequested: 0
+      cancellationRequested: 0,
+      refunded: 0
     },
     lowStockAlerts: []
   },
@@ -319,17 +324,59 @@ const adminSlice = createSlice({
 
     builder.addCase(updateOrderStatusThunk.fulfilled, (state, action) => {
       state.loading = false;
-      const index = state.orders.findIndex((o) => o._id === action.payload._id);
+      const updatedOrder = action.payload;
+      const index = state.orders.findIndex((o) => o._id === updatedOrder._id);
+      const previousOrder = index !== -1 ? state.orders[index] : null;
       if (index !== -1) {
-        state.orders[index] = action.payload;
+        state.orders[index] = updatedOrder;
+      }
+
+      // If status changed to Refunded, automatically update counters
+      if (updatedOrder.orderStatus === 'Refunded' && previousOrder?.orderStatus !== 'Refunded') {
+        const refundVal = updatedOrder.refundAmount || updatedOrder.totalPrice || 0;
+        if (state.analytics?.counters) {
+          if (previousOrder?.orderStatus === 'Delivered') {
+            state.analytics.counters.totalRevenue = Math.max(0, (state.analytics.counters.totalRevenue || 0) - refundVal);
+            state.analytics.counters.totalOrders = Math.max(0, (state.analytics.counters.totalOrders || 0) - 1);
+          }
+          state.analytics.counters.totalRefunded = (state.analytics.counters.totalRefunded || 0) + refundVal;
+          state.analytics.counters.refundedOrders = (state.analytics.counters.refundedOrders || 0) + 1;
+        }
+        if (state.analytics?.orderStatus) {
+          if (previousOrder?.orderStatus === 'Delivered' && state.analytics.orderStatus.delivered > 0) {
+            state.analytics.orderStatus.delivered -= 1;
+          }
+          state.analytics.orderStatus.refunded = (state.analytics.orderStatus.refunded || 0) + 1;
+        }
       }
     });
 
     builder.addCase(refundOrderThunk.fulfilled, (state, action) => {
       state.loading = false;
-      const index = state.orders.findIndex((o) => o._id === action.payload._id);
+      const refundedOrder = action.payload;
+      const index = state.orders.findIndex((o) => o._id === refundedOrder._id);
+      const previousOrder = index !== -1 ? state.orders[index] : null;
       if (index !== -1) {
-        state.orders[index] = action.payload;
+        state.orders[index] = refundedOrder;
+      }
+
+      // Automatically reduce dashboard revenue and increase refunded metrics
+      const refundVal = refundedOrder.refundAmount || refundedOrder.totalPrice || 0;
+      if (state.analytics?.counters) {
+        if (!previousOrder || previousOrder.orderStatus === 'Delivered') {
+          state.analytics.counters.totalRevenue = Math.max(0, (state.analytics.counters.totalRevenue || 0) - refundVal);
+          state.analytics.counters.totalOrders = Math.max(0, (state.analytics.counters.totalOrders || 0) - 1);
+        }
+        state.analytics.counters.totalRefunded = (state.analytics.counters.totalRefunded || 0) + refundVal;
+        state.analytics.counters.refundedOrders = (state.analytics.counters.refundedOrders || 0) + 1;
+      }
+      if (state.analytics?.orderStatus) {
+        if (previousOrder?.orderStatus === 'Delivered' && state.analytics.orderStatus.delivered > 0) {
+          state.analytics.orderStatus.delivered -= 1;
+        } else if (previousOrder?.orderStatus === 'Cancelled' && state.analytics.orderStatus.cancelled > 0) {
+          state.analytics.orderStatus.cancelled -= 1;
+        }
+        state.analytics.orderStatus.refunded = (state.analytics.orderStatus.refunded || 0) + 1;
       }
     });
 

@@ -59,6 +59,11 @@ const orderSchema = new mongoose.Schema({
     default: 'Processing'
   },
   cancellationReason: { type: String },
+  isRefunded: { type: Boolean, default: false },
+  refundAmount: { type: Number, default: 0.0 },
+  refundReason: { type: String, default: '' },
+  refundedAt: { type: Date },
+  refundTransactionId: { type: String, default: '' },
   courierName: { type: String },
   trackingNumber: { type: String },
   trackingId: { type: String },

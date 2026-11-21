@@ -7,7 +7,8 @@ import {
   sendOrderCancellationEmail,
   sendOrderRefundEmail,
   sendOrderDeliveryEmail,
-  sendCancellationRejectedEmail
+  sendCancellationRejectedEmail,
+  sendOrderShippedEmail
 } from '../utils/sendEmail.js';
 
 // @desc    Create new order
@@ -34,22 +35,31 @@ export const createOrder = async (req, res, next) => {
       throw new Error('No items specified to create an order');
     }
 
-    // 1. Verify Stock levels & Deduct stock
+    // 1. Atomic Concurrency Stock Deduction (Prevents Race Conditions & Overselling)
+    const deductedProducts = [];
     for (const item of orderItems) {
-      const product = await Product.findById(item.product);
-      if (!product) {
-        res.status(404);
-        throw new Error(`Product not found: SKU ${item.sku || 'N/A'}`);
-      }
+      const updatedProduct = await Product.findOneAndUpdate(
+        { _id: item.product, stock: { $gte: item.quantity } },
+        { $inc: { stock: -item.quantity } },
+        { new: true }
+      );
 
-      if (product.stock < item.quantity) {
+      if (!updatedProduct) {
+        // Rollback any items that were already deducted in this multi-item order
+        for (const reverted of deductedProducts) {
+          await Product.findByIdAndUpdate(reverted.id, { $inc: { stock: reverted.quantity } });
+        }
+
+        const existing = await Product.findById(item.product);
         res.status(400);
-        throw new Error(`Insufficient inventory: Only ${product.stock} units of ${product.name} are available`);
+        if (!existing) {
+          throw new Error(`Product not found: SKU ${item.sku || 'N/A'}`);
+        } else {
+          throw new Error(`Insufficient inventory: Only ${existing.stock} units of "${existing.name}" are available.`);
+        }
       }
 
-      // Deduct stock
-      product.stock -= item.quantity;
-      await product.save();
+      deductedProducts.push({ id: item.product, quantity: item.quantity });
     }
 
     // 2. Create the Order
@@ -240,7 +250,7 @@ export const updateOrderStatus = async (req, res, next) => {
     }
 
     // B. Check if Admin is rejecting a cancellation request
-    if (previousStatus === 'Cancellation Requested' && status !== 'Cancelled') {
+    if (previousStatus === 'Cancellation Requested' && status !== 'Cancelled' && status !== 'Refunded') {
       order.orderStatus = status || 'Processing';
       await order.save();
 
@@ -258,6 +268,44 @@ export const updateOrderStatus = async (req, res, next) => {
       });
     }
 
+    // C. Check if Admin is marking order as Refunded directly via status update
+    if (status === 'Refunded' && previousStatus !== 'Refunded') {
+      if (!order.isPaid) {
+        res.status(400);
+        throw new Error('Cannot process refund: Order payment status is unpaid');
+      }
+
+      // Restore product inventory stocks if not already cancelled
+      if (previousStatus !== 'Cancelled') {
+        for (const item of order.orderItems) {
+          if (item.product) {
+            await Product.findByIdAndUpdate(item.product, { $inc: { stock: item.quantity } });
+          }
+        }
+      }
+
+      order.orderStatus = 'Refunded';
+      order.isRefunded = true;
+      order.refundAmount = order.totalPrice;
+      order.refundReason = rejectionReason || 'Status changed to Refunded by admin';
+      order.refundedAt = Date.now();
+      order.refundTransactionId = `REF_${Date.now()}_${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+
+      await order.save();
+
+      if (order.shippingAddress && order.shippingAddress.email) {
+        sendOrderRefundEmail(order.shippingAddress.email, order).catch(err => {
+          console.error('⚠️ [Refund Email Error]:', err.message);
+        });
+      }
+
+      return res.json({
+        success: true,
+        message: 'Order marked as Refunded, inventory restored and customer notified',
+        order
+      });
+    }
+
     // C. Regular status updates (Delivered, Shipped, etc.)
     order.orderStatus = status || order.orderStatus;
     
@@ -265,6 +313,15 @@ export const updateOrderStatus = async (req, res, next) => {
     if (trackingNumber) {
       order.trackingNumber = trackingNumber;
       order.trackingId = trackingNumber;
+    }
+
+    if (status === 'Shipped' || status === 'Dispatched') {
+      // Send tracking details notification email to customer
+      if (order.shippingAddress && order.shippingAddress.email) {
+        sendOrderShippedEmail(order.shippingAddress.email, order).catch(err => {
+          console.error('⚠️ [Shipped Email Error]: Failed to send tracking email:', err.message);
+        });
+      }
     }
 
     if (status === 'Delivered') {
@@ -340,26 +397,65 @@ export const cancelOrder = async (req, res, next) => {
 // @access  Private/Admin
 export const refundOrder = async (req, res, next) => {
   try {
-    const order = await Order.findById(req.params.id);
+    const { id } = req.params;
+    const { reason, amount } = req.body || {};
+
+    if (!id || !/^[0-9a-fA-F]{24}$/.test(id)) {
+      res.status(404);
+      throw new Error('Order not found: Invalid Order ID format');
+    }
+
+    const order = await Order.findById(id);
     if (!order) {
       res.status(404);
-      throw new Error('Order not found');
+      throw new Error('Order not found: Order does not exist');
     }
 
-    if (order.orderStatus !== 'Cancelled') {
+    // Check if order is already refunded
+    if (order.orderStatus === 'Refunded' || order.isRefunded) {
       res.status(400);
-      throw new Error('Cannot process refund: Order must be Cancelled first');
+      throw new Error('Order has already been refunded');
     }
 
+    // Payment validation: Cannot refund if order was never paid
     if (!order.isPaid) {
       res.status(400);
       throw new Error('Cannot process refund: Order payment status is unpaid');
     }
 
+    // Amount validation
+    const refundAmount = (amount !== undefined && amount !== null && amount !== '') ? Number(amount) : order.totalPrice;
+    if (isNaN(refundAmount) || refundAmount <= 0) {
+      res.status(400);
+      throw new Error('Invalid refund amount: Must be a positive number greater than 0');
+    }
+    if (refundAmount > order.totalPrice) {
+      res.status(400);
+      throw new Error(`Refund amount (₹${refundAmount}) cannot exceed total order value (₹${order.totalPrice})`);
+    }
+
+    // 1. Restore product inventory stocks if not already restored by cancellation
+    if (order.orderStatus !== 'Cancelled' && order.orderItems && order.orderItems.length > 0) {
+      for (const item of order.orderItems) {
+        if (item.product) {
+          await Product.findByIdAndUpdate(item.product, {
+            $inc: { stock: item.quantity }
+          });
+        }
+      }
+    }
+
+    // 2. Mark order as Refunded
     order.orderStatus = 'Refunded';
+    order.isRefunded = true;
+    order.refundAmount = refundAmount;
+    order.refundReason = reason || 'Admin processed refund';
+    order.refundedAt = Date.now();
+    order.refundTransactionId = `REF_${Date.now()}_${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+
     await order.save();
 
-    // Send refund confirmation email
+    // 3. Send refund confirmation email
     if (order.shippingAddress && order.shippingAddress.email) {
       sendOrderRefundEmail(order.shippingAddress.email, order).catch(err => {
         console.error('⚠️ [Refund Email Error]:', err.message);
@@ -368,8 +464,91 @@ export const refundOrder = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: 'Order refund marked successfully in records',
+      message: `Order #${order._id.toString().substring(18).toUpperCase()} refunded successfully for ₹${refundAmount.toLocaleString('en-IN')}`,
       order
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Public order tracking lookup (Guests and Customers)
+// @route   POST /api/orders/track
+// @access  Public
+export const trackOrderPublicly = async (req, res, next) => {
+  try {
+    const { orderId, identifier } = req.body;
+
+    if (!orderId) {
+      res.status(400);
+      throw new Error('Please provide a valid Order ID to track');
+    }
+
+    const cleanOrderId = orderId.trim();
+
+    if (!/^[0-9a-fA-F]{24}$/.test(cleanOrderId)) {
+      res.status(404);
+      throw new Error('Order not found: Please check the Order ID format');
+    }
+
+    const order = await Order.findById(cleanOrderId);
+    if (!order) {
+      res.status(404);
+      throw new Error('No order found with this Order ID');
+    }
+
+    // Security verification: If user is not authenticated or not the owner/admin,
+    // they must provide either the matching phone number or email address
+    if (identifier) {
+      const cleanInput = identifier.trim().toLowerCase();
+      const orderEmail = (order.shippingAddress?.email || '').toLowerCase();
+      const orderPhone = (order.shippingAddress?.phone || '').replace(/\D/g, '');
+      const inputPhone = cleanInput.replace(/\D/g, '');
+
+      const isEmailMatch = orderEmail && orderEmail === cleanInput;
+      const isPhoneMatch = orderPhone && inputPhone && (orderPhone.endsWith(inputPhone) || inputPhone.endsWith(orderPhone));
+
+      if (!isEmailMatch && !isPhoneMatch) {
+        res.status(403);
+        throw new Error('Verification failed: The provided email or phone does not match this order');
+      }
+    }
+
+    // Return safe public tracking payload without sensitive payment tokens
+    res.json({
+      success: true,
+      order: {
+        _id: order._id,
+        createdAt: order.createdAt,
+        orderStatus: order.orderStatus,
+        paymentMethod: order.paymentMethod,
+        isPaid: order.isPaid,
+        isRefunded: order.isRefunded || order.orderStatus === 'Refunded',
+        refundAmount: order.refundAmount || (order.orderStatus === 'Refunded' ? order.totalPrice : 0),
+        refundReason: order.refundReason || '',
+        refundedAt: order.refundedAt || null,
+        refundTransactionId: order.refundTransactionId || '',
+        itemsPrice: order.itemsPrice,
+        shippingPrice: order.shippingPrice,
+        discountPrice: order.discountPrice,
+        totalPrice: order.totalPrice,
+        courierName: order.courierName || 'Standard Express Delivery',
+        trackingNumber: order.trackingNumber || order.trackingId || '',
+        deliveredAt: order.deliveredAt,
+        shippingAddress: {
+          city: order.shippingAddress?.city,
+          state: order.shippingAddress?.state,
+          pincode: order.shippingAddress?.pincode
+        },
+        orderItems: (order.orderItems || []).map(item => ({
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+          image: item.image,
+          color: item.color,
+          size: item.size
+        }))
+      }
     });
   } catch (error) {
     next(error);

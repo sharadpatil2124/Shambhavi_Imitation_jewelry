@@ -4,9 +4,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { 
   fetchOrdersThunk, 
   updateOrderStatusThunk, 
-  refundOrderThunk 
+  refundOrderThunk,
+  fetchDashboardAnalytics,
+  fetchRevenueStats
 } from '../store/adminSlice';
 import adminService from '../services/adminService';
+import { generateRefundPDF } from '../utils/refundPdf';
 import { 
   FiSearch, 
   FiEye, 
@@ -34,10 +37,17 @@ export default function AdminOrders() {
   // Modals state
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+
+  // Refund Confirmation Modal state
+  const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
+  const [orderToRefund, setOrderToRefund] = useState(null);
+  const [refundAmountInput, setRefundAmountInput] = useState("");
+  const [refundReasonInput, setRefundReasonInput] = useState("");
   
   // Update state form
   const [statusForm, setStatusForm] = useState("");
   const [trackingIdForm, setTrackingIdForm] = useState("");
+  const [courierNameForm, setCourierNameForm] = useState("Blue Dart");
   const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
@@ -69,7 +79,8 @@ export default function AdminOrders() {
   const openOrderDetail = async (order) => {
     setSelectedOrder(order);
     setStatusForm(order.orderStatus);
-    setTrackingIdForm(order.trackingId || "");
+    setTrackingIdForm(order.trackingId || order.trackingNumber || "");
+    setCourierNameForm(order.courierName || "Blue Dart");
     setIsDetailOpen(true);
     
     // Fetch fresh details from database
@@ -77,9 +88,60 @@ export default function AdminOrders() {
       const response = await adminService.getOrderDetails(order._id);
       if (response.success) {
         setSelectedOrder(response.order);
+        setTrackingIdForm(response.order.trackingId || response.order.trackingNumber || "");
+        setCourierNameForm(response.order.courierName || "Blue Dart");
       }
     } catch (error) {
       console.warn("Could not fetch fresh order detail logs:", error.message);
+    }
+  };
+
+  const openRefundModal = (order) => {
+    setOrderToRefund(order);
+    setRefundAmountInput(order.totalPrice ? String(order.totalPrice) : "");
+    setRefundReasonInput("Customer requested refund");
+    setIsRefundModalOpen(true);
+  };
+
+  const handleConfirmRefund = async (e) => {
+    if (e) e.preventDefault();
+    if (!orderToRefund) return;
+
+    const amountNum = Number(refundAmountInput);
+    if (isNaN(amountNum) || amountNum <= 0) {
+      toast.error("Please enter a valid refund amount greater than 0");
+      return;
+    }
+    if (amountNum > orderToRefund.totalPrice) {
+      toast.error(`Refund amount cannot exceed total order value (₹${orderToRefund.totalPrice.toLocaleString()})`);
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const result = await dispatch(refundOrderThunk({
+        id: orderToRefund._id,
+        amount: amountNum,
+        reason: refundReasonInput.trim() || "Admin processed refund"
+      })).unwrap();
+
+      if (selectedOrder && selectedOrder._id === orderToRefund._id) {
+        setSelectedOrder(result);
+        setStatusForm('Refunded');
+      }
+
+      toast.success(`Refund of ₹${amountNum.toLocaleString()} processed! Cost automatically deducted from Dashboard.`);
+      setIsRefundModalOpen(false);
+      setOrderToRefund(null);
+
+      // Re-fetch dashboard analytics to update revenue and order status in real time
+      dispatch(fetchDashboardAnalytics());
+      dispatch(fetchRevenueStats());
+      loadOrders();
+    } catch (error) {
+      toast.error(error || "Failed to process refund.");
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -92,11 +154,17 @@ export default function AdminOrders() {
       const result = await dispatch(updateOrderStatusThunk({
         id: selectedOrder._id,
         status: statusForm,
-        trackingId: trackingIdForm
+        trackingId: trackingIdForm,
+        courierName: courierNameForm
       })).unwrap();
 
       setSelectedOrder(result);
-      toast.success(`Order status updated to ${statusForm} successfully.`);
+      toast.success(`Order status updated to ${statusForm} and notification sent.`);
+
+      if (statusForm === 'Refunded' || statusForm === 'Delivered' || statusForm === 'Cancelled') {
+        dispatch(fetchDashboardAnalytics());
+        dispatch(fetchRevenueStats());
+      }
       loadOrders();
     } catch (error) {
       toast.error(error || "Failed to update order status.");
@@ -105,21 +173,9 @@ export default function AdminOrders() {
     }
   };
 
-  const handleRefund = async () => {
+  const handleRefund = () => {
     if (!selectedOrder) return;
-    if (!window.confirm("Are you sure you want to trigger a refund for this order? The payment status will be marked as refunded in database logs.")) return;
-
-    setActionLoading(true);
-    try {
-      const result = await dispatch(refundOrderThunk(selectedOrder._id)).unwrap();
-      setSelectedOrder(result);
-      toast.success("Order marked as REFUNDED successfully.");
-      loadOrders();
-    } catch (error) {
-      toast.error(error || "Failed to process refund logs.");
-    } finally {
-      setActionLoading(false);
-    }
+    openRefundModal(selectedOrder);
   };
 
   const handleCancelOrder = async () => {
@@ -184,6 +240,7 @@ export default function AdminOrders() {
       case 'Delivered': return <FiCheckCircle className="text-emerald-500" />;
       case 'Cancelled': return <FiX className="text-red-500" />;
       case 'Cancellation Requested': return <FiClock className="text-rose-500 animate-pulse" />;
+      case 'Refunded': return <FiRotateCcw className="text-purple-600" />;
       default: return null;
     }
   };
@@ -226,6 +283,7 @@ export default function AdminOrders() {
               <option value="Delivered">Delivered</option>
               <option value="Cancelled">Cancelled</option>
               <option value="Cancellation Requested">Cancellation Requested</option>
+              <option value="Refunded">Refunded</option>
             </select>
           </div>
 
@@ -290,14 +348,18 @@ export default function AdminOrders() {
                       </td>
                       <td className="p-4 text-center">
                         <span className={`px-2 py-0.5 rounded-sm text-[9px] font-bold uppercase tracking-wider border ${
-                          order.isPaid 
-                            ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
-                            : 'bg-amber-50 text-amber-600 border-amber-100'
+                          order.orderStatus === 'Refunded' || order.isRefunded
+                            ? 'bg-purple-50 text-purple-700 border-purple-200'
+                            : order.isPaid 
+                              ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
+                              : 'bg-amber-50 text-amber-600 border-amber-100'
                         }`}>
-                          {order.isPaid ? 'PAID' : 'PENDING'}
+                          {order.orderStatus === 'Refunded' || order.isRefunded ? 'REFUNDED' : (order.isPaid ? 'PAID' : 'PENDING')}
                         </span>
-                        {order.paymentInfo?.refunded && (
-                          <span className="block text-[8px] font-bold text-red-500 uppercase mt-0.5">Refunded</span>
+                        {(order.orderStatus === 'Refunded' || order.isRefunded) && (
+                          <span className="block text-[8px] font-bold text-purple-600 uppercase mt-0.5">
+                            ₹{(order.refundAmount || order.totalPrice).toLocaleString()}
+                          </span>
                         )}
                       </td>
                       <td className="p-4 text-center">
@@ -318,6 +380,7 @@ export default function AdminOrders() {
                         <span className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase ${
                           order.orderStatus === 'Delivered' ? 'bg-green-100 text-green-700' :
                           order.orderStatus === 'Cancelled' ? 'bg-red-100 text-red-700' :
+                          order.orderStatus === 'Refunded' ? 'bg-purple-100 text-purple-700 border border-purple-200' :
                           order.orderStatus === 'Shipped' ? 'bg-blue-100 text-blue-700' :
                           order.orderStatus === 'Cancellation Requested' ? 'bg-rose-100 text-rose-700 border border-rose-300 animate-pulse' :
                           'bg-amber-100 text-amber-700'
@@ -327,12 +390,33 @@ export default function AdminOrders() {
                         </span>
                       </td>
                       <td className="p-4 text-center">
-                        <button
-                          onClick={() => openOrderDetail(order)}
-                          className="flex items-center justify-center mx-auto text-secondary hover:text-gold-600 font-semibold py-1 px-2.5 bg-[#FAF8F2] border border-gold-200/50 rounded-sm cursor-pointer"
-                        >
-                          <FiEye className="mr-1.5" size={13} /> Manage
-                        </button>
+                        <div className="flex items-center justify-center space-x-1.5">
+                          <button
+                            onClick={() => openOrderDetail(order)}
+                            className="flex items-center text-secondary hover:text-gold-600 font-semibold py-1 px-2.5 bg-[#FAF8F2] border border-gold-200/50 rounded-sm cursor-pointer transition-colors text-xs"
+                            title="Manage Order"
+                          >
+                            <FiEye className="mr-1" size={13} /> Manage
+                          </button>
+                          {order.isPaid && order.orderStatus !== 'Refunded' && !order.isRefunded && (
+                            <button
+                              onClick={() => openRefundModal(order)}
+                              className="flex items-center text-purple-700 hover:text-white hover:bg-purple-600 font-semibold py-1 px-2 bg-purple-50 border border-purple-200 rounded-sm cursor-pointer transition-colors text-xs"
+                              title="Direct refund order"
+                            >
+                              <FiRotateCcw className="mr-1" size={11} /> Refund
+                            </button>
+                          )}
+                          {(order.orderStatus === 'Refunded' || order.isRefunded) && (
+                            <button
+                              onClick={() => generateRefundPDF(order)}
+                              className="flex items-center text-purple-700 hover:text-white hover:bg-purple-700 font-semibold py-1 px-2 bg-purple-50 border border-purple-200 rounded-sm cursor-pointer transition-colors text-xs"
+                              title="Print / Download Refund Receipt PDF"
+                            >
+                              <FiPrinter className="mr-1" size={11} /> Refund PDF
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -417,6 +501,27 @@ export default function AdminOrders() {
                       Order Cancelled / Rejected
                     </div>
                   )}
+                  {(selectedOrder.orderStatus === 'Refunded' || selectedOrder.isRefunded) && (
+                    <div className="bg-purple-50 border border-purple-200 p-3 text-purple-700 font-bold tracking-wide uppercase mt-3 rounded-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+                      <div>
+                        <div className="flex items-center space-x-1.5">
+                          <FiRotateCcw className="text-purple-600" />
+                          <span>Order Refunded (₹{(selectedOrder.refundAmount || selectedOrder.totalPrice).toLocaleString()})</span>
+                        </div>
+                        <p className="text-[10px] text-purple-600 font-normal lowercase tracking-normal mt-0.5">
+                          Ref: {selectedOrder.refundTransactionId || 'N/A'} • Reason: {selectedOrder.refundReason || 'Admin processed refund'}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => generateRefundPDF(selectedOrder)}
+                        className="inline-flex items-center space-x-1.5 bg-purple-700 hover:bg-purple-800 text-white font-bold py-1.5 px-3 rounded-xs text-[10px] uppercase tracking-wider transition-colors cursor-pointer shrink-0 shadow-xs"
+                      >
+                        <FiPrinter size={12} />
+                        <span>Print Refund PDF</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* 2. Order Items */}
@@ -432,6 +537,9 @@ export default function AdminOrders() {
                           <th className="pb-2 text-right">Price</th>
                           <th className="pb-2 text-center">Qty</th>
                           <th className="pb-2 text-right">Subtotal</th>
+                          {(selectedOrder.orderStatus === 'Refunded' || selectedOrder.isRefunded) && (
+                            <th className="pb-2 text-center">Refund PDF</th>
+                          )}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gold-50">
@@ -453,6 +561,19 @@ export default function AdminOrders() {
                               <td className="py-2.5 text-right font-semibold">₹{item.price.toLocaleString()}</td>
                               <td className="py-2.5 text-center font-semibold">{item.quantity}</td>
                               <td className="py-2.5 text-right font-bold text-primary">₹{(item.price * item.quantity).toLocaleString()}</td>
+                              {(selectedOrder.orderStatus === 'Refunded' || selectedOrder.isRefunded) && (
+                                <td className="py-2.5 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => generateRefundPDF(selectedOrder, item)}
+                                    className="inline-flex items-center space-x-1 text-purple-700 hover:text-white hover:bg-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-xs text-[9px] font-bold uppercase transition-colors cursor-pointer"
+                                    title={`Print refund PDF for ${item.name}`}
+                                  >
+                                    <FiPrinter size={10} />
+                                    <span>Slip</span>
+                                  </button>
+                                </td>
+                              )}
                             </tr>
                           );
                         })}
@@ -575,20 +696,41 @@ export default function AdminOrders() {
                         <option value="Delivered">Delivered</option>
                         <option value="Cancelled">Cancelled</option>
                         <option value="Cancellation Requested">Cancellation Requested</option>
+                        <option value="Refunded">Refunded</option>
                       </select>
                     </div>
 
-                    {statusForm === 'Shipped' && (
-                      <div>
-                        <label className="block text-[9px] font-bold text-secondary uppercase tracking-wider mb-1.5">Courier Tracking ID</label>
-                        <input
-                          type="text"
-                          required
-                          value={trackingIdForm}
-                          onChange={(e) => setTrackingIdForm(e.target.value)}
-                          placeholder="e.g. BLUEDART-12345"
-                          className="w-full bg-[#faf9f6] border border-gold-300 p-2 text-xs font-sans outline-none focus:border-gold-500"
-                        />
+                    {(statusForm === 'Shipped' || statusForm === 'Dispatched') && (
+                      <div className="space-y-3 bg-[#FAF8F2] p-3 border border-gold-200/60 rounded-sm">
+                        <div>
+                          <label className="block text-[9px] font-bold text-secondary uppercase tracking-wider mb-1">Courier Partner</label>
+                          <select
+                            value={courierNameForm}
+                            onChange={(e) => setCourierNameForm(e.target.value)}
+                            className="w-full bg-white border border-gold-300 p-2 text-xs font-sans outline-none focus:border-gold-500"
+                          >
+                            <option value="Blue Dart">Blue Dart</option>
+                            <option value="Delhivery">Delhivery</option>
+                            <option value="DTDC">DTDC Express</option>
+                            <option value="India Post">India Post (Speed Post)</option>
+                            <option value="Shiprocket">Shiprocket</option>
+                            <option value="Ekart">Ekart Logistics</option>
+                            <option value="Shadowfax">Shadowfax</option>
+                            <option value="Standard Express">Standard Express Delivery</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-[9px] font-bold text-secondary uppercase tracking-wider mb-1">Courier Tracking ID / AWB No.</label>
+                          <input
+                            type="text"
+                            required
+                            value={trackingIdForm}
+                            onChange={(e) => setTrackingIdForm(e.target.value)}
+                            placeholder="e.g. BLUEDART-987654321"
+                            className="w-full bg-white border border-gold-300 p-2 text-xs font-sans outline-none focus:border-gold-500 font-mono"
+                          />
+                        </div>
                       </div>
                     )}
 
@@ -602,17 +744,25 @@ export default function AdminOrders() {
                   </form>
 
                   <div className="border-t border-gold-100 mt-4 pt-4 space-y-2">
-                    {selectedOrder.isPaid && !selectedOrder.paymentInfo?.refunded && (
+                    {selectedOrder.isPaid && selectedOrder.orderStatus !== 'Refunded' && !selectedOrder.isRefunded && (
                       <button
+                        type="button"
                         onClick={handleRefund}
                         disabled={actionLoading}
-                        className="w-full flex items-center justify-center bg-red-50 text-red-650 border border-red-200/50 py-2 text-xs font-bold uppercase tracking-wider hover:bg-red-100 transition-colors cursor-pointer"
+                        className="w-full flex items-center justify-center bg-purple-50 text-purple-700 border border-purple-200 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-purple-100 transition-colors cursor-pointer rounded-xs"
                       >
-                        <FiRotateCcw className="mr-2" /> Refund Order
+                        <FiRotateCcw className="mr-2" size={14} /> Process Refund (₹{selectedOrder.totalPrice.toLocaleString()})
                       </button>
                     )}
+
+                    {(selectedOrder.orderStatus === 'Refunded' || selectedOrder.isRefunded) && (
+                      <div className="bg-purple-50 border border-purple-200 p-3 rounded-xs text-center text-purple-800">
+                        <span className="text-[10px] uppercase font-bold tracking-wider block">✓ Order Fully Refunded</span>
+                        <span className="text-xs font-semibold">₹{(selectedOrder.refundAmount || selectedOrder.totalPrice).toLocaleString()} returned to customer</span>
+                      </div>
+                    )}
                     
-                    {selectedOrder.orderStatus !== 'Delivered' && selectedOrder.orderStatus !== 'Cancelled' && (
+                    {selectedOrder.orderStatus !== 'Delivered' && selectedOrder.orderStatus !== 'Cancelled' && selectedOrder.orderStatus !== 'Refunded' && (
                       <button
                         onClick={handleCancelOrder}
                         disabled={actionLoading}
@@ -654,6 +804,16 @@ export default function AdminOrders() {
                   >
                     <FiPrinter className="mr-2" /> Print PDF Invoice
                   </button>
+
+                  {(selectedOrder.orderStatus === 'Refunded' || selectedOrder.isRefunded) && (
+                    <button
+                      type="button"
+                      onClick={() => generateRefundPDF(selectedOrder)}
+                      className="w-full flex items-center justify-center bg-purple-700 hover:bg-purple-800 text-white font-bold py-2.5 text-xs uppercase tracking-wider cursor-pointer mt-2 shadow-sm transition-colors"
+                    >
+                      <FiPrinter className="mr-2" /> Print Refund Receipt (PDF)
+                    </button>
+                  )}
                 </div>
 
               </div>
@@ -773,6 +933,136 @@ export default function AdminOrders() {
               </button>
             </div>
 
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ========================================================================= */}
+      {/* REFUND CONFIRMATION MODAL */}
+      {/* ========================================================================= */}
+      {isRefundModalOpen && orderToRefund && createPortal(
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-white border border-gold-300 shadow-2xl max-w-lg w-full p-6 animate-scale-up text-left relative my-auto">
+            
+            {/* Modal Header */}
+            <div className="flex justify-between items-center border-b border-gold-200 pb-3 mb-4">
+              <div className="flex items-center space-x-2.5">
+                <div className="p-2 bg-purple-100 text-purple-700 rounded-full">
+                  <FiRotateCcw size={18} />
+                </div>
+                <div>
+                  <h3 className="font-serif text-base font-bold text-primary tracking-wide">
+                    Issue Customer Refund
+                  </h3>
+                  <p className="text-[10px] text-secondary/60 font-mono">
+                    Order #{orderToRefund._id.substring(18).toUpperCase()} • {orderToRefund.shippingAddress?.name || orderToRefund.user?.name || 'Customer'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setIsRefundModalOpen(false); setOrderToRefund(null); }}
+                className="text-secondary/60 hover:text-red-600 p-1 rounded-full cursor-pointer transition-colors"
+                title="Cancel"
+              >
+                <FiX size={20} />
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={handleConfirmRefund} className="space-y-4 font-sans text-xs">
+              
+              {/* Order summary box */}
+              <div className="bg-[#FAF8F2] border border-gold-200/70 p-3.5 space-y-2">
+                <div className="flex justify-between text-secondary/70">
+                  <span>Current Status:</span>
+                  <span className="font-bold text-primary uppercase">{orderToRefund.orderStatus}</span>
+                </div>
+                <div className="flex justify-between text-secondary/70">
+                  <span>Payment Method:</span>
+                  <span className="font-semibold text-primary">{orderToRefund.paymentMethod || 'Razorpay / Prepaid'} ({orderToRefund.isPaid ? 'PAID' : 'PENDING'})</span>
+                </div>
+                <div className="flex justify-between text-secondary/70">
+                  <span>Total Order Value:</span>
+                  <span className="font-bold text-primary font-mono text-sm">₹{orderToRefund.totalPrice.toLocaleString()}</span>
+                </div>
+              </div>
+
+              {/* Refund Amount Input */}
+              <div>
+                <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">
+                  Refund Amount (₹) <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary font-bold">₹</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max={orderToRefund.totalPrice}
+                    step="any"
+                    required
+                    value={refundAmountInput}
+                    onChange={(e) => setRefundAmountInput(e.target.value)}
+                    placeholder="Enter amount to refund"
+                    className="w-full bg-white border border-gold-300 py-2.5 pl-8 pr-4 text-xs font-mono font-bold outline-none focus:border-gold-500 text-primary"
+                  />
+                </div>
+                <p className="text-[10px] text-secondary/50 mt-1">
+                  Max refundable: ₹{orderToRefund.totalPrice.toLocaleString()} (Defaults to full order amount)
+                </p>
+              </div>
+
+              {/* Refund Reason Input */}
+              <div>
+                <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">
+                  Refund Reason / Notes <span className="text-secondary/50 font-normal">(Optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={refundReasonInput}
+                  onChange={(e) => setRefundReasonInput(e.target.value)}
+                  placeholder="e.g. Return approved, customer requested, defective piece"
+                  className="w-full bg-white border border-gold-300 py-2 px-3 text-xs outline-none focus:border-gold-500 text-primary"
+                />
+              </div>
+
+              {/* Real-time sync alert */}
+              <div className="bg-purple-50 border border-purple-200 p-3 rounded-xs text-[11px] text-purple-900 leading-relaxed">
+                <span className="font-bold block mb-0.5">⚡ Automatic Dashboard Synchronization:</span>
+                Processing this refund will mark the order as <strong>Refunded</strong>, automatically deduct <strong>₹{Number(refundAmountInput || 0).toLocaleString()}</strong> from Dashboard Revenue, restore inventory stock, and send a refund confirmation email to the customer.
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex space-x-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => { setIsRefundModalOpen(false); setOrderToRefund(null); }}
+                  disabled={actionLoading}
+                  className="flex-1 bg-transparent hover:bg-gray-100 border border-gray-300 text-gray-700 font-bold py-2.5 px-4 text-xs uppercase tracking-wider cursor-pointer text-center transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={actionLoading}
+                  className="flex-1 bg-purple-700 hover:bg-purple-800 text-white font-bold py-2.5 px-4 text-xs uppercase tracking-wider cursor-pointer text-center shadow-md transition-colors flex items-center justify-center space-x-2"
+                >
+                  {actionLoading ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Processing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FiRotateCcw size={14} />
+                      <span>Confirm Refund</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+            </form>
           </div>
         </div>,
         document.body

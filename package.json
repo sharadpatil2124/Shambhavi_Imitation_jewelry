@@ -1,0 +1,20 @@
+{
+  "name": "sambhavi-imitation-jewelry",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shambhavi Imitation Jewelry eCommerce Platform",
+  "scripts": {
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:admin": "npm --prefix admin run dev",
+    "start": "npm --prefix backend start",
+    "start:backend": "npm --prefix backend start",
+    "build:frontend": "npm --prefix frontend run build",
+    "build:admin": "npm --prefix admin run build",
+    "build": "npm --prefix frontend run build && npm --prefix admin run build",
+    "test": "npm --prefix backend test && npm --prefix frontend test && npm --prefix admin test",
+    "test:backend": "npm --prefix backend test",
+    "test:frontend": "npm --prefix frontend test",
+    "test:admin": "npm --prefix admin test"
+  }
+}

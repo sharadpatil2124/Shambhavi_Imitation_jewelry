@@ -31,7 +31,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Please provide a secure login password'],
     minlength: [6, 'Password must contain at least 6 characters'],
-    select: false // Excludes password by default in queries
+    select: false
   },
   phone: {
     type: String,
@@ -64,7 +64,6 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Pre-save Mongoose hook to hash password and sync role/isAdmin attributes
 userSchema.pre('save', async function (next) {
   if (this.isAdmin) {
     this.role = 'admin';
@@ -78,7 +77,6 @@ userSchema.pre('save', async function (next) {
   next();
 });
 
-// Instance method to match user password
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };

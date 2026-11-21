@@ -106,14 +106,17 @@ export const getProducts = async (req, res, next) => {
       }
     }
 
-    // 7. Pagination
+    // 7. Parallel Execution & Lean Projection for High Concurrency Performance
     const skip = (Number(page) - 1) * Number(limit);
-    const total = await Product.countDocuments(query);
-    const products = await Product.find(query)
-      .populate('category', 'name slug')
-      .sort(sortOptions)
-      .skip(skip)
-      .limit(Number(limit));
+    const [total, products] = await Promise.all([
+      Product.countDocuments(query),
+      Product.find(query)
+        .populate('category', 'name slug')
+        .sort(sortOptions)
+        .skip(skip)
+        .limit(Number(limit))
+        .lean()
+    ]);
 
     res.json({
       success: true,
@@ -132,7 +135,9 @@ export const getProducts = async (req, res, next) => {
 // @access  Public
 export const getProductById = async (req, res, next) => {
   try {
-    const product = await Product.findById(req.params.id).populate('category', 'name slug');
+    const product = await Product.findById(req.params.id)
+      .populate('category', 'name slug')
+      .lean();
     if (!product) {
       res.status(404);
       throw new Error('Product not found: Masterpiece ID does not exist');

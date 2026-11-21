@@ -14,7 +14,7 @@ const reviewSchema = new mongoose.Schema({
   },
   name: {
     type: String,
-    required: true // Cache user name directly for fast catalog rendering
+    required: true
   },
   rating: {
     type: Number,
@@ -39,7 +39,6 @@ const reviewSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Ensure a single user can only submit one review per product
 reviewSchema.index({ user: 1, product: 1 }, { unique: true });
 
 const Review = mongoose.model('Review', reviewSchema);

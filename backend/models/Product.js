@@ -53,7 +53,7 @@ const productSchema = new mongoose.Schema({
     trim: true
   }],
   images: [{
-    type: String, // Cloudinary secure URLs
+    type: String,
     required: [true, 'Please upload at least one product image']
   }],
   stock: {
@@ -94,7 +94,6 @@ const productSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Helper auto-calculate discount percentage before saving
 productSchema.pre('save', function (next) {
   if (this.originalPrice > this.price) {
     this.discount = Math.round(((this.originalPrice - this.price) / this.originalPrice) * 100);

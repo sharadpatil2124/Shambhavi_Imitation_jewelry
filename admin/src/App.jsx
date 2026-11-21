@@ -3,11 +3,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-// Route Guards & Layouts
 import AdminProtectedRoute from './routes/AdminProtectedRoute';
 import AdminLayout from './layouts/AdminLayout';
 
-// Admin Page Components
 import AdminLogin from './pages/AdminLogin';
 import AdminForgotPassword from './pages/AdminForgotPassword';
 import AdminResetPassword from './pages/AdminResetPassword';
@@ -27,12 +25,10 @@ export default function App() {
     <Router>
       <div className="flex flex-col min-h-screen bg-[#FDFCF7] font-sans antialiased">
         <Routes>
-          {/* Public Auth Endpoint */}
           <Route path="/login" element={<AdminLogin />} />
           <Route path="/forgot-password" element={<AdminForgotPassword />} />
           <Route path="/reset-password" element={<AdminResetPassword />} />
 
-          {/* Secure Administrative Console Workspace */}
           <Route element={<AdminProtectedRoute />}>
             <Route element={<AdminLayout />}>
               <Route path="/" element={<AdminDashboard />} />
@@ -45,7 +41,6 @@ export default function App() {
               <Route path="/settings" element={<AdminSettings />} />
               <Route path="/profile" element={<AdminProfile />} />
               <Route path="/enquiries" element={<AdminEnquiries />} />
-              {/* Fallback route */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
           </Route>
