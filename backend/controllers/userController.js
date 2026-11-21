@@ -65,10 +65,7 @@ export const registerUser = async (req, res, next) => {
         userExists.otpExpires = otpExpires;
         await userExists.save();
 
-        console.log(`🔑 [OTP GENERATED] Registration OTP for ${email}: ${otp}`);
-        sendOtpEmail(email, otp, 'register').catch(err => {
-          console.error('⚠️ [Registration Email Notice]:', err.message);
-        });
+        await sendOtpEmail(email, otp, 'register');
 
         return res.status(200).json({
           success: true,
@@ -91,10 +88,7 @@ export const registerUser = async (req, res, next) => {
     });
 
     if (user) {
-      console.log(`🔑 [OTP GENERATED] Registration OTP for ${email}: ${otp}`);
-      sendOtpEmail(email, otp, 'register').catch(err => {
-        console.error('⚠️ [Registration Email Notice]:', err.message);
-      });
+      await sendOtpEmail(email, otp, 'register');
 
       res.status(201).json({
         success: true,
@@ -302,10 +296,7 @@ export const resendOtp = async (req, res, next) => {
       user.resetPasswordOtpExpires = otpExpires;
       await user.save();
 
-      console.log(`🔑 [OTP GENERATED] Reset OTP for ${email}: ${otp}`);
-      sendOtpEmail(email, otp, 'reset').catch(err => {
-        console.error('⚠️ [Reset Email Notice]:', err.message);
-      });
+      await sendOtpEmail(email, otp, 'reset');
     } else {
       if (user.isVerified) {
         res.status(400);
@@ -316,10 +307,7 @@ export const resendOtp = async (req, res, next) => {
       user.otpExpires = otpExpires;
       await user.save();
 
-      console.log(`🔑 [OTP GENERATED] Verification OTP for ${email}: ${otp}`);
-      sendOtpEmail(email, otp, 'register').catch(err => {
-        console.error('⚠️ [Verification Email Notice]:', err.message);
-      });
+      await sendOtpEmail(email, otp, 'register');
     }
 
     res.json({
@@ -359,10 +347,7 @@ export const forgotPassword = async (req, res, next) => {
 
     await user.save();
 
-    console.log(`🔑 [OTP GENERATED] Forgot Password OTP for ${email}: ${otp}`);
-    sendOtpEmail(email, otp, 'reset').catch(err => {
-      console.error('⚠️ [Forgot Password Email Notice]:', err.message);
-    });
+    await sendOtpEmail(email, otp, 'reset');
 
     res.json({
       success: true,

@@ -48,18 +48,46 @@ const getResetEmailHtml = (otp) => `
 </div>
 `;
 
+const getEmailConfig = () => {
+  const clean = (val) => val ? val.replace(/^['"]|['"]$/g, '').trim() : '';
+
+  const host = clean(process.env.BREVO_SMTP_HOST || process.env.SMTP_HOST || process.env.EMAIL_HOST) || 'smtp-relay.brevo.com';
+  const port = parseInt(clean(process.env.BREVO_SMTP_PORT || process.env.SMTP_PORT || process.env.EMAIL_PORT) || '587', 10);
+  const user = clean(process.env.BREVO_SMTP_USER || process.env.SMTP_USER || process.env.EMAIL_USER || process.env.GMAIL_USER);
+  const pass = clean(process.env.BREVO_SMTP_PASSWORD || process.env.SMTP_PASS || process.env.EMAIL_PASS || process.env.GMAIL_PASS);
+  const fromEmail = clean(process.env.BREVO_EMAIL_FROM || process.env.EMAIL_FROM || process.env.GMAIL_USER) || user || 'kadamshambhavi1@gmail.com';
+  const fromName = clean(process.env.BREVO_EMAIL_FROM_NAME || process.env.EMAIL_FROM_NAME) || 'Shambhavi Imitation';
+
+  return { host, port, user, pass, fromEmail, fromName };
+};
+
 const createTransporter = (host, port, user, pass) => {
+  const isGmail = host?.toLowerCase().includes('gmail') || user?.toLowerCase().includes('@gmail.com') || process.env.EMAIL_SERVICE === 'gmail';
+
+  if (isGmail) {
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user,
+        pass: pass?.replace(/\s+/g, ''),
+      },
+      connectionTimeout: 10000,
+      greetingTimeout: 8000,
+      socketTimeout: 15000,
+    });
+  }
+
   return nodemailer.createTransport({
-    host,
-    port,
+    host: host || 'smtp-relay.brevo.com',
+    port: port || 587,
     secure: port === 465,
     auth: {
       user,
       pass,
     },
-    connectionTimeout: 6000, // Fail fast after 6s to prevent hanging
-    greetingTimeout: 5000,
-    socketTimeout: 8000,
+    connectionTimeout: 10000,
+    greetingTimeout: 8000,
+    socketTimeout: 15000,
     tls: {
       rejectUnauthorized: false
     }
@@ -67,14 +95,7 @@ const createTransporter = (host, port, user, pass) => {
 };
 
 export const sendOtpEmail = async (to, otp, type) => {
-  const clean = (val) => val ? val.replace(/^['"]|['"]$/g, '').trim() : '';
-
-  const host = clean(process.env.BREVO_SMTP_HOST) || 'smtp-relay.brevo.com';
-  const port = parseInt(clean(process.env.BREVO_SMTP_PORT) || '465', 10);
-  const user = clean(process.env.BREVO_SMTP_USER);
-  const pass = clean(process.env.BREVO_SMTP_PASSWORD);
-  const fromEmail = clean(process.env.BREVO_EMAIL_FROM) || 'no-reply@sambhavijewelry.com';
-  const fromName = clean(process.env.BREVO_EMAIL_FROM_NAME) || 'Shambhavi Imitation';
+  const { host, port, user, pass, fromEmail, fromName } = getEmailConfig();
 
   const subject = type === 'register' 
     ? 'Verify Your Email Address - Shambhavi Imitation'
@@ -83,6 +104,8 @@ export const sendOtpEmail = async (to, otp, type) => {
   const html = type === 'register' 
     ? getVerifyEmailHtml(otp)
     : getResetEmailHtml(otp);
+
+  console.log(`🔑 [OTP DISPATCH] ${type.toUpperCase()} OTP for ${to}: ${otp}`);
 
   if (!user || !pass) {
     throw new Error('SMTP credentials are not configured. Email communication is unavailable.');
@@ -99,10 +122,11 @@ export const sendOtpEmail = async (to, otp, type) => {
     };
 
     const info = await transporter.sendMail(mailOptions);
+    console.log(`✅ [Email Service] ${type} OTP email delivered to ${to}`);
     return info;
   } catch (error) {
-    console.error('\n❌ [BREVO SMTP ERROR] Failed to send email:', error.message);
-    throw new Error(`SMTP email delivery failed: ${error.message}`);
+    console.error('\n❌ [EMAIL SERVICE ERROR] Failed to send email:', error.message);
+    throw new Error(`Email delivery failed: ${error.message}`);
   }
 };
 
@@ -223,14 +247,7 @@ const getOrderEmailHtml = (order) => {
 };
 
 export const sendOrderConfirmationEmail = async (to, order) => {
-  const clean = (val) => val ? val.replace(/^['"]|['"]$/g, '').trim() : '';
-
-  const host = clean(process.env.BREVO_SMTP_HOST) || 'smtp-relay.brevo.com';
-  const port = parseInt(clean(process.env.BREVO_SMTP_PORT) || '587', 10);
-  const user = clean(process.env.BREVO_SMTP_USER);
-  const pass = clean(process.env.BREVO_SMTP_PASSWORD);
-  const fromEmail = clean(process.env.BREVO_EMAIL_FROM) || 'no-reply@sambhavijewelry.com';
-  const fromName = clean(process.env.BREVO_EMAIL_FROM_NAME) || 'Shambhavi Imitation';
+  const { host, port, user, pass, fromEmail, fromName } = getEmailConfig();
 
   const subject = `Your Order has been Placed Successfully! (Ref: #${order._id}) - Shambhavi Imitation`;
   const html = getOrderEmailHtml(order);
@@ -252,8 +269,8 @@ export const sendOrderConfirmationEmail = async (to, order) => {
     const info = await transporter.sendMail(mailOptions);
     return info;
   } catch (error) {
-    console.error('\n❌ [BREVO SMTP ERROR] Failed to send order email:', error.message);
-    throw new Error(`SMTP email delivery failed: ${error.message}`);
+    console.error('\n❌ [EMAIL SERVICE ERROR] Failed to send order email:', error.message);
+    throw new Error(`Email delivery failed: ${error.message}`);
   }
 };
 
@@ -343,14 +360,7 @@ const getCancellationEmailHtml = (order) => {
 };
 
 export const sendOrderCancellationEmail = async (to, order) => {
-  const clean = (val) => val ? val.replace(/^['"]|['"]$/g, '').trim() : '';
-
-  const host = clean(process.env.BREVO_SMTP_HOST) || 'smtp-relay.brevo.com';
-  const port = parseInt(clean(process.env.BREVO_SMTP_PORT) || '587', 10);
-  const user = clean(process.env.BREVO_SMTP_USER);
-  const pass = clean(process.env.BREVO_SMTP_PASSWORD);
-  const fromEmail = clean(process.env.BREVO_EMAIL_FROM) || 'no-reply@sambhavijewelry.com';
-  const fromName = clean(process.env.BREVO_EMAIL_FROM_NAME) || 'Shambhavi Imitation';
+  const { host, port, user, pass, fromEmail, fromName } = getEmailConfig();
 
   const subject = `Order Cancelled Successfully (Ref: #${order._id}) - Shambhavi Imitation`;
   const html = getCancellationEmailHtml(order);
@@ -372,8 +382,8 @@ export const sendOrderCancellationEmail = async (to, order) => {
     const info = await transporter.sendMail(mailOptions);
     return info;
   } catch (error) {
-    console.error('\n❌ [BREVO SMTP ERROR] Failed to send cancellation email:', error.message);
-    throw new Error(`SMTP email delivery failed: ${error.message}`);
+    console.error('\n❌ [EMAIL SERVICE ERROR] Failed to send cancellation email:', error.message);
+    throw new Error(`Email delivery failed: ${error.message}`);
   }
 };
 
@@ -418,14 +428,7 @@ const getRefundEmailHtml = (order) => `
 `;
 
 export const sendOrderRefundEmail = async (to, order) => {
-  const clean = (val) => val ? val.replace(/^['"]|['"]$/g, '').trim() : '';
-
-  const host = clean(process.env.BREVO_SMTP_HOST) || 'smtp-relay.brevo.com';
-  const port = parseInt(clean(process.env.BREVO_SMTP_PORT) || '587', 10);
-  const user = clean(process.env.BREVO_SMTP_USER);
-  const pass = clean(process.env.BREVO_SMTP_PASSWORD);
-  const fromEmail = clean(process.env.BREVO_EMAIL_FROM) || 'no-reply@sambhavijewelry.com';
-  const fromName = clean(process.env.BREVO_EMAIL_FROM_NAME) || 'Shambhavi Imitation';
+  const { host, port, user, pass, fromEmail, fromName } = getEmailConfig();
 
   const subject = `Payment Refund Processed (Ref: #${order._id}) - Shambhavi Imitation`;
   const html = getRefundEmailHtml(order);
@@ -436,7 +439,7 @@ export const sendOrderRefundEmail = async (to, order) => {
     const transporter = createTransporter(host, port, user, pass);
     await transporter.sendMail({ from: `"${fromName}" <${fromEmail}>`, to, subject, html });
   } catch (error) {
-    console.error('❌ [BREVO SMTP ERROR] Failed to send refund email:', error.message);
+    console.error('❌ [EMAIL SERVICE ERROR] Failed to send refund email:', error.message);
   }
 };
 
@@ -477,14 +480,7 @@ const getDeliveryEmailHtml = (order) => `
 `;
 
 export const sendOrderDeliveryEmail = async (to, order) => {
-  const clean = (val) => val ? val.replace(/^['"]|['"]$/g, '').trim() : '';
-
-  const host = clean(process.env.BREVO_SMTP_HOST) || 'smtp-relay.brevo.com';
-  const port = parseInt(clean(process.env.BREVO_SMTP_PORT) || '587', 10);
-  const user = clean(process.env.BREVO_SMTP_USER);
-  const pass = clean(process.env.BREVO_SMTP_PASSWORD);
-  const fromEmail = clean(process.env.BREVO_EMAIL_FROM) || 'no-reply@sambhavijewelry.com';
-  const fromName = clean(process.env.BREVO_EMAIL_FROM_NAME) || 'Shambhavi Imitation';
+  const { host, port, user, pass, fromEmail, fromName } = getEmailConfig();
 
   const subject = `Your Order Has Been Delivered! (Ref: #${order._id}) - Shambhavi Imitation`;
   const html = getDeliveryEmailHtml(order);
@@ -495,7 +491,7 @@ export const sendOrderDeliveryEmail = async (to, order) => {
     const transporter = createTransporter(host, port, user, pass);
     await transporter.sendMail({ from: `"${fromName}" <${fromEmail}>`, to, subject, html });
   } catch (error) {
-    console.error('❌ [BREVO SMTP ERROR] Failed to send delivery email:', error.message);
+    console.error('❌ [EMAIL SERVICE ERROR] Failed to send delivery email:', error.message);
   }
 };
 
@@ -540,14 +536,7 @@ const getCancellationRejectedEmailHtml = (order, reason) => `
 `;
 
 export const sendCancellationRejectedEmail = async (to, order, reason) => {
-  const clean = (val) => val ? val.replace(/^['"]|['"]$/g, '').trim() : '';
-
-  const host = clean(process.env.BREVO_SMTP_HOST) || 'smtp-relay.brevo.com';
-  const port = parseInt(clean(process.env.BREVO_SMTP_PORT) || '587', 10);
-  const user = clean(process.env.BREVO_SMTP_USER);
-  const pass = clean(process.env.BREVO_SMTP_PASSWORD);
-  const fromEmail = clean(process.env.BREVO_EMAIL_FROM) || 'no-reply@sambhavijewelry.com';
-  const fromName = clean(process.env.BREVO_EMAIL_FROM_NAME) || 'Shambhavi Imitation';
+  const { host, port, user, pass, fromEmail, fromName } = getEmailConfig();
 
   const subject = `Update on Cancellation Request (Ref: #${order._id}) - Shambhavi Imitation`;
   const html = getCancellationRejectedEmailHtml(order, reason);
@@ -558,7 +547,7 @@ export const sendCancellationRejectedEmail = async (to, order, reason) => {
     const transporter = createTransporter(host, port, user, pass);
     await transporter.sendMail({ from: `"${fromName}" <${fromEmail}>`, to, subject, html });
   } catch (error) {
-    console.error('❌ [BREVO SMTP ERROR] Failed to send cancellation rejection email:', error.message);
+    console.error('❌ [EMAIL SERVICE ERROR] Failed to send cancellation rejection email:', error.message);
   }
 };
 
@@ -671,14 +660,7 @@ const getShippedEmailHtml = (order) => {
 };
 
 export const sendOrderShippedEmail = async (to, order) => {
-  const clean = (val) => val ? val.replace(/^['"]|['"]$/g, '').trim() : '';
-
-  const host = clean(process.env.BREVO_SMTP_HOST) || 'smtp-relay.brevo.com';
-  const port = parseInt(clean(process.env.BREVO_SMTP_PORT) || '587', 10);
-  const user = clean(process.env.BREVO_SMTP_USER);
-  const pass = clean(process.env.BREVO_SMTP_PASSWORD);
-  const fromEmail = clean(process.env.BREVO_EMAIL_FROM) || 'no-reply@sambhavijewelry.com';
-  const fromName = clean(process.env.BREVO_EMAIL_FROM_NAME) || 'Shambhavi Imitation';
+  const { host, port, user, pass, fromEmail, fromName } = getEmailConfig();
 
   const subject = `Your Order Has Been Shipped! (Tracking Ref: #${order.trackingNumber || order.trackingId || order._id}) - Shambhavi Imitation`;
   const html = getShippedEmailHtml(order);
@@ -688,9 +670,9 @@ export const sendOrderShippedEmail = async (to, order) => {
   try {
     const transporter = createTransporter(host, port, user, pass);
     await transporter.sendMail({ from: `"${fromName}" <${fromEmail}>`, to, subject, html });
-    console.log(`✅ [Brevo SMTP] Shipped tracking email successfully delivered to ${to}`);
+    console.log(`✅ [Email Service] Shipped tracking email successfully delivered to ${to}`);
   } catch (error) {
-    console.error('❌ [BREVO SMTP ERROR] Failed to send order shipped email:', error.message);
+    console.error('❌ [EMAIL SERVICE ERROR] Failed to send order shipped email:', error.message);
   }
 };
 
