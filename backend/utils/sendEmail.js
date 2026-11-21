@@ -48,11 +48,29 @@ const getResetEmailHtml = (otp) => `
 </div>
 `;
 
+const createTransporter = (host, port, user, pass) => {
+  return nodemailer.createTransport({
+    host,
+    port,
+    secure: port === 465,
+    auth: {
+      user,
+      pass,
+    },
+    connectionTimeout: 6000, // Fail fast after 6s to prevent hanging
+    greetingTimeout: 5000,
+    socketTimeout: 8000,
+    tls: {
+      rejectUnauthorized: false
+    }
+  });
+};
+
 export const sendOtpEmail = async (to, otp, type) => {
   const clean = (val) => val ? val.replace(/^['"]|['"]$/g, '').trim() : '';
 
   const host = clean(process.env.BREVO_SMTP_HOST) || 'smtp-relay.brevo.com';
-  const port = parseInt(clean(process.env.BREVO_SMTP_PORT) || '587', 10);
+  const port = parseInt(clean(process.env.BREVO_SMTP_PORT) || '465', 10);
   const user = clean(process.env.BREVO_SMTP_USER);
   const pass = clean(process.env.BREVO_SMTP_PASSWORD);
   const fromEmail = clean(process.env.BREVO_EMAIL_FROM) || 'no-reply@sambhavijewelry.com';
@@ -71,15 +89,7 @@ export const sendOtpEmail = async (to, otp, type) => {
   }
 
   try {
-    const transporter = nodemailer.createTransport({
-      host,
-      port,
-      secure: port === 465,
-      auth: {
-        user,
-        pass,
-      },
-    });
+    const transporter = createTransporter(host, port, user, pass);
 
     const mailOptions = {
       from: `"${fromName}" <${fromEmail}>`,
@@ -230,15 +240,7 @@ export const sendOrderConfirmationEmail = async (to, order) => {
   }
 
   try {
-    const transporter = nodemailer.createTransport({
-      host,
-      port,
-      secure: port === 465,
-      auth: {
-        user,
-        pass,
-      },
-    });
+    const transporter = createTransporter(host, port, user, pass);
 
     const mailOptions = {
       from: `"${fromName}" <${fromEmail}>`,
@@ -358,15 +360,7 @@ export const sendOrderCancellationEmail = async (to, order) => {
   }
 
   try {
-    const transporter = nodemailer.createTransport({
-      host,
-      port,
-      secure: port === 465,
-      auth: {
-        user,
-        pass,
-      },
-    });
+    const transporter = createTransporter(host, port, user, pass);
 
     const mailOptions = {
       from: `"${fromName}" <${fromEmail}>`,
@@ -439,7 +433,7 @@ export const sendOrderRefundEmail = async (to, order) => {
   if (!user || !pass) return;
 
   try {
-    const transporter = nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
+    const transporter = createTransporter(host, port, user, pass);
     await transporter.sendMail({ from: `"${fromName}" <${fromEmail}>`, to, subject, html });
   } catch (error) {
     console.error('❌ [BREVO SMTP ERROR] Failed to send refund email:', error.message);
@@ -498,7 +492,7 @@ export const sendOrderDeliveryEmail = async (to, order) => {
   if (!user || !pass) return;
 
   try {
-    const transporter = nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
+    const transporter = createTransporter(host, port, user, pass);
     await transporter.sendMail({ from: `"${fromName}" <${fromEmail}>`, to, subject, html });
   } catch (error) {
     console.error('❌ [BREVO SMTP ERROR] Failed to send delivery email:', error.message);
@@ -561,7 +555,7 @@ export const sendCancellationRejectedEmail = async (to, order, reason) => {
   if (!user || !pass) return;
 
   try {
-    const transporter = nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
+    const transporter = createTransporter(host, port, user, pass);
     await transporter.sendMail({ from: `"${fromName}" <${fromEmail}>`, to, subject, html });
   } catch (error) {
     console.error('❌ [BREVO SMTP ERROR] Failed to send cancellation rejection email:', error.message);
@@ -692,7 +686,7 @@ export const sendOrderShippedEmail = async (to, order) => {
   if (!user || !pass) return;
 
   try {
-    const transporter = nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
+    const transporter = createTransporter(host, port, user, pass);
     await transporter.sendMail({ from: `"${fromName}" <${fromEmail}>`, to, subject, html });
     console.log(`✅ [Brevo SMTP] Shipped tracking email successfully delivered to ${to}`);
   } catch (error) {
