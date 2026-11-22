@@ -1,28 +1,34 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { FiX, FiHeart, FiShoppingBag, FiMinus, FiPlus } from 'react-icons/fi';
 import { FaHeart, FaStar, FaWhatsapp } from 'react-icons/fa';
 import { getImageUrl } from '../utils/image';
+import { canHoverZoom } from '../utils/pointer';
 import { addToCart } from '../store/cartSlice';
 import { toggleWishlist } from '../store/wishlistSlice';
 import { toast } from 'react-toastify';
 
 export default function QuickViewModal({ product, onClose }) {
-  if (!product) return null;
-
+  // All hooks run on every render, before any early return (React's rules of hooks).
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [selectedColor, setSelectedColor] = useState(product.colors[0] || "");
-  const [selectedSize, setSelectedSize] = useState(product.sizes[0] || "");
+  const [selectedColor, setSelectedColor] = useState(product?.colors?.[0] || "");
+  const [selectedSize, setSelectedSize] = useState(product?.sizes?.[0] || "");
   const [quantity, setQuantity] = useState(1);
 
   // Hover zoom coordinates tracker
   const [zoomPos, setZoomPos] = useState({ x: 0, y: 0 });
   const [isZoomed, setIsZoomed] = useState(false);
+
+  const wishlistItems = useSelector((state) => state.wishlist.items);
+  const { settings } = useSelector((state) => state.settings);
+  const { isAuthenticated } = useSelector((state) => state.auth);
+
+  if (!product) return null;
 
   const handleMouseMove = (e) => {
     const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
@@ -31,9 +37,6 @@ export default function QuickViewModal({ product, onClose }) {
     setZoomPos({ x, y });
   };
 
-  const wishlistItems = useSelector((state) => state.wishlist.items);
-  const { settings } = useSelector((state) => state.settings);
-  const { isAuthenticated } = useSelector((state) => state.auth);
   const productId = product._id || product.id;
   const isWishlisted = wishlistItems.some((item) => (item._id || item.id) === productId);
 
@@ -47,13 +50,22 @@ export default function QuickViewModal({ product, onClose }) {
   };
 
   const handleAddToCart = () => {
-    dispatch(addToCart({ product, quantity, color: selectedColor, size: selectedSize }));
-    toast.success(`Added ${quantity}x to Cart: ${product.name}`, { position: "bottom-right", autoClose: 2000 });
-    onClose();
+    dispatch(addToCart({ product, quantity, color: selectedColor, size: selectedSize }))
+      .unwrap()
+      .then(() => {
+        toast.success(`Added ${quantity}x to Cart: ${product.name}`, { position: "bottom-right", autoClose: 2000 });
+        onClose();
+      })
+      .catch((message) => toast.error(message || "Could not add this item to your cart.", { position: "bottom-right" }));
   };
 
-  const handleBuyNow = () => {
-    dispatch(addToCart({ product, quantity, color: selectedColor, size: selectedSize }));
+  const handleBuyNow = async () => {
+    try {
+      await dispatch(addToCart({ product, quantity, color: selectedColor, size: selectedSize })).unwrap();
+    } catch (message) {
+      toast.error(message || "Could not add this item to your cart.", { position: "bottom-right" });
+      return;
+    }
     onClose();
     if (!isAuthenticated) {
       toast.warning("Please Login or Sign Up to purchase items!");
@@ -74,12 +86,12 @@ export default function QuickViewModal({ product, onClose }) {
   const handleDecrement = () => setQuantity(prev => (prev > 1 ? prev - 1 : 1));
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/75 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 md:p-8 lg:p-12 animate-fade-in">
+    <div className="scroll-lock fixed inset-0 z-[100] overflow-y-auto overscroll-contain bg-black/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 md:p-8 lg:p-12 animate-fade-in">
       {/* Backdrop click closer */}
       <div className="absolute inset-0 cursor-default" onClick={onClose}></div>
 
       {/* Modal Card */}
-      <div className="relative w-[92%] sm:w-full max-w-3xl bg-white dark:bg-[#0c0a06] border border-gold-300/40 rounded-none shadow-2xl overflow-hidden transform animate-scale-up z-10 flex flex-col md:flex-row max-h-[85vh] md:max-h-[80vh] overflow-y-auto md:overflow-hidden mx-auto">
+      <div className="relative w-full max-w-3xl bg-white dark:bg-[#0c0a06] border border-gold-300/40 rounded-none shadow-2xl overflow-hidden transform animate-scale-up z-10 flex flex-col md:flex-row max-h-[calc(100dvh-1.5rem)] sm:max-h-[85dvh] md:max-h-[80dvh] overflow-y-auto overscroll-contain md:overflow-hidden mx-auto">
         {/* Luxury Gold Corner Frames */}
         <div className="absolute top-4 left-4 w-4 h-4 border-t border-l border-gold-400/50 pointer-events-none z-10"></div>
         <div className="absolute bottom-4 right-4 w-4 h-4 border-b border-r border-gold-400/50 pointer-events-none z-10"></div>
@@ -94,11 +106,11 @@ export default function QuickViewModal({ product, onClose }) {
         </button>
 
         {/* Left Side: Images & Slider preview */}
-        <div className="w-full md:w-1/2 p-6 flex flex-col justify-center bg-[#faf9f6] dark:bg-[#12100b] border-r border-gold-100/10">
+        <div className="w-full md:w-1/2 p-4 sm:p-6 flex flex-col justify-center bg-[#faf9f6] dark:bg-[#12100b] border-r border-gold-100/10">
           {/* Main Large Image */}
           <div 
             className="relative aspect-square w-full overflow-hidden border border-gold-100 dark:border-gold-900/40 bg-white dark:bg-[#0a0907] mb-4 cursor-zoom-in"
-            onMouseEnter={() => setIsZoomed(true)}
+            onMouseEnter={() => canHoverZoom && setIsZoomed(true)}
             onMouseLeave={() => setIsZoomed(false)}
             onMouseMove={handleMouseMove}
           >
@@ -130,10 +142,10 @@ export default function QuickViewModal({ product, onClose }) {
         </div>
 
         {/* Right Side: Product Customizations and Info */}
-        <div className="w-full md:w-1/2 p-6 sm:p-8 flex flex-col justify-between overflow-y-auto md:max-h-full dark:bg-[#0c0a06]">
+        <div className="w-full md:w-1/2 p-5 sm:p-8 flex flex-col justify-between md:overflow-y-auto md:max-h-full dark:bg-[#0c0a06]">
           <div>
             {/* SKU and Category */}
-            <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-widest text-gold-600 mb-2">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[11px] font-bold uppercase tracking-widest text-gold-600 mb-2 md:pr-10">
               <span>{typeof product.category === 'object' ? product.category?.name : product.category}</span>
               <span>SKU: {product.sku}</span>
             </div>
@@ -159,7 +171,7 @@ export default function QuickViewModal({ product, onClose }) {
             </div>
 
             {/* Pricing Section */}
-            <div className="flex items-baseline space-x-3 mb-6 bg-gold-50/40 dark:bg-gold-950/20 p-3 border border-gold-200/30 dark:border-gold-900/30 justify-start">
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-6 bg-gold-50/40 dark:bg-gold-950/20 p-3 border border-gold-200/30 dark:border-gold-900/30 justify-start">
               <span className="font-sans text-2xl font-bold text-primary dark:text-white">
                 ₹{product.price.toLocaleString('en-IN')}
               </span>
@@ -186,7 +198,7 @@ export default function QuickViewModal({ product, onClose }) {
                 <span className="block text-xs font-bold uppercase tracking-wider text-primary dark:text-white mb-2">
                   Select Color: <span className="text-gold-600 font-semibold">{selectedColor}</span>
                 </span>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {product.colors.map((color) => (
                     <button
                       key={color}
@@ -210,7 +222,7 @@ export default function QuickViewModal({ product, onClose }) {
                 <span className="block text-xs font-bold uppercase tracking-wider text-primary dark:text-white mb-2">
                   Select Size: <span className="text-gold-600 font-semibold">{selectedSize}</span>
                 </span>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {product.sizes.map((size) => (
                     <button
                       key={size}
@@ -231,12 +243,12 @@ export default function QuickViewModal({ product, onClose }) {
 
           <div>
             {/* Quantity and Cart Actions */}
-            <div className="flex items-center space-x-4 mb-4 text-left">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-4 text-left">
               <span className="text-xs font-bold uppercase tracking-wider text-primary dark:text-white">Quantity:</span>
               <div className="flex items-center border border-gold-300 dark:border-gold-900/60 bg-white dark:bg-[#100d07]">
                 <button
                   onClick={handleDecrement}
-                  className="px-3 py-2 text-secondary hover:text-gold-600 transition-colors cursor-pointer"
+                  className="px-3 py-2.5 text-secondary hover:text-gold-600 transition-colors cursor-pointer"
                   aria-label="Decrease quantity"
                 >
                   <FiMinus size={14} />
@@ -246,7 +258,7 @@ export default function QuickViewModal({ product, onClose }) {
                 </span>
                 <button
                   onClick={handleIncrement}
-                  className="px-3 py-2 text-secondary hover:text-gold-600 transition-colors cursor-pointer"
+                  className="px-3 py-2.5 text-secondary hover:text-gold-600 transition-colors cursor-pointer"
                   aria-label="Increase quantity"
                 >
                   <FiPlus size={14} />

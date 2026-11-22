@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { 
   fetchDashboardAnalytics, 
@@ -36,7 +36,7 @@ const COLORS = ['#F59E0B', '#6366F1', '#3B82F6', '#0EA5E9', '#10B981', '#EF4444'
 
 export default function AdminDashboard() {
   const dispatch = useDispatch();
-  const { analytics, monthlySales, dailyRevenue, orders, loading } = useSelector((state) => state.admin);
+  const { analytics, monthlySales, dailyRevenue, orders } = useSelector((state) => state.admin);
   const [mounted, setMounted] = useState(false);
   const [revenueTab, setRevenueTab] = useState('daily'); // 'daily' | 'monthly'
 
@@ -138,17 +138,17 @@ export default function AdminDashboard() {
       </div>
 
       {/* 2. Top Metric Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+      <div className="grid grid-cols-1 min-[400px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-3.5">
         {cards.map((card, idx) => {
           const Icon = card.icon;
           return (
-            <div key={idx} className="bg-white border border-gold-200/50 p-3.5 shadow-xs flex items-center justify-between rounded-xs hover:border-gold-300 transition-colors">
-              <div className="truncate mr-2">
+            <div key={idx} className="bg-white border border-gold-200/50 p-3.5 shadow-xs flex items-center justify-between gap-2 rounded-xs hover:border-gold-300 transition-colors">
+              <div className="min-w-0 flex-1">
                 <p className="text-[10px] font-bold text-secondary/60 uppercase tracking-wider mb-0.5 font-sans truncate">{card.title}</p>
-                <h3 className="text-xl font-bold text-primary font-serif tracking-tight">{card.value}</h3>
+                <h3 className="text-lg sm:text-xl font-bold text-primary font-serif tracking-tight leading-tight [overflow-wrap:anywhere]">{card.value}</h3>
                 <span className="text-[9px] font-semibold text-emerald-700 block truncate mt-0.5 font-sans">{card.change}</span>
               </div>
-              <div className={`p-2.5 shrink-0 rounded-xs ${card.color}`}>
+              <div className={`p-2 sm:p-2.5 shrink-0 rounded-xs ${card.color}`}>
                 <Icon size={18} />
               </div>
             </div>
@@ -160,7 +160,7 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         
         {/* Left: Revenue Analytics with Seamless Daily / Monthly View Toggle */}
-        <div className="bg-white border border-gold-200/50 p-5 shadow-xs lg:col-span-2 flex flex-col justify-between">
+        <div className="bg-white border border-gold-200/50 p-4 sm:p-5 shadow-xs lg:col-span-2 min-w-0 flex flex-col justify-between">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-3 border-b border-gold-100/60 mb-4 gap-2">
             <div>
               <h3 className="font-serif text-sm font-bold text-primary tracking-wide">Revenue Analytics</h3>
@@ -168,12 +168,12 @@ export default function AdminDashboard() {
                 {revenueTab === 'daily' ? 'Last 7 Active Sales Days' : 'Fiscal Monthly Sales Comparison'}
               </p>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <div className="bg-[#FAF8F2] border border-gold-250 p-0.5 rounded-xs flex">
                 <button
                   type="button"
                   onClick={() => setRevenueTab('daily')}
-                  className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer rounded-xs ${
+                  className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-colors cursor-pointer rounded-xs ${
                     revenueTab === 'daily' ? 'bg-gold-600 text-white shadow-xs' : 'text-secondary/70 hover:text-primary'
                   }`}
                 >
@@ -182,7 +182,7 @@ export default function AdminDashboard() {
                 <button
                   type="button"
                   onClick={() => setRevenueTab('monthly')}
-                  className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer rounded-xs ${
+                  className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-colors cursor-pointer rounded-xs ${
                     revenueTab === 'monthly' ? 'bg-gold-600 text-white shadow-xs' : 'text-secondary/70 hover:text-primary'
                   }`}
                 >
@@ -195,7 +195,7 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="h-64 w-full font-sans text-xs">
+          <div className="h-56 sm:h-64 w-full min-w-0 font-sans text-xs">
             {mounted && revenueTab === 'daily' && (
               chartDataRevenue.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%" minWidth={0}>
@@ -253,7 +253,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Right: Order Operations Donut Chart & Pipeline Allocation */}
-        <div className="bg-white border border-gold-200/50 p-5 shadow-xs flex flex-col justify-between">
+        <div className="bg-white border border-gold-200/50 p-4 sm:p-5 shadow-xs min-w-0 flex flex-col justify-between">
           <div className="pb-3 border-b border-gold-100/60 mb-3 flex items-center justify-between">
             <div>
               <h3 className="font-serif text-sm font-bold text-primary tracking-wide">Order Operations</h3>
@@ -314,8 +314,8 @@ export default function AdminDashboard() {
       {/* 4. Critical Inventory Shortages (Compact Alert Banner) */}
       {analytics?.lowStockAlerts && analytics.lowStockAlerts.length > 0 && (
         <div className="bg-white border border-amber-200/80 p-4 shadow-xs">
-          <div className="flex items-center justify-between mb-2.5">
-            <div className="flex items-center space-x-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+            <div className="flex items-center gap-2 flex-wrap">
               <FiAlertTriangle className="text-amber-600 animate-pulse" size={15} />
               <h4 className="font-serif text-xs font-bold text-primary uppercase tracking-wider">
                 Critical Inventory Limits (Stock Below 5 Units)
@@ -328,7 +328,7 @@ export default function AdminDashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
             {analytics.lowStockAlerts.slice(0, 4).map((product) => (
               <div key={product._id} className="flex items-center justify-between p-2.5 bg-[#FAF8F2] border border-gold-200/60 rounded-xs text-xs">
-                <div className="truncate mr-2">
+                <div className="min-w-0 flex-1">
                   <p className="font-semibold text-primary truncate text-[11px]">{product.name}</p>
                   <p className="text-[9px] font-mono text-secondary/60">SKU: {product.sku}</p>
                 </div>
@@ -342,8 +342,8 @@ export default function AdminDashboard() {
       )}
 
       {/* 5. Recent Orders */}
-      <div className="bg-white border border-gold-200/40 p-6 shadow-sm">
-        <div className="flex justify-between items-center mb-6">
+      <div className="bg-white border border-gold-200/40 p-4 sm:p-6 shadow-sm">
+        <div className="flex flex-wrap justify-between items-center gap-2 mb-4 sm:mb-6">
           <div>
             <h3 className="font-serif text-base font-bold text-primary tracking-wide">Recent Placed Orders</h3>
             <p className="text-[10px] text-secondary/50 uppercase tracking-wider font-semibold">Latest Pipeline Requests</p>
@@ -354,7 +354,7 @@ export default function AdminDashboard() {
         </div>
         <div className="overflow-x-auto">
           {orders && orders.length > 0 ? (
-            <table className="w-full text-left text-xs font-sans border-collapse">
+            <table className="w-full min-w-[640px] text-left text-xs font-sans border-collapse [&_th]:whitespace-nowrap [&_th]:pr-4 [&_td]:pr-4">
               <thead>
                 <tr className="border-b border-gold-100 text-secondary/50 uppercase font-semibold text-[10px] tracking-wider">
                   <th className="pb-3">Order ID</th>

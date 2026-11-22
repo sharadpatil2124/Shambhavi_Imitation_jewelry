@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   FiSearch, 
   FiTrash2, 
@@ -92,17 +92,17 @@ export default function AdminEnquiries() {
   }, [search]);
 
   return (
-    <div className="space-y-8 animate-fade-in text-left">
+    <div className="space-y-6 sm:space-y-8 animate-fade-in text-left">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="font-serif text-2xl font-bold tracking-wide text-primary m-0">Customer Enquiries</h1>
+          <h1 className="font-serif text-xl sm:text-2xl font-bold tracking-wide text-primary m-0">Customer Enquiries</h1>
           <p className="text-xs text-secondary/60 font-sans mt-1">Review, inspect, or manage messages and design custom requests sent through the client concierge desk.</p>
         </div>
       </div>
 
       {/* Control Panel */}
-      <div className="bg-white border border-gold-200/50 p-4 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+      <div className="bg-white border border-gold-200/50 p-4 shadow-sm flex flex-col md:flex-row gap-3 md:gap-4 items-stretch md:items-center justify-between">
         {/* Search */}
         <div className="relative w-full md:max-w-md">
           <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gold-600" size={16} />
@@ -115,7 +115,7 @@ export default function AdminEnquiries() {
           />
         </div>
         
-        <div className="text-[10px] font-bold text-gold-700 tracking-wider uppercase bg-gold-50 px-3 py-1.5 border border-gold-200/50">
+        <div className="self-start md:self-auto text-[10px] font-bold text-gold-700 tracking-wider uppercase bg-gold-50 px-3 py-1.5 border border-gold-200/50">
           Total Messages: {filteredEnquiries.length}
         </div>
       </div>
@@ -129,7 +129,7 @@ export default function AdminEnquiries() {
       ) : paginatedEnquiries.length > 0 ? (
         <div className="bg-white border border-gold-200/40 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs font-sans border-collapse">
+            <table className="w-full min-w-[760px] text-left text-xs font-sans border-collapse [&_th]:whitespace-nowrap">
               <thead>
                 <tr className="border-b border-gold-100 bg-[#FAF8F2] text-secondary/50 uppercase font-semibold text-[10px] tracking-wider select-none">
                   <th className="p-4">Sender Details</th>
@@ -214,20 +214,20 @@ export default function AdminEnquiries() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="px-6 py-4 bg-[#FAF8F2] border-t border-gold-100 flex items-center justify-between select-none">
+            <div className="px-4 sm:px-6 py-4 bg-[#FAF8F2] border-t border-gold-100 flex items-center justify-between gap-3 select-none">
               <button
                 disabled={currentPage === 1}
                 onClick={() => handlePageChange(currentPage - 1)}
-                className="flex items-center text-xs font-semibold text-secondary/70 hover:text-primary disabled:opacity-40 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+                className="flex items-center shrink-0 py-2 text-xs font-semibold text-secondary/70 hover:text-primary disabled:opacity-40 transition-opacity cursor-pointer disabled:cursor-not-allowed"
               >
                 <FiChevronLeft className="mr-1.5" size={16} /> Previous
               </button>
-              <div className="flex space-x-1.5">
+              <div className="flex flex-wrap justify-center gap-1.5">
                 {[...Array(totalPages).keys()].map((p) => (
                   <button
                     key={p + 1}
                     onClick={() => handlePageChange(p + 1)}
-                    className={`w-7 h-7 text-xs font-bold border transition-colors ${
+                    className={`w-8 h-8 text-xs font-bold border transition-colors ${
                       currentPage === p + 1 
                         ? 'bg-primary text-white border-primary' 
                         : 'bg-white text-secondary hover:bg-gold-50 border-gold-200'
@@ -240,7 +240,7 @@ export default function AdminEnquiries() {
               <button
                 disabled={currentPage === totalPages}
                 onClick={() => handlePageChange(currentPage + 1)}
-                className="flex items-center text-xs font-semibold text-secondary/70 hover:text-primary disabled:opacity-40 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+                className="flex items-center shrink-0 py-2 text-xs font-semibold text-secondary/70 hover:text-primary disabled:opacity-40 transition-opacity cursor-pointer disabled:cursor-not-allowed"
               >
                 Next <FiChevronRight className="ml-1.5" size={16} />
               </button>
@@ -256,27 +256,27 @@ export default function AdminEnquiries() {
 
       {/* Detail Modal Dialog Popup */}
       {selectedEnquiry && (
-        <div className="fixed inset-0 bg-black/45 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in" onClick={() => setSelectedEnquiry(null)}>
+        <div className="scroll-lock fixed inset-0 bg-black/45 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto overscroll-contain animate-fade-in" onClick={() => setSelectedEnquiry(null)}>
           <div 
-            className="bg-white border border-gold-200 w-full max-w-lg shadow-2xl relative animate-scale-up text-left"
+            className="bg-white border border-gold-200 w-full max-w-lg max-h-[calc(100dvh-1.5rem)] sm:max-h-[90dvh] flex flex-col my-auto shadow-2xl relative animate-scale-up text-left"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="px-6 py-4 bg-[#FAF8F2] border-b border-gold-150 flex justify-between items-center">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 bg-[#FAF8F2] border-b border-gold-150 flex justify-between items-center gap-3 shrink-0">
               <div className="flex items-center space-x-2">
                 <FiMail className="text-gold-600" size={18} />
                 <span className="font-serif text-sm font-bold text-primary uppercase tracking-wider">Enquiry Details</span>
               </div>
               <button 
                 onClick={() => setSelectedEnquiry(null)}
-                className="text-secondary/50 hover:text-secondary hover:bg-gold-100/40 p-1.5 rounded-full transition-colors cursor-pointer"
+                className="text-secondary/50 hover:text-secondary hover:bg-gold-100/40 p-2 rounded-full transition-colors cursor-pointer" aria-label="Close"
               >
                 <FiX size={18} />
               </button>
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 space-y-5">
+            <div className="p-4 sm:p-6 space-y-5 flex-1 min-h-0 overflow-y-auto overscroll-contain">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <span className="text-[10px] font-bold text-secondary/50 uppercase tracking-wider block mb-0.5">Sender Name</span>
@@ -305,7 +305,7 @@ export default function AdminEnquiries() {
                     className="flex items-center text-gold-700 hover:text-gold-900 font-semibold text-xs transition-colors"
                   >
                     <FiMail className="mr-1.5 shrink-0" size={13} />
-                    {selectedEnquiry.email}
+                    <span className="break-all">{selectedEnquiry.email}</span>
                   </a>
                 </div>
                 <div>
@@ -326,8 +326,8 @@ export default function AdminEnquiries() {
 
               <div className="border-t border-gold-100 pt-4">
                 <span className="text-[10px] font-bold text-secondary/50 uppercase tracking-wider block mb-1">Subject Header</span>
-                <div className="bg-[#FAF8F2] border border-gold-200/40 p-2.5 font-semibold text-xs text-primary flex items-center">
-                  <FiFileText className="mr-2 text-gold-500" size={14} />
+                <div className="bg-[#FAF8F2] border border-gold-200/40 p-2.5 font-semibold text-xs text-primary flex items-start">
+                  <FiFileText className="mr-2 mt-0.5 shrink-0 text-gold-500" size={14} />
                   {selectedEnquiry.subject || <span className="font-normal italic text-secondary/40">No Subject Header Specified</span>}
                 </div>
               </div>
@@ -341,17 +341,17 @@ export default function AdminEnquiries() {
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-4 bg-[#FAF8F2] border-t border-gold-150 flex justify-end space-x-3">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 bg-[#FAF8F2] border-t border-gold-150 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3 shrink-0">
               <a 
                 href={`mailto:${selectedEnquiry.email}?subject=Reply to Enquiry: ${encodeURIComponent(selectedEnquiry.subject || '')}`}
-                className="bg-primary hover:bg-gold-600 text-white font-bold py-2 px-4 text-xs tracking-widest uppercase transition-colors flex items-center space-x-1.5"
+                className="bg-primary hover:bg-gold-600 text-white font-bold py-2.5 px-4 text-xs tracking-widest uppercase transition-colors flex items-center justify-center space-x-1.5"
               >
                 <FiMail size={12} />
                 <span>Write Response Email</span>
               </a>
               <button 
                 onClick={() => setSelectedEnquiry(null)}
-                className="bg-white border border-gold-200 text-secondary hover:bg-gold-50 font-semibold py-2 px-4 text-xs tracking-wider uppercase transition-colors cursor-pointer"
+                className="bg-white border border-gold-200 text-secondary hover:bg-gold-50 font-semibold py-2.5 px-4 text-xs tracking-wider uppercase transition-colors cursor-pointer"
               >
                 Close
               </button>

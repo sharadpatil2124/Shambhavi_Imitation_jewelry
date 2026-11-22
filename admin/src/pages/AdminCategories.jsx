@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import productService from '../services/productService';
 import adminService from '../services/adminService';
@@ -31,10 +31,6 @@ export default function AdminCategories() {
   });
   const [existingImage, setExistingImage] = useState("");
 
-  useEffect(() => {
-    loadCategories();
-  }, []);
-
   const loadCategories = async () => {
     setLoading(true);
     try {
@@ -48,6 +44,10 @@ export default function AdminCategories() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
@@ -130,7 +130,7 @@ export default function AdminCategories() {
   };
 
   const handleDeleteCategory = async (id) => {
-    if (window.confirm("Are you sure you want to delete this category? All designs linked to this category might lose their category group assignment.")) {
+    if (window.confirm("Are you sure you want to delete this category? Categories that still contain products can't be deleted; move those products first.")) {
       try {
         const response = await adminService.deleteCategory(id);
         if (response.success) {
@@ -149,23 +149,23 @@ export default function AdminCategories() {
   );
 
   return (
-    <div className="space-y-8 animate-fade-in text-left">
+    <div className="space-y-6 sm:space-y-8 animate-fade-in text-left">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="font-serif text-2xl font-bold tracking-wide text-primary m-0">Jewelry Categories</h1>
+          <h1 className="font-serif text-xl sm:text-2xl font-bold tracking-wide text-primary m-0">Jewelry Categories</h1>
           <p className="text-xs text-secondary/60 font-sans mt-1">Manage catalog collections, descriptions, and cover graphics.</p>
         </div>
         <button
           onClick={openAddModal}
-          className="bg-primary hover:bg-gold-600 text-white font-bold py-2.5 px-5 text-xs tracking-wider uppercase transition-colors flex items-center shrink-0 cursor-pointer"
+          className="self-start sm:self-auto bg-primary hover:bg-gold-600 text-white font-bold py-2.5 px-5 text-xs tracking-wider uppercase transition-colors flex items-center shrink-0 cursor-pointer"
         >
           <FiPlus className="mr-2" size={16} /> Add Category
         </button>
       </div>
 
       {/* Search panel */}
-      <div className="bg-white border border-gold-200/50 p-4 shadow-[0_2px_12px_rgba(240,235,220,0.08)] max-w-md">
+      <div className="bg-white border border-gold-200/50 p-4 shadow-[0_2px_12px_rgba(240,235,220,0.08)] w-full max-w-md">
         <div className="relative">
           <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gold-600" size={16} />
           <input
@@ -209,20 +209,20 @@ export default function AdminCategories() {
                   {category.description || 'No description comments added for this jewelry collection category.'}
                 </p>
                 
-                <div className="flex items-center justify-between border-t border-gold-50/80 pt-3">
-                  <span className="text-[10px] font-mono text-secondary/50 uppercase tracking-wider">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gold-50/80 pt-3">
+                  <span className="text-[10px] font-mono text-secondary/50 uppercase tracking-wider min-w-0 break-all">
                     Slug: {category.slug}
                   </span>
                   <div className="flex space-x-2 text-xs">
                     <button
                       onClick={() => openEditModal(category)}
-                      className="flex items-center text-gold-700 hover:text-primary transition-colors py-1 px-2.5 bg-[#FAF8F2] border border-gold-200/40 rounded-sm font-semibold cursor-pointer"
+                      className="flex items-center text-gold-700 hover:text-primary transition-colors py-1.5 px-2.5 bg-[#FAF8F2] border border-gold-200/40 rounded-sm font-semibold cursor-pointer"
                     >
                       <FiEdit className="mr-1.5" size={13} /> Edit
                     </button>
                     <button
                       onClick={() => handleDeleteCategory(category._id)}
-                      className="flex items-center text-red-650 hover:text-red-700 transition-colors py-1 px-2.5 bg-red-50/50 border border-red-200/30 rounded-sm font-semibold cursor-pointer"
+                      className="flex items-center text-red-650 hover:text-red-700 transition-colors py-1.5 px-2.5 bg-red-50/50 border border-red-200/30 rounded-sm font-semibold cursor-pointer"
                     >
                       <FiTrash2 className="mr-1.5" size={13} /> Delete
                     </button>
@@ -243,9 +243,9 @@ export default function AdminCategories() {
       {/* ADD CATEGORY MODAL */}
       {/* ========================================================================= */}
       {isAddOpen && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6 overflow-y-auto">
+        <div className="scroll-lock fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-6 overflow-y-auto overscroll-contain">
           <div className="bg-white border border-gold-200 shadow-2xl max-w-md w-full rounded-none animate-scale-up relative my-auto">
-            <div className="bg-[#FAF8F2] border-b border-gold-200/55 p-4 sm:px-5 flex justify-between items-center shrink-0">
+            <div className="bg-[#FAF8F2] border-b border-gold-200/55 p-4 sm:px-5 flex justify-between items-center gap-3 shrink-0">
               <h3 className="font-serif text-base font-bold text-primary tracking-wide">Create Jewelry Category</h3>
               <button 
                 type="button"
@@ -257,7 +257,7 @@ export default function AdminCategories() {
               </button>
             </div>
 
-            <form onSubmit={handleAddSubmit} className="p-6 space-y-4 font-sans text-xs">
+            <form onSubmit={handleAddSubmit} className="p-4 sm:p-6 space-y-4 font-sans text-xs">
               <div className="text-left">
                 <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1.5">Category Name *</label>
                 <input
@@ -297,8 +297,8 @@ export default function AdminCategories() {
                 </div>
 
                 {formData.image && (
-                  <div className="mt-3 p-1.5 border border-gold-200 flex items-center justify-between bg-[#FAF8F2]">
-                    <span className="truncate max-w-[200px] font-mono text-[10px] text-secondary/70">{formData.image.name}</span>
+                  <div className="mt-3 p-1.5 border border-gold-200 flex items-center justify-between gap-2 bg-[#FAF8F2]">
+                    <span className="truncate min-w-0 max-w-[200px] font-mono text-[10px] text-secondary/70">{formData.image.name}</span>
                     <button
                       type="button"
                       onClick={() => setFormData({ ...formData, image: null })}
@@ -310,18 +310,18 @@ export default function AdminCategories() {
                 )}
               </div>
 
-              <div className="pt-4 border-t border-gold-100 flex justify-end space-x-3">
+              <div className="pt-4 border-t border-gold-100 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3">
                 <button
                   type="button"
                   onClick={() => setIsAddOpen(false)}
-                  className="bg-transparent hover:bg-gold-50 border border-gold-300 text-gold-700 font-bold py-2 px-5 uppercase tracking-wider cursor-pointer"
+                  className="bg-transparent hover:bg-gold-50 border border-gold-300 text-gold-700 font-bold py-2.5 px-5 uppercase tracking-wider cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="bg-primary hover:bg-gold-600 text-white font-bold py-2 px-5 uppercase tracking-wider cursor-pointer"
+                  className="bg-primary hover:bg-gold-600 text-white font-bold py-2.5 px-5 uppercase tracking-wider cursor-pointer"
                 >
                   {loading ? "Creating..." : "Create Category"}
                 </button>
@@ -336,9 +336,9 @@ export default function AdminCategories() {
       {/* EDIT CATEGORY MODAL */}
       {/* ========================================================================= */}
       {isEditOpen && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6 overflow-y-auto">
+        <div className="scroll-lock fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-6 overflow-y-auto overscroll-contain">
           <div className="bg-white border border-gold-200 shadow-2xl max-w-md w-full rounded-none animate-scale-up relative my-auto">
-            <div className="bg-[#FAF8F2] border-b border-gold-200/55 p-4 sm:px-5 flex justify-between items-center shrink-0">
+            <div className="bg-[#FAF8F2] border-b border-gold-200/55 p-4 sm:px-5 flex justify-between items-center gap-3 shrink-0">
               <h3 className="font-serif text-base font-bold text-primary tracking-wide">Edit Category Details</h3>
               <button 
                 type="button"
@@ -350,7 +350,7 @@ export default function AdminCategories() {
               </button>
             </div>
 
-            <form onSubmit={handleEditSubmit} className="p-6 space-y-4 font-sans text-xs">
+            <form onSubmit={handleEditSubmit} className="p-4 sm:p-6 space-y-4 font-sans text-xs">
               <div className="text-left">
                 <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1.5">Category Name *</label>
                 <input
@@ -394,8 +394,8 @@ export default function AdminCategories() {
                 </div>
 
                 {formData.image && (
-                  <div className="mt-3 p-1.5 border border-gold-200 flex items-center justify-between bg-[#FAF8F2]">
-                    <span className="truncate max-w-[200px] font-mono text-[10px] text-secondary/70">{formData.image.name}</span>
+                  <div className="mt-3 p-1.5 border border-gold-200 flex items-center justify-between gap-2 bg-[#FAF8F2]">
+                    <span className="truncate min-w-0 max-w-[200px] font-mono text-[10px] text-secondary/70">{formData.image.name}</span>
                     <button
                       type="button"
                       onClick={() => setFormData({ ...formData, image: null })}
@@ -407,18 +407,18 @@ export default function AdminCategories() {
                 )}
               </div>
 
-              <div className="pt-4 border-t border-gold-100 flex justify-end space-x-3">
+              <div className="pt-4 border-t border-gold-100 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3">
                 <button
                   type="button"
                   onClick={() => setIsEditOpen(false)}
-                  className="bg-transparent hover:bg-gold-50 border border-gold-300 text-gold-700 font-bold py-2 px-5 uppercase tracking-wider cursor-pointer"
+                  className="bg-transparent hover:bg-gold-50 border border-gold-300 text-gold-700 font-bold py-2.5 px-5 uppercase tracking-wider cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="bg-primary hover:bg-gold-600 text-white font-bold py-2 px-5 uppercase tracking-wider cursor-pointer"
+                  className="bg-primary hover:bg-gold-600 text-white font-bold py-2.5 px-5 uppercase tracking-wider cursor-pointer"
                 >
                   {loading ? "Saving..." : "Save Changes"}
                 </button>

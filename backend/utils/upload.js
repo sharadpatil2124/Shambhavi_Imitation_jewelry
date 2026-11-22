@@ -41,13 +41,22 @@ export const upload = multer({
 });
 
 export const uploadToImageKit = async (filePath, folder = '/sambhavi-imitation') => {
-  try {
-    if (!process.env.IMAGEKIT_PUBLIC_KEY || !process.env.IMAGEKIT_PRIVATE_KEY) {
-      console.warn('⚠️  ImageKit keys missing. Falling back to local static URL paths.');
-      const absolutePath = filePath.replace(/\\/g, '/');
-      return `/${absolutePath}`;
-    }
+  const removeTempFile = () => {
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  };
 
+  if (!process.env.IMAGEKIT_PUBLIC_KEY || !process.env.IMAGEKIT_PRIVATE_KEY) {
+    // Local development only: serve from the uploads folder. In production that folder is wiped on
+    // every Render redeploy, so images saved there would break later.
+    if (process.env.NODE_ENV === 'production') {
+      removeTempFile();
+      throw new Error('Image upload is not configured on the server (ImageKit keys are missing). Please contact the site administrator.');
+    }
+    console.warn('⚠️  ImageKit keys missing. Falling back to local static URL paths (development only).');
+    return `/${filePath.replace(/\\/g, '/')}`;
+  }
+
+  try {
     const fileStream = fs.createReadStream(filePath);
     const fileName = path.basename(filePath);
 
@@ -58,15 +67,14 @@ export const uploadToImageKit = async (filePath, folder = '/sambhavi-imitation')
       tags: ['sambhavi-imitation']
     });
 
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-    }
+    removeTempFile();
 
     return result.url;
   } catch (error) {
+    // Report the failure instead of silently saving to temporary disk.
     console.error(`❌ ImageKit Upload Error: ${error.message}`);
-    const absolutePath = filePath.replace(/\\/g, '/');
-    return `/${absolutePath}`;
+    removeTempFile();
+    throw new Error('Image upload failed. Please try again in a moment.');
   }
 };
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { 
@@ -15,7 +15,6 @@ import {
   FiEye, 
   FiPrinter, 
   FiTruck, 
-  FiCreditCard, 
   FiX, 
   FiRotateCcw, 
   FiCheckCircle,
@@ -27,7 +26,7 @@ import { toast } from 'react-toastify';
 
 export default function AdminOrders() {
   const dispatch = useDispatch();
-  const { orders, ordersPage, ordersPages, totalOrdersCount, loading } = useSelector((state) => state.admin);
+  const { orders, ordersPage, ordersPages, loading } = useSelector((state) => state.admin);
 
   // Filter state
   const [search, setSearch] = useState("");
@@ -50,10 +49,6 @@ export default function AdminOrders() {
   const [courierNameForm, setCourierNameForm] = useState("Blue Dart");
   const [actionLoading, setActionLoading] = useState(false);
 
-  useEffect(() => {
-    loadOrders();
-  }, [page, statusFilter]);
-
   const loadOrders = () => {
     const params = {
       page,
@@ -63,6 +58,13 @@ export default function AdminOrders() {
     };
     dispatch(fetchOrdersThunk(params));
   };
+
+  // Reload when the page or status filter changes. The search text is deliberately left out:
+  // searching runs on submit (handleSearchSubmit), not on every keystroke.
+  useEffect(() => {
+    loadOrders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, statusFilter]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -202,7 +204,6 @@ export default function AdminOrders() {
     if (!selectedOrder) return;
     
     const printContent = document.getElementById("invoice-print-area").innerHTML;
-    const originalContent = document.body.innerHTML;
     
     const printWindow = window.open('', '_blank', 'height=800,width=800');
     printWindow.document.write('<html><head><title>Invoice - Shambhavi Imitation</title>');
@@ -246,15 +247,15 @@ export default function AdminOrders() {
   };
 
   return (
-    <div className="space-y-8 animate-fade-in text-left">
+    <div className="space-y-6 sm:space-y-8 animate-fade-in text-left">
       {/* Header */}
       <div>
-        <h1 className="font-serif text-2xl font-bold tracking-wide text-primary m-0">Order Operations</h1>
+        <h1 className="font-serif text-xl sm:text-2xl font-bold tracking-wide text-primary m-0">Order Operations</h1>
         <p className="text-xs text-secondary/60 font-sans mt-1">Review active pipeline requests, print invoices, and update delivery tracking logs.</p>
       </div>
 
       {/* Filter and Search Panel */}
-      <div className="bg-white border border-gold-200/50 p-5 shadow-sm">
+      <div className="bg-white border border-gold-200/50 p-4 sm:p-5 shadow-sm">
         <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Search bar */}
           <div className="relative md:col-span-2">
@@ -317,7 +318,7 @@ export default function AdminOrders() {
           </div>
         ) : orders && orders.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs font-sans border-collapse">
+            <table className="w-full min-w-[960px] text-left text-xs font-sans border-collapse [&_th]:whitespace-nowrap">
               <thead>
                 <tr className="bg-[#FAF8F2] border-b border-gold-150 text-secondary/60 uppercase font-semibold text-[10px] tracking-wider">
                   <th className="p-4">Order ID</th>
@@ -432,7 +433,7 @@ export default function AdminOrders() {
 
         {/* Pagination bar */}
         {ordersPages > 1 && (
-          <div className="bg-[#FAF8F2] border-t border-gold-200/50 px-6 py-4 flex items-center justify-between font-sans text-xs">
+          <div className="bg-[#FAF8F2] border-t border-gold-200/50 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3 font-sans text-xs">
             <span className="text-secondary/60 font-semibold">
               Showing page <strong className="text-primary">{ordersPage}</strong> of <strong className="text-primary">{ordersPages}</strong>
             </span>
@@ -440,14 +441,14 @@ export default function AdminOrders() {
               <button
                 disabled={ordersPage === 1}
                 onClick={() => setPage(ordersPage - 1)}
-                className="bg-white border border-gold-250 p-2 text-gold-600 disabled:opacity-40 hover:bg-gold-50 cursor-pointer rounded-sm"
+                className="bg-white border border-gold-250 p-2.5 text-gold-600 disabled:opacity-40 hover:bg-gold-50 cursor-pointer rounded-sm"
               >
                 <FiChevronLeft size={16} />
               </button>
               <button
                 disabled={ordersPage === ordersPages}
                 onClick={() => setPage(ordersPage + 1)}
-                className="bg-white border border-gold-250 p-2 text-gold-600 disabled:opacity-40 hover:bg-gold-50 cursor-pointer rounded-sm"
+                className="bg-white border border-gold-250 p-2.5 text-gold-600 disabled:opacity-40 hover:bg-gold-50 cursor-pointer rounded-sm"
               >
                 <FiChevronRight size={16} />
               </button>
@@ -460,16 +461,16 @@ export default function AdminOrders() {
       {/* ORDER DETAILS & MODERATION DRAWER / MODAL */}
       {/* ========================================================================= */}
       {isDetailOpen && selectedOrder && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6 overflow-y-auto">
-          <div className="bg-white border border-gold-200 shadow-2xl max-w-4xl w-full max-h-[88vh] flex flex-col rounded-none animate-scale-up relative my-auto">
+        <div className="scroll-lock fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-6 overflow-y-auto overscroll-contain">
+          <div className="bg-white border border-gold-200 shadow-2xl max-w-4xl w-full max-h-[calc(100dvh-1.5rem)] sm:max-h-[88dvh] flex flex-col rounded-none animate-scale-up relative my-auto">
             
             {/* Header */}
-            <div className="bg-[#FAF8F2] border-b border-gold-200/55 p-4 sm:px-6 flex justify-between items-center shrink-0">
+            <div className="bg-[#FAF8F2] border-b border-gold-200/55 p-4 sm:px-6 flex justify-between items-center gap-3 shrink-0">
               <div>
                 <h3 className="font-serif text-lg font-bold text-primary tracking-wide">
                   Order Management Panel
                 </h3>
-                <p className="text-[10px] font-mono text-secondary/60 mt-0.5">Database ID: {selectedOrder._id}</p>
+                <p className="text-[10px] font-mono text-secondary/60 mt-0.5 break-all">Database ID: {selectedOrder._id}</p>
               </div>
               <button 
                 type="button"
@@ -481,20 +482,23 @@ export default function AdminOrders() {
               </button>
             </div>
 
-            <div className="p-6 overflow-y-auto flex-1 text-left font-sans text-xs">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="p-4 sm:p-6 overflow-y-auto overscroll-contain flex-1 text-left font-sans text-xs">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-8">
               {/* Left Column: Info & Action Controllers */}
-              <div className="lg:col-span-2 space-y-6">
+              <div className="lg:col-span-2 min-w-0 space-y-5 sm:space-y-6">
                 
                 {/* 1. Pipeline Timeline Status */}
-                <div className="bg-white border border-gold-150 p-5">
+                <div className="bg-white border border-gold-150 p-4 sm:p-5">
                   <h4 className="font-serif text-xs font-bold text-primary uppercase tracking-wider mb-3">Order Status Steps</h4>
-                  <div className="grid grid-cols-5 gap-2 text-center text-[10px] font-bold text-secondary/40 font-mono">
+                  {/* On narrow phones the five steps scroll sideways instead of crushing their labels */}
+                  <div className="overflow-x-auto overscroll-x-contain -mx-1 px-1">
+                  <div className="grid grid-cols-5 gap-2 min-w-[27rem] whitespace-nowrap text-center text-[10px] font-bold text-secondary/40 font-mono">
                     <div className={`p-1.5 border-b-2 ${selectedOrder.orderStatus !== 'Cancelled' ? 'border-emerald-500 text-emerald-600 font-sans' : 'border-gold-100'}`}>Pending</div>
                     <div className={`p-1.5 border-b-2 ${['Confirmed', 'Processing', 'Shipped', 'Delivered'].includes(selectedOrder.orderStatus) ? 'border-emerald-500 text-emerald-600 font-sans' : 'border-gold-100'}`}>Confirmed</div>
                     <div className={`p-1.5 border-b-2 ${['Processing', 'Shipped', 'Delivered'].includes(selectedOrder.orderStatus) ? 'border-emerald-500 text-emerald-600 font-sans' : 'border-gold-100'}`}>Processing</div>
                     <div className={`p-1.5 border-b-2 ${['Shipped', 'Delivered'].includes(selectedOrder.orderStatus) ? 'border-emerald-500 text-emerald-600 font-sans' : 'border-gold-100'}`}>Shipped</div>
                     <div className={`p-1.5 border-b-2 ${selectedOrder.orderStatus === 'Delivered' ? 'border-emerald-500 text-emerald-600 font-sans' : 'border-gold-100'}`}>Delivered</div>
+                  </div>
                   </div>
                   {selectedOrder.orderStatus === 'Cancelled' && (
                     <div className="bg-red-50 border border-red-100 p-2 text-center text-red-600 font-bold tracking-wide uppercase mt-3">
@@ -508,7 +512,7 @@ export default function AdminOrders() {
                           <FiRotateCcw className="text-purple-600" />
                           <span>Order Refunded (₹{(selectedOrder.refundAmount || selectedOrder.totalPrice).toLocaleString()})</span>
                         </div>
-                        <p className="text-[10px] text-purple-600 font-normal lowercase tracking-normal mt-0.5">
+                        <p className="text-[10px] text-purple-600 font-normal lowercase tracking-normal mt-0.5 break-all">
                           Ref: {selectedOrder.refundTransactionId || 'N/A'} • Reason: {selectedOrder.refundReason || 'Admin processed refund'}
                         </p>
                       </div>
@@ -525,10 +529,10 @@ export default function AdminOrders() {
                 </div>
 
                 {/* 2. Order Items */}
-                <div className="bg-white border border-gold-150 p-5">
+                <div className="bg-white border border-gold-150 p-4 sm:p-5">
                   <h4 className="font-serif text-xs font-bold text-primary uppercase tracking-wider mb-3">Purchase Breakdown</h4>
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs font-sans border-collapse">
+                    <table className="w-full min-w-[560px] text-left text-xs font-sans border-collapse [&_th]:whitespace-nowrap">
                       <thead>
                         <tr className="border-b border-gold-100 text-secondary/50 font-semibold text-[10px] uppercase">
                           <th className="pb-2 w-16">Image</th>
@@ -583,7 +587,7 @@ export default function AdminOrders() {
                 </div>
 
                 {/* 3. Shipping address & client profile */}
-                <div className="bg-white border border-gold-150 p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-white border border-gold-150 p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <h4 className="font-serif text-xs font-bold text-primary uppercase tracking-wider mb-2">Shipping Destination</h4>
                     <p className="font-semibold text-primary">{selectedOrder.shippingAddress?.name}</p>
@@ -596,20 +600,20 @@ export default function AdminOrders() {
                   <div>
                     <h4 className="font-serif text-xs font-bold text-primary uppercase tracking-wider mb-2">Customer Profile</h4>
                     <p className="font-semibold text-primary">{selectedOrder.user?.name || 'Guest User'}</p>
-                    <p className="text-secondary/70 font-sans mt-0.5">Email: {selectedOrder.user?.email || 'N/A'}</p>
+                    <p className="text-secondary/70 font-sans mt-0.5 break-all">Email: {selectedOrder.user?.email || 'N/A'}</p>
                     <p className="text-secondary/70 font-sans mt-0.5">Phone: {selectedOrder.shippingAddress?.phone || selectedOrder.user?.phone || 'N/A'}</p>
-                    <p className="text-secondary/50 text-[10px] mt-2">Database user ID: {selectedOrder.user?._id || 'N/A'}</p>
+                    <p className="text-secondary/50 text-[10px] mt-2 break-all">Database user ID: {selectedOrder.user?._id || 'N/A'}</p>
                   </div>
                 </div>
 
               </div>
 
               {/* Right Column: Modifier forms & Invoicing */}
-              <div className="space-y-6">
+              <div className="space-y-5 sm:space-y-6 min-w-0">
 
                 {/* Cancellation Request Alert Box */}
                 {selectedOrder.orderStatus === 'Cancellation Requested' && (
-                  <div className="bg-rose-50 border border-rose-250 p-5 shadow-sm text-left">
+                  <div className="bg-rose-50 border border-rose-250 p-4 sm:p-5 shadow-sm text-left">
                     <h4 className="font-serif text-xs font-bold text-rose-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                       ⚠️ Cancellation Requested
                     </h4>
@@ -678,7 +682,7 @@ export default function AdminOrders() {
                 )}
                 
                 {/* 1. Status modifier control */}
-                <div className="bg-white border border-gold-200/60 p-5 shadow-sm">
+                <div className="bg-white border border-gold-200/60 p-4 sm:p-5 shadow-sm">
                   <h4 className="font-serif text-xs font-bold text-primary uppercase tracking-wider mb-4 border-b border-gold-100 pb-2">Operational Controls</h4>
                   
                   <form onSubmit={handleStatusChange} className="space-y-4">
@@ -687,7 +691,7 @@ export default function AdminOrders() {
                       <select
                         value={statusForm}
                         onChange={(e) => setStatusForm(e.target.value)}
-                        className="w-full bg-[#faf9f6] border border-gold-300 p-2 text-xs font-sans outline-none focus:border-gold-500"
+                        className="w-full bg-[#faf9f6] border border-gold-300 p-2.5 text-xs font-sans outline-none focus:border-gold-500"
                       >
                         <option value="Pending">Pending</option>
                         <option value="Confirmed">Confirmed</option>
@@ -707,7 +711,7 @@ export default function AdminOrders() {
                           <select
                             value={courierNameForm}
                             onChange={(e) => setCourierNameForm(e.target.value)}
-                            className="w-full bg-white border border-gold-300 p-2 text-xs font-sans outline-none focus:border-gold-500"
+                            className="w-full bg-white border border-gold-300 p-2.5 text-xs font-sans outline-none focus:border-gold-500"
                           >
                             <option value="Blue Dart">Blue Dart</option>
                             <option value="Delhivery">Delhivery</option>
@@ -737,7 +741,7 @@ export default function AdminOrders() {
                     <button
                       type="submit"
                       disabled={actionLoading}
-                      className="w-full bg-gold-600 hover:bg-primary text-white font-bold py-2 text-xs uppercase tracking-wider cursor-pointer"
+                      className="w-full bg-gold-600 hover:bg-primary text-white font-bold py-2.5 text-xs uppercase tracking-wider cursor-pointer"
                     >
                       {actionLoading ? "Updating..." : "Commit status update"}
                     </button>
@@ -749,7 +753,7 @@ export default function AdminOrders() {
                         type="button"
                         onClick={handleRefund}
                         disabled={actionLoading}
-                        className="w-full flex items-center justify-center bg-purple-50 text-purple-700 border border-purple-200 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-purple-100 transition-colors cursor-pointer rounded-xs"
+                        className="w-full flex items-center justify-center text-center bg-purple-50 text-purple-700 border border-purple-200 py-2.5 px-3 text-xs font-bold uppercase tracking-wider hover:bg-purple-100 transition-colors cursor-pointer rounded-xs"
                       >
                         <FiRotateCcw className="mr-2" size={14} /> Process Refund (₹{selectedOrder.totalPrice.toLocaleString()})
                       </button>
@@ -775,7 +779,7 @@ export default function AdminOrders() {
                 </div>
 
                 {/* 2. Mini invoice layout with printing */}
-                <div className="bg-[#FAF8F2] border border-gold-200 p-5 text-secondary">
+                <div className="bg-[#FAF8F2] border border-gold-200 p-4 sm:p-5 text-secondary">
                   <h4 className="font-serif text-xs font-bold text-primary uppercase tracking-wider mb-3">Invoice Details</h4>
                   
                   <div className="space-y-2 pb-3 border-b border-gold-200/55 font-mono text-[10px]">
@@ -915,7 +919,7 @@ export default function AdminOrders() {
                   </table>
                   
                   <div className="footer-note">
-                    Thank you for choosing Shambhavi Imitation. For returns or support, please contact help@shambhaviimitation.com.
+                    Thank you for choosing Shambhavi Imitation. For returns or support, please contact kadamshambhavi1@gmail.com.
                   </div>
                 </div>
               )}
@@ -923,7 +927,7 @@ export default function AdminOrders() {
             </div>
 
             {/* Footer with Clear Close Action */}
-            <div className="bg-[#FAF8F2] border-t border-gold-200/55 px-6 py-3.5 flex justify-end items-center shrink-0">
+            <div className="bg-[#FAF8F2] border-t border-gold-200/55 px-4 sm:px-6 py-3 sm:py-3.5 flex justify-end items-center shrink-0">
               <button
                 type="button"
                 onClick={() => setIsDetailOpen(false)}
@@ -942,13 +946,13 @@ export default function AdminOrders() {
       {/* REFUND CONFIRMATION MODAL */}
       {/* ========================================================================= */}
       {isRefundModalOpen && orderToRefund && createPortal(
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white border border-gold-300 shadow-2xl max-w-lg w-full p-6 animate-scale-up text-left relative my-auto">
+        <div className="scroll-lock fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto overscroll-contain">
+          <div className="bg-white border border-gold-300 shadow-2xl max-w-lg w-full p-4 sm:p-6 animate-scale-up text-left relative my-auto">
             
             {/* Modal Header */}
-            <div className="flex justify-between items-center border-b border-gold-200 pb-3 mb-4">
-              <div className="flex items-center space-x-2.5">
-                <div className="p-2 bg-purple-100 text-purple-700 rounded-full">
+            <div className="flex justify-between items-start gap-3 border-b border-gold-200 pb-3 mb-4">
+              <div className="flex items-center space-x-2.5 min-w-0">
+                <div className="p-2 shrink-0 bg-purple-100 text-purple-700 rounded-full">
                   <FiRotateCcw size={18} />
                 </div>
                 <div>
@@ -963,7 +967,7 @@ export default function AdminOrders() {
               <button
                 type="button"
                 onClick={() => { setIsRefundModalOpen(false); setOrderToRefund(null); }}
-                className="text-secondary/60 hover:text-red-600 p-1 rounded-full cursor-pointer transition-colors"
+                className="text-secondary/60 hover:text-red-600 p-2 -mr-2 -mt-1 shrink-0 rounded-full cursor-pointer transition-colors"
                 title="Cancel"
               >
                 <FiX size={20} />
@@ -975,15 +979,15 @@ export default function AdminOrders() {
               
               {/* Order summary box */}
               <div className="bg-[#FAF8F2] border border-gold-200/70 p-3.5 space-y-2">
-                <div className="flex justify-between text-secondary/70">
+                <div className="flex justify-between gap-3 text-secondary/70">
                   <span>Current Status:</span>
                   <span className="font-bold text-primary uppercase">{orderToRefund.orderStatus}</span>
                 </div>
-                <div className="flex justify-between text-secondary/70">
+                <div className="flex justify-between gap-3 text-secondary/70">
                   <span>Payment Method:</span>
-                  <span className="font-semibold text-primary">{orderToRefund.paymentMethod || 'Razorpay / Prepaid'} ({orderToRefund.isPaid ? 'PAID' : 'PENDING'})</span>
+                  <span className="font-semibold text-primary text-right">{orderToRefund.paymentMethod || 'Razorpay / Prepaid'} ({orderToRefund.isPaid ? 'PAID' : 'PENDING'})</span>
                 </div>
-                <div className="flex justify-between text-secondary/70">
+                <div className="flex justify-between gap-3 text-secondary/70">
                   <span>Total Order Value:</span>
                   <span className="font-bold text-primary font-mono text-sm">₹{orderToRefund.totalPrice.toLocaleString()}</span>
                 </div>
@@ -1034,7 +1038,7 @@ export default function AdminOrders() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex space-x-3 pt-2">
+              <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => { setIsRefundModalOpen(false); setOrderToRefund(null); }}

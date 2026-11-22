@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { FiMail, FiLock, FiEye, FiEyeOff, FiKey, FiArrowLeft } from 'react-icons/fi';
 import { toast } from 'react-toastify';
@@ -97,12 +97,12 @@ export default function AdminResetPassword() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFCF7] flex items-center justify-center p-6 relative overflow-hidden select-none">
+    <div className="min-h-dvh bg-[#FDFCF7] flex items-center justify-center p-4 sm:p-6 relative overflow-hidden select-none">
       {/* Decorative luxury abstract circles */}
       <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-gold-100/30 blur-3xl"></div>
       <div className="absolute -bottom-40 -right-40 w-96 h-96 rounded-full bg-gold-200/20 blur-3xl"></div>
       
-      <div className="w-full max-w-md bg-white border border-gold-200/60 p-8 shadow-xl relative z-10">
+      <div className="w-full max-w-md bg-white border border-gold-200/60 p-6 sm:p-8 shadow-xl relative z-10">
         {/* Brand Header */}
         <div className="text-center mb-8 pb-4 border-b border-gold-100">
           <span className="text-[10px] font-bold tracking-[0.4em] text-gold-600 uppercase mb-1.5 block">
@@ -138,7 +138,7 @@ export default function AdminResetPassword() {
 
           {/* OTP Code */}
           <div className="text-left">
-            <div className="flex justify-between items-center mb-2">
+            <div className="flex flex-wrap justify-between items-center gap-x-3 gap-y-1 mb-2">
               <label className="block text-xs font-bold text-secondary uppercase tracking-wider">
                 6-Digit Reset OTP
               </label>
@@ -185,7 +185,7 @@ export default function AdminResetPassword() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-secondary/60 hover:text-gold-600 transition-colors"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-secondary/60 hover:text-gold-600 transition-colors"
               >
                 {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
               </button>

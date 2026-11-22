@@ -1,9 +1,9 @@
-import React, { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { fetchCartThunk, mergeCartThunk, setCartSettings } from './store/cartSlice';
+import { mergeCartThunk, setCartSettings } from './store/cartSlice';
 import { fetchWishlistThunk } from './store/wishlistSlice';
 import { fetchPublicSettings } from './store/settingsSlice';
 
@@ -16,23 +16,25 @@ import ScrollToTop from './components/ScrollToTop';
 
 // Page Components
 import Home from './pages/Home';
-import Shop from './pages/Shop';
-import ProductDetails from './pages/ProductDetails';
-import Categories from './pages/Categories';
-import Cart from './pages/Cart';
-import Checkout from './pages/Checkout';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
-import Wishlist from './pages/Wishlist';
-import MyAccount from './pages/MyAccount';
-import OrderTracking from './pages/OrderTracking';
-import ContactUs from './pages/ContactUs';
-import AboutUs from './pages/AboutUs';
-import PrivacyPolicy from './pages/PrivacyPolicy';
-import TermsConditions from './pages/TermsConditions';
-import ReturnRefundPolicy from './pages/ReturnRefundPolicy';
+
+// Other pages load on demand, so the first visit downloads less JavaScript.
+const Shop = lazy(() => import('./pages/Shop'));
+const ProductDetails = lazy(() => import('./pages/ProductDetails'));
+const Categories = lazy(() => import('./pages/Categories'));
+const Cart = lazy(() => import('./pages/Cart'));
+const Checkout = lazy(() => import('./pages/Checkout'));
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const Wishlist = lazy(() => import('./pages/Wishlist'));
+const MyAccount = lazy(() => import('./pages/MyAccount'));
+const OrderTracking = lazy(() => import('./pages/OrderTracking'));
+const ContactUs = lazy(() => import('./pages/ContactUs'));
+const AboutUs = lazy(() => import('./pages/AboutUs'));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const TermsConditions = lazy(() => import('./pages/TermsConditions'));
+const ReturnRefundPolicy = lazy(() => import('./pages/ReturnRefundPolicy'));
 
 function AppContent() {
   const dispatch = useDispatch();
@@ -66,6 +68,7 @@ function AppContent() {
 
       {/* Dynamic Route Content */}
       <main className="flex-grow">
+        <Suspense fallback={<div className="min-h-[50vh] flex items-center justify-center text-xs tracking-widest uppercase text-gold-600">Loading…</div>}>
         <Routes>
           {/* Customer Facing Pages */}
           <Route path="/" element={<Home />} />
@@ -87,6 +90,7 @@ function AppContent() {
           <Route path="/terms-conditions" element={<TermsConditions />} />
           <Route path="/return-refund" element={<ReturnRefundPolicy />} />
         </Routes>
+        </Suspense>
       </main>
 
       {/* Global Luxury Footer for customer facing pages */}

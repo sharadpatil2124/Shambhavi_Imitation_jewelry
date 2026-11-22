@@ -10,6 +10,12 @@ export const errorHandler = (err, req, res, next) => {
   let statusCode = res.statusCode === 200 ? 500 : res.statusCode;
   let message = err.message;
 
+  // Handle malformed JSON request bodies (rejected by express.json before any route runs)
+  if (err.type === 'entity.parse.failed') {
+    statusCode = 400;
+    message = 'Invalid request: the request body is not valid JSON';
+  }
+
   // Handle Mongoose Bad ObjectId (Cast Error)
   if (err.name === 'CastError' && err.kind === 'ObjectId') {
     statusCode = 400;

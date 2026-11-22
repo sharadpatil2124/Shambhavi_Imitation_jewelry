@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useSearchParams } from 'react-router-dom';
 import { setSelectedCategory, setSearchTerm, resetFilters } from '../store/productSlice';
@@ -120,7 +120,7 @@ export default function Shop() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 animate-fade-in">
       
       {/* 1. Header Banner */}
-      <div className="relative bg-gold-50/20 dark:bg-gold-950/10 border border-gold-200/40 dark:border-gold-900/30 p-8 sm:p-12 mb-10 text-center select-none overflow-hidden">
+      <div className="relative bg-gold-50/20 dark:bg-gold-950/10 border border-gold-200/40 dark:border-gold-900/30 px-5 py-8 sm:p-12 mb-8 sm:mb-10 text-center select-none overflow-hidden">
         {/* Luxury Gold Corner Frames */}
         <div className="absolute top-3 left-3 w-4 h-4 border-t border-l border-gold-300/40"></div>
         <div className="absolute bottom-3 right-3 w-4 h-4 border-b border-r border-gold-300/40"></div>
@@ -128,7 +128,7 @@ export default function Shop() {
         <span className="text-[10px] font-bold tracking-[0.3em] text-gold-600 uppercase mb-2 block">
           SHAMBHAVI LUXE
         </span>
-        <h1 className="font-serif text-3xl sm:text-4xl font-bold tracking-wide text-primary m-0 mb-3 dark:text-white leading-none">
+        <h1 className="font-serif text-[1.65rem] leading-tight min-[400px]:text-3xl sm:text-4xl font-bold tracking-wide text-primary m-0 mb-3 dark:text-white leading-tight">
           {selectedCategory !== "All" ? `${selectedCategory}` : "All Exquisite Jewelry"}
         </h1>
         <p className="text-secondary text-xs sm:text-sm font-sans max-w-lg mx-auto leading-relaxed dark:text-gray-300">
@@ -201,7 +201,7 @@ export default function Shop() {
       </div>
 
       {/* 3. Main Catalog Display (Split Layout) */}
-      <div className="flex gap-8 items-start">
+      <div className="flex gap-8 items-start min-w-0">
         
         {/* Left Side: Desktop Filter Panel */}
         <aside className="hidden lg:block w-72 flex-shrink-0 sticky top-28">
@@ -209,7 +209,7 @@ export default function Shop() {
         </aside>
 
         {/* Right Side: Product Cards Grid */}
-        <div className="flex-grow">
+        <div className="flex-grow min-w-0">
           {loading ? (
             /* Skeleton Loading Grid */
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
@@ -219,7 +219,7 @@ export default function Shop() {
             </div>
           ) : error ? (
             /* API Error UI Container */
-            <div className="bg-red-50/50 border border-red-200 p-12 text-center select-none dark:bg-red-950/10 dark:border-red-950/50">
+            <div className="bg-red-50/50 border border-red-200 px-6 py-12 sm:p-12 text-center select-none dark:bg-red-950/10 dark:border-red-950/50">
               <FiAlertTriangle className="text-red-500 mx-auto mb-4" size={40} />
               <h3 className="font-serif text-xl sm:text-2xl font-semibold mb-3 text-red-800 dark:text-red-400">Connection Interrupted</h3>
               <p className="text-red-700/80 text-sm font-sans mb-8 max-w-sm mx-auto leading-relaxed dark:text-red-400/80">
@@ -247,11 +247,11 @@ export default function Shop() {
 
               {/* Luxury Pagination Controls */}
               {totalPages > 1 && (
-                <nav className="flex items-center justify-center space-x-2 mt-16 select-none border-t border-gold-100 dark:border-gold-950/60 pt-8">
+                <nav className="flex flex-wrap items-center justify-center gap-2 mt-12 sm:mt-16 select-none border-t border-gold-100 dark:border-gold-950/60 pt-8">
                   <button
                     disabled={currentPage === 1}
                     onClick={() => handlePageChange(currentPage - 1)}
-                    className="p-3.5 border border-gold-250/70 text-secondary hover:text-gold-600 disabled:opacity-30 disabled:hover:text-secondary disabled:hover:border-gold-250 transition-all cursor-pointer rounded-none dark:border-gold-900/60 dark:text-gray-400"
+                    className="p-3.5 shrink-0 border border-gold-250/70 text-secondary hover:text-gold-600 disabled:opacity-30 disabled:hover:text-secondary disabled:hover:border-gold-250 transition-all cursor-pointer rounded-none dark:border-gold-900/60 dark:text-gray-400"
                     aria-label="Previous Page"
                   >
                     <FiChevronLeft size={16} />
@@ -263,7 +263,7 @@ export default function Shop() {
                       <button
                         key={pageNum}
                         onClick={() => handlePageChange(pageNum)}
-                        className={`w-12 h-12 border font-sans text-sm font-bold transition-all cursor-pointer rounded-none flex items-center justify-center ${
+                        className={`w-11 h-11 sm:w-12 sm:h-12 border font-sans text-sm font-bold transition-all cursor-pointer rounded-none flex items-center justify-center ${
                           currentPage === pageNum
                             ? 'border-gold-600 bg-gold-600 text-white dark:bg-gold-600 dark:border-gold-600 dark:text-primary font-bold shadow-xs'
                             : 'border-gold-200/75 dark:border-gold-900/60 text-secondary dark:text-gray-300 hover:text-gold-600 hover:border-gold-400'
@@ -277,7 +277,7 @@ export default function Shop() {
                   <button
                     disabled={currentPage === totalPages}
                     onClick={() => handlePageChange(currentPage + 1)}
-                    className="p-3.5 border border-gold-250/70 text-secondary hover:text-gold-600 disabled:opacity-30 disabled:hover:text-secondary disabled:hover:border-gold-250 transition-all cursor-pointer rounded-none dark:border-gold-900/60 dark:text-gray-400"
+                    className="p-3.5 shrink-0 border border-gold-250/70 text-secondary hover:text-gold-600 disabled:opacity-30 disabled:hover:text-secondary disabled:hover:border-gold-250 transition-all cursor-pointer rounded-none dark:border-gold-900/60 dark:text-gray-400"
                     aria-label="Next Page"
                   >
                     <FiChevronRight size={16} />
@@ -287,7 +287,7 @@ export default function Shop() {
             </>
           ) : (
             /* Empty State Catalog UI */
-            <div className="bg-white border border-gold-200/50 dark:bg-[#0c0a06] dark:border-gold-900/40 p-12 sm:p-20 text-center select-none">
+            <div className="bg-white border border-gold-200/50 dark:bg-[#0c0a06] dark:border-gold-900/40 px-6 py-12 sm:p-20 text-center select-none">
               <h3 className="font-serif text-xl sm:text-2xl font-bold mb-3 text-primary dark:text-white">No Masterpieces Found</h3>
               <p className="text-secondary text-sm font-sans mb-8 max-w-sm mx-auto leading-relaxed dark:text-gray-400">
                 We couldn't find any jewelry matches for your active filters or query. Try resetting filters to browse all.
@@ -303,34 +303,43 @@ export default function Shop() {
         </div>
       </div>
 
-      {/* 4. Sliding Drawer for Mobile Filter Panel */}
+      {/* 4. Sliding Drawer for Mobile Filter Panel.
+          The clipping wrapper keeps the parked (off-screen right) drawer from adding
+          horizontal scroll on phones, and `invisible` keeps it out of the tab order. */}
       <div
-        className={`fixed inset-y-0 right-0 w-80 bg-white dark:bg-[#0a0907] z-50 shadow-2xl transform transition-transform duration-300 ease-in-out border-l border-gold-200/30 overflow-y-auto ${
-          isMobileFilterOpen ? "translate-x-0" : "translate-x-full"
+        className={`fixed inset-0 z-50 overflow-hidden lg:hidden transition-[visibility] duration-300 ${
+          isMobileFilterOpen ? "visible scroll-lock" : "invisible pointer-events-none"
         }`}
+        aria-hidden={!isMobileFilterOpen}
       >
-        <div className="flex items-center justify-between p-6 border-b border-gold-100/50 dark:border-gold-950/60">
-          <h3 className="font-serif text-lg font-bold text-primary dark:text-white uppercase tracking-wider">Filters</h3>
-          <button
-            onClick={() => setIsMobileFilterOpen(false)}
-            className="text-primary dark:text-gray-300 hover:text-gold-600 p-1 cursor-pointer"
-            aria-label="Close filters"
-          >
-            <FiX size={24} />
-          </button>
-        </div>
-        <div className="p-6">
-          <FiltersSidebar />
-        </div>
-      </div>
-
-      {/* Backdrop for Mobile Filter Panel */}
-      {isMobileFilterOpen && (
+        {/* Backdrop for Mobile Filter Panel */}
         <div
           onClick={() => setIsMobileFilterOpen(false)}
-          className="fixed inset-0 bg-black/60 z-40 backdrop-blur-xs lg:hidden"
+          className={`absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity duration-300 ${
+            isMobileFilterOpen ? "opacity-100" : "opacity-0"
+          }`}
         ></div>
-      )}
+
+        <div
+          className={`absolute inset-y-0 right-0 w-[88vw] max-w-80 flex flex-col bg-white dark:bg-[#0a0907] shadow-2xl transform transition-transform duration-300 ease-in-out border-l border-gold-200/30 ${
+            isMobileFilterOpen ? "translate-x-0" : "translate-x-full"
+          }`}
+        >
+          <div className="flex items-center justify-between px-5 py-4 sm:p-6 border-b border-gold-100/50 dark:border-gold-950/60 shrink-0">
+            <h3 className="font-serif text-lg font-bold text-primary dark:text-white uppercase tracking-wider">Filters</h3>
+            <button
+              onClick={() => setIsMobileFilterOpen(false)}
+              className="text-primary dark:text-gray-300 hover:text-gold-600 p-2 -mr-2 cursor-pointer"
+              aria-label="Close filters"
+            >
+              <FiX size={24} />
+            </button>
+          </div>
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-6">
+            <FiltersSidebar />
+          </div>
+        </div>
+      </div>
 
       {/* Quick View Modal Overlay */}
       {selectedQuickViewProduct && (

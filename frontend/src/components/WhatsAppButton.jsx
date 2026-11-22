@@ -1,4 +1,3 @@
-import React from 'react';
 import { useSelector } from 'react-redux';
 import { FaWhatsapp } from 'react-icons/fa';
 
@@ -13,12 +12,12 @@ export default function WhatsAppButton() {
       href={`https://wa.me/${whatsappNumber}?text=${encodedMessage}`}
       target="_blank"
       rel="noopener noreferrer"
-      className="fixed bottom-24 right-6 sm:bottom-6 sm:right-6 z-40 bg-[#25d366] text-white p-3.5 sm:p-4 rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all duration-300 group flex items-center justify-center animate-bounce"
+      className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-40 bg-[#25d366] text-white p-3.5 sm:p-4 rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all duration-300 group flex items-center justify-center animate-bounce"
       style={{ animationDuration: '3s' }}
       title="Chat on WhatsApp"
     >
       {/* Tooltip */}
-      <span className="absolute right-full mr-3 bg-white text-primary text-xs font-semibold py-1.5 px-3 shadow-md border border-gold-200/50 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none tracking-wide select-none">
+      <span className="absolute right-full mr-3 hidden md:block bg-white text-primary text-xs font-semibold py-1.5 px-3 shadow-md border border-gold-200/50 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none tracking-wide select-none">
         Order on WhatsApp ✨
       </span>
       <FaWhatsapp size={24} className="sm:w-7 sm:h-7" />

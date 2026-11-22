@@ -1,4 +1,4 @@
-import { describe, it } from 'node:test';
+import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import mongoose from 'mongoose';
 import Order from '../models/Order.js';
@@ -46,6 +46,17 @@ describe('Unit Tests: Order Refund Operations & Dashboard Revenue Deduction', ()
   });
 
   describe('Positive Test Cases (Happy Path)', () => {
+    // Stock is restored at most once: the controller first claims the order's stockRestored flag
+    // atomically. With no database in these unit tests, the claim is simulated as succeeding.
+    let origOrderFindOneAndUpdate;
+    before(() => {
+      origOrderFindOneAndUpdate = Order.findOneAndUpdate;
+      Order.findOneAndUpdate = async () => ({ _id: validOrderId });
+    });
+    after(() => {
+      Order.findOneAndUpdate = origOrderFindOneAndUpdate;
+    });
+
     it('should successfully refund a paid order, restock inventory, and update refund fields', async () => {
       const mockOrder = createMockOrder({ orderStatus: 'Delivered' });
       let stockIncremented = false;
@@ -92,6 +103,7 @@ describe('Unit Tests: Order Refund Operations & Dashboard Revenue Deduction', ()
         assert.ok(mockOrder.refundTransactionId.startsWith('REF_'));
         assert.strictEqual(stockIncremented, true, 'Product stock should be incremented');
         assert.strictEqual(incrementedQty, 2, 'Should restock 2 items');
+        assert.strictEqual(mockOrder.stockRestored, true, 'Order should be marked as restocked');
       } finally {
         Order.findById = origOrderFindById;
         Product.findByIdAndUpdate = origProductFindByIdAndUpdate;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchCartWishlistAnalytics } from '../store/adminSlice';
 import { 
@@ -50,11 +50,11 @@ export default function AdminCartWishlist() {
   };
 
   return (
-    <div className="space-y-8 animate-fade-in text-left">
+    <div className="space-y-6 sm:space-y-8 animate-fade-in text-left">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="font-serif text-2xl font-bold tracking-wide text-primary m-0">Cart & Wishlist Analytics</h1>
+          <h1 className="font-serif text-xl sm:text-2xl font-bold tracking-wide text-primary m-0">Cart & Wishlist Analytics</h1>
           <p className="text-xs text-secondary/60 font-sans mt-1">Analyze popular wishlist designs, customer shopping bags, and potential abandoned checkout revenue.</p>
         </div>
       </div>
@@ -93,10 +93,10 @@ export default function AdminCartWishlist() {
       </div>
 
       {/* Tabs Menu */}
-      <div className="border-b border-gold-200 flex space-x-6 text-xs uppercase tracking-wider font-bold">
+      <div className="border-b border-gold-200 flex gap-6 overflow-x-auto overscroll-x-contain text-xs uppercase tracking-wider font-bold -mx-4 px-4 sm:mx-0 sm:px-0">
         <button
           onClick={() => setActiveTab("carts")}
-          className={`pb-3 border-b-2 cursor-pointer transition-colors ${
+          className={`pb-3 border-b-2 cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
             activeTab === "carts" ? "border-gold-500 text-gold-600" : "border-transparent text-secondary/60 hover:text-primary"
           }`}
         >
@@ -104,7 +104,7 @@ export default function AdminCartWishlist() {
         </button>
         <button
           onClick={() => setActiveTab("wishlists")}
-          className={`pb-3 border-b-2 cursor-pointer transition-colors ${
+          className={`pb-3 border-b-2 cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
             activeTab === "wishlists" ? "border-gold-500 text-gold-600" : "border-transparent text-secondary/60 hover:text-primary"
           }`}
         >
@@ -112,7 +112,7 @@ export default function AdminCartWishlist() {
         </button>
         <button
           onClick={() => setActiveTab("popular")}
-          className={`pb-3 border-b-2 cursor-pointer transition-colors ${
+          className={`pb-3 border-b-2 cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
             activeTab === "popular" ? "border-gold-500 text-gold-600" : "border-transparent text-secondary/60 hover:text-primary"
           }`}
         >
@@ -133,7 +133,7 @@ export default function AdminCartWishlist() {
         cartsList.length > 0 ? (
           <div className="bg-white border border-gold-200/40 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs font-sans border-collapse">
+              <table className="w-full min-w-[680px] text-left text-xs font-sans border-collapse [&_th]:whitespace-nowrap">
                 <thead>
                   <tr className="border-b border-gold-100 bg-[#FAF8F2] text-secondary/50 uppercase font-semibold text-[10px] tracking-wider">
                     <th className="p-4">Customer Details</th>
@@ -295,11 +295,11 @@ export default function AdminCartWishlist() {
       {/* ITEM DETAILS MODAL */}
       {/* ========================================================================= */}
       {isModalOpen && selectedCart && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white border border-gold-200 shadow-2xl max-w-lg w-full rounded-none animate-scale-up">
+        <div className="scroll-lock fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto overscroll-contain">
+          <div className="bg-white border border-gold-200 shadow-2xl max-w-lg w-full rounded-none animate-scale-up my-auto">
             
             {/* Modal Header */}
-            <div className="bg-[#FAF8F2] border-b border-gold-200/55 p-4 flex justify-between items-center">
+            <div className="bg-[#FAF8F2] border-b border-gold-200/55 p-4 flex justify-between items-center gap-3">
               <div>
                 <h3 className="font-serif text-base font-bold text-primary tracking-wide">Customer Cart Contents</h3>
                 <p className="text-[9px] text-secondary/60 uppercase tracking-widest font-sans mt-0.5">Itemized Checkout Analytics</p>
@@ -310,7 +310,7 @@ export default function AdminCartWishlist() {
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto text-left">
+            <div className="p-4 sm:p-6 space-y-4 max-h-[60dvh] overflow-y-auto overscroll-contain text-left">
               
               {/* Customer Contact */}
               {selectedCart.user && (
@@ -319,7 +319,7 @@ export default function AdminCartWishlist() {
                     <FiUser className="mr-2 text-gold-600" size={13} /> {selectedCart.user.name}
                   </p>
                   <p className="flex items-center text-[11px]">
-                    <FiMail className="mr-2 text-gold-500" size={12} /> {selectedCart.user.email}
+                    <FiMail className="mr-2 shrink-0 text-gold-500" size={12} /> <span className="break-all">{selectedCart.user.email}</span>
                   </p>
                   {selectedCart.user.phone && (
                     <p className="flex items-center text-[10px]">
@@ -334,14 +334,14 @@ export default function AdminCartWishlist() {
                 <h5 className="text-[10px] font-bold text-secondary uppercase tracking-wider font-sans border-b border-gold-100 pb-1">Unpurchased Bags Details</h5>
                 <div className="divide-y divide-gold-50">
                   {selectedCart.items?.map((item, idx) => (
-                    <div key={idx} className="py-3 flex space-x-4 items-center justify-between text-xs">
-                      <div className="flex space-x-3 items-center overflow-hidden">
+                    <div key={idx} className="py-3 flex gap-3 items-center justify-between text-xs">
+                      <div className="flex space-x-3 items-center overflow-hidden min-w-0">
                         <img 
                           src={item.product?.images?.[0] || 'https://via.placeholder.com/60?text=No+Image'} 
                           alt={item.product?.name || 'Item'} 
                           className="w-12 h-12 object-cover border border-gold-100/50 rounded-sm shrink-0"
                         />
-                        <div className="truncate">
+                        <div className="truncate min-w-0">
                           <h6 className="font-semibold text-primary truncate max-w-[200px]" title={item.product?.name}>{item.product?.name || 'Deleted Product'}</h6>
                           <div className="flex space-x-2 text-[9px] font-bold uppercase tracking-wider text-secondary/50 mt-0.5">
                             {item.color && <span>Color: {item.color}</span>}
@@ -367,7 +367,7 @@ export default function AdminCartWishlist() {
             </div>
 
             {/* Modal Footer */}
-            <div className="bg-[#FAF8F2] border-t border-gold-100 p-4 flex justify-between items-center">
+            <div className="bg-[#FAF8F2] border-t border-gold-100 p-4 flex flex-wrap justify-between items-center gap-3">
               <div>
                 <span className="text-[9px] font-bold text-secondary/50 uppercase block">Cart Value Summary</span>
                 <strong className="text-base text-primary font-serif font-bold">{formatCurrency(selectedCart.total)}</strong>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { FiHeart, FiShoppingBag, FiTrash2, FiEye } from 'react-icons/fi';
@@ -30,8 +30,10 @@ export default function Wishlist() {
       sizes: ['Standard'],
       countInStock: 10
     };
-    dispatch(addToCart({ product: fullProduct, quantity: 1 }));
-    toast.success(`Added to Cart: ${item.name}`, { position: "bottom-right", autoClose: 2000 });
+    dispatch(addToCart({ product: fullProduct, quantity: 1 }))
+      .unwrap()
+      .then(() => toast.success(`Added to Cart: ${item.name}`, { position: "bottom-right", autoClose: 2000 }))
+      .catch((message) => toast.error(message || "Could not add this item to your cart.", { position: "bottom-right" }));
   };
 
   const handleRemove = (id, name) => {
@@ -60,7 +62,7 @@ export default function Wishlist() {
 
   if (wishlistItems.length === 0) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center select-none animate-fade-in">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-20 text-center select-none animate-fade-in">
         <div className="flex flex-col items-center max-w-sm mx-auto">
           <div className="w-20 h-20 bg-gold-50 border border-gold-200/50 rounded-full flex items-center justify-center text-gold-600 mb-6">
             <FiHeart size={32} />
@@ -85,7 +87,7 @@ export default function Wishlist() {
       
       {/* Page Header */}
       <div className="border-b border-gold-100 pb-4 mb-8">
-        <h1 className="font-serif text-3xl font-bold tracking-wide text-primary m-0">
+        <h1 className="font-serif text-2xl sm:text-3xl font-bold tracking-wide text-primary m-0">
           My Saved Wishlist ({wishlistItems.length} items)
         </h1>
       </div>
@@ -138,14 +140,14 @@ export default function Wishlist() {
                 {item.name}
               </Link>
               
-              <div className="mt-auto pt-3 border-t border-gold-100/40 flex items-center justify-between">
+              <div className="mt-auto pt-3 border-t border-gold-100/40 flex items-center justify-between gap-2">
                 <span className="font-sans text-sm sm:text-base font-bold text-primary">
                   ₹{item.price.toLocaleString('en-IN')}
                 </span>
                 
                 <button
                   onClick={() => handleAddToCart(item)}
-                  className="bg-primary hover:bg-gold-500 text-white p-2.5 sm:px-3 sm:py-2 transition-colors flex items-center space-x-1.5 font-sans text-xs font-semibold cursor-pointer"
+                  className="shrink-0 bg-primary hover:bg-gold-500 text-white p-2.5 sm:px-3 sm:py-2 transition-colors flex items-center space-x-1.5 font-sans text-xs font-semibold cursor-pointer"
                   title="Add to Cart"
                 >
                   <FiShoppingBag size={14} />

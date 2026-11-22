@@ -1,3 +1,4 @@
+import validator from 'validator';
 import Enquiry from '../models/Enquiry.js';
 
 // @desc    Submit an enquiry message
@@ -10,6 +11,11 @@ export const createEnquiry = async (req, res, next) => {
     if (!name || !email || !message) {
       res.status(400);
       throw new Error('Please enter all required fields (name, email, and message)');
+    }
+
+    if (typeof email !== 'string' || !validator.isEmail(email.trim())) {
+      res.status(400);
+      throw new Error('Please provide a valid email address so we can reply to you');
     }
 
     const enquiry = await Enquiry.create({

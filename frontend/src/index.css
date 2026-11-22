@@ -42,11 +42,20 @@
   to { transform: scale(1); opacity: 1; }
 }
 
+html {
+  /* Stop iOS/Android from inflating text after an orientation change */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  /* Reserve the scrollbar gutter so locking scroll for a modal never shifts the page sideways */
+  scrollbar-gutter: stable;
+}
+
 body {
   font-family: var(--font-sans);
   background-color: #faf9f6; /* Warm premium alabaster/white */
   color: #121212;
   overflow-x: hidden;
+  overflow-wrap: break-word;
   -webkit-font-smoothing: antialiased;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
@@ -366,4 +375,73 @@ body {
   transform: rotate(45deg);
   background-color: #bfa054;
   margin: 0 1rem;
+}
+
+/* ==========================================================================
+   Responsive & mobile stability layer
+   ========================================================================== */
+
+/* No sideways page scroll. `clip` (unlike `hidden`) does not create a scroll
+   container, so the sticky header keeps working. Older browsers keep the
+   `overflow-x: hidden` declared on body above. */
+@supports (overflow: clip) {
+  html,
+  body {
+    overflow-x: clip;
+  }
+}
+
+/* While a drawer or modal carrying `.scroll-lock` is open, freeze the page behind it. */
+html:has(.scroll-lock) {
+  overflow: hidden;
+}
+
+@layer base {
+  /* Let form controls shrink inside flex rows instead of pushing past the screen edge */
+  input,
+  select,
+  textarea {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* Remove the double-tap-to-zoom delay on interactive controls */
+  a,
+  button,
+  input,
+  select,
+  textarea,
+  label,
+  [role='button'] {
+    touch-action: manipulation;
+  }
+}
+
+@media (max-width: 767px) {
+  /* iOS Safari zooms the page when a focused field's text is under 16px. */
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  /* Keep toasts above the fixed mobile bottom navigation bar */
+  .Toastify .Toastify__toast-container--bottom-left,
+  .Toastify .Toastify__toast-container--bottom-center,
+  .Toastify .Toastify__toast-container--bottom-right {
+    bottom: calc(4.5rem + env(safe-area-inset-bottom));
+  }
+}
+
+/* iOS renders native date/time pickers with an intrinsic width that can overflow narrow forms */
+@supports (-webkit-touch-callout: none) {
+  input[type='date'],
+  input[type='time'],
+  input[type='datetime-local'],
+  input[type='month'] {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    min-height: 2.75rem;
+  }
 }

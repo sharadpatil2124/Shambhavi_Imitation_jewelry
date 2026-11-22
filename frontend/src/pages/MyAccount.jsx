@@ -185,7 +185,7 @@ export default function MyAccount() {
       
       {/* Page Header */}
       <div className="border-b border-gold-100 dark:border-gold-950/60 pb-4 mb-8 flex flex-col sm:flex-row sm:items-baseline justify-between select-none">
-        <h1 className="font-serif text-3xl font-bold tracking-wide text-primary dark:text-white m-0">
+        <h1 className="font-serif text-2xl sm:text-3xl font-bold tracking-wide text-primary dark:text-white m-0">
           My Account
         </h1>
         <span className="text-sm text-secondary dark:text-gray-300 font-medium mt-1 sm:mt-0">
@@ -202,7 +202,7 @@ export default function MyAccount() {
             {/* Orders Tab */}
             <button
               onClick={() => setActiveTab("orders")}
-              className={`flex items-center space-x-3 text-sm py-3 px-4 transition-all duration-200 text-left rounded-none cursor-pointer ${
+              className={`flex items-center space-x-3 text-sm py-3.5 px-4 transition-all duration-200 text-left rounded-none cursor-pointer ${
                 activeTab === "orders"
                   ? 'bg-gold-50 dark:bg-gold-950/20 border-l-2 border-gold-500 font-semibold text-gold-800 dark:text-gold-300'
                   : 'text-secondary dark:text-gray-300 hover:text-primary dark:hover:text-gold-400 hover:bg-gold-50/20 dark:hover:bg-gold-950/10'
@@ -215,7 +215,7 @@ export default function MyAccount() {
             {/* Profile Tab */}
             <button
               onClick={() => setActiveTab("profile")}
-              className={`flex items-center space-x-3 text-sm py-3 px-4 transition-all duration-200 text-left rounded-none cursor-pointer ${
+              className={`flex items-center space-x-3 text-sm py-3.5 px-4 transition-all duration-200 text-left rounded-none cursor-pointer ${
                 activeTab === "profile"
                   ? 'bg-gold-50 dark:bg-gold-950/20 border-l-2 border-gold-500 font-semibold text-gold-800 dark:text-gold-300'
                   : 'text-secondary dark:text-gray-300 hover:text-primary dark:hover:text-gold-400 hover:bg-gold-50/20 dark:hover:bg-gold-950/10'
@@ -237,7 +237,7 @@ export default function MyAccount() {
         </aside>
 
         {/* Right Side: Tab Contents Panel */}
-        <div className="flex-grow w-full bg-white dark:bg-[#0c0a06] border border-gold-200/50 dark:border-gold-900/40 p-6 sm:p-8 shadow-sm relative">
+        <div className="flex-grow w-full min-w-0 bg-white dark:bg-[#0c0a06] border border-gold-200/50 dark:border-gold-900/40 p-4 sm:p-8 shadow-sm relative">
           {/* Luxury Gold Corner Frames */}
           <div className="absolute top-4 left-4 w-4 h-4 border-t border-l border-gold-400/50 pointer-events-none z-10"></div>
           <div className="absolute bottom-4 right-4 w-4 h-4 border-b border-r border-gold-400/50 pointer-events-none z-10"></div>
@@ -263,9 +263,9 @@ export default function MyAccount() {
                     >
                       {/* Order status headers */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 mb-4 border-b border-gray-100 dark:border-gold-950/60 text-xs font-sans text-secondary dark:text-gray-300 font-medium">
-                        <div className="flex flex-wrap gap-4">
+                        <div className="flex flex-wrap gap-x-4 gap-y-1">
                           <span>Order Date: <strong>{new Date(order.createdAt).toLocaleDateString('en-IN')}</strong></span>
-                          <span>Order ID: <strong className="font-mono text-primary dark:text-gold-250">{order._id.substring(18).toUpperCase()}</strong></span>
+                          <span className="break-all">Order ID: <strong className="font-mono text-primary dark:text-gold-250">{order._id.substring(18).toUpperCase()}</strong></span>
                           <span>Method: <strong>{order.paymentMethod}</strong></span>
                         </div>
                         <div className="mt-2 sm:mt-0">
@@ -290,15 +290,15 @@ export default function MyAccount() {
                       {/* Items Row inside Order */}
                       <div className="space-y-3.5 mb-4">
                         {order.orderItems?.map((item, idx) => (
-                          <div key={idx} className="flex items-center justify-between text-sm">
-                            <div className="flex items-center space-x-3 max-w-[80%]">
-                              <img src={item.image} alt={item.name} className="w-12 h-12 object-cover border border-gold-100 dark:border-gold-900/40" />
-                              <div className="text-left">
+                          <div key={idx} className="flex items-center justify-between gap-3 text-sm">
+                            <div className="flex items-center space-x-3 min-w-0">
+                              <img src={item.image} alt={item.name} className="w-12 h-12 shrink-0 object-cover border border-gold-100 dark:border-gold-900/40" />
+                              <div className="text-left min-w-0">
                                 <span className="font-serif font-bold text-primary dark:text-white line-clamp-1">{item.name}</span>
                                 <span className="text-xs text-secondary dark:text-gray-400 font-medium">Quantity: {item.quantity} | Price: ₹{item.price.toLocaleString('en-IN')}</span>
                               </div>
                             </div>
-                            <span className="font-bold text-primary dark:text-white font-sans">
+                            <span className="font-bold text-primary dark:text-white font-sans shrink-0">
                               ₹{(item.price * item.quantity).toLocaleString('en-IN')}
                             </span>
                           </div>
@@ -306,18 +306,18 @@ export default function MyAccount() {
                       </div>
 
                       {/* Order totals & Track link */}
-                      <div className="border-t border-gray-100 dark:border-gold-950/60 pt-3.5 flex items-center justify-between">
-                        <div className="flex items-center space-x-2 text-xs">
-                          <span className="text-secondary dark:text-gray-450 font-medium">SF Tracking:</span>
-                          <span className="font-mono text-primary dark:text-white font-bold">{order.trackingNumber || order.trackingId || 'Pending'}</span>
+                      <div className="border-t border-gray-100 dark:border-gold-950/60 pt-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center space-x-2 text-xs min-w-0">
+                          <span className="text-secondary dark:text-gray-450 font-medium shrink-0">SF Tracking:</span>
+                          <span className="font-mono text-primary dark:text-white font-bold break-all">{order.trackingNumber || order.trackingId || 'Pending'}</span>
                         </div>
 
-                        <div className="flex items-center space-x-3">
-                          <span className="text-sm font-sans font-medium text-secondary dark:text-gray-300">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 sm:justify-end">
+                          <span className="text-sm font-sans font-medium text-secondary dark:text-gray-300 w-full sm:w-auto">
                             Total: <strong className="text-gold-700 dark:text-gold-400 font-bold text-base">₹{order.totalPrice.toLocaleString('en-IN')}</strong>
                           </span>
                           {(order.orderStatus === 'Refunded' || order.isRefunded) && (
-                            <div className="flex items-center space-x-2">
+                            <div className="flex flex-wrap items-center gap-2">
                               <span className="text-[11px] font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 rounded-xs border border-purple-200 dark:border-purple-800">
                                 Refund: ₹{(order.refundAmount || order.totalPrice).toLocaleString('en-IN')}
                               </span>
@@ -340,14 +340,14 @@ export default function MyAccount() {
                            order.orderStatus !== 'Cancellation Requested' && (
                             <button
                               onClick={() => handleCancelOrder(order._id)}
-                              className="border border-red-300 hover:border-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-650 hover:text-red-750 font-bold py-2 px-4 text-[10px] tracking-widest uppercase transition-colors cursor-pointer animate-fade-in"
+                              className="border border-red-300 hover:border-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-650 hover:text-red-750 font-bold py-2.5 px-4 text-[10px] tracking-widest uppercase transition-colors cursor-pointer animate-fade-in"
                             >
                               Cancel Order
                             </button>
                           )}
                           <Link
                             to={`/tracking?orderId=${order._id}`}
-                            className="bg-primary hover:bg-gold-500 text-white hover:text-primary font-bold py-2 px-4 text-[10px] tracking-widest uppercase transition-colors border border-primary hover:border-gold-500 dark:bg-gold-600 dark:border-gold-600 dark:text-primary dark:hover:bg-white dark:hover:border-white"
+                            className="bg-primary hover:bg-gold-500 text-white hover:text-primary font-bold py-2.5 px-4 text-[10px] tracking-widest uppercase transition-colors border border-primary hover:border-gold-500 dark:bg-gold-600 dark:border-gold-600 dark:text-primary dark:hover:bg-white dark:hover:border-white"
                           >
                             Track Shipment
                           </Link>
@@ -374,7 +374,7 @@ export default function MyAccount() {
           {/* Tab 2: Profile Settings */}
           {activeTab === "profile" && (
             <div className="relative z-20">
-              <div className="flex items-center justify-between pb-2 mb-6 border-b border-gold-100 dark:border-gold-950/60">
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 pb-2 mb-6 border-b border-gold-100 dark:border-gold-950/60">
                 <h3 className="font-serif text-lg font-bold text-primary dark:text-white tracking-wide">
                   Billing & Profile Settings
                 </h3>
@@ -382,7 +382,7 @@ export default function MyAccount() {
                 {!isEditing && (
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="text-xs text-gold-600 hover:text-gold-550 dark:text-gold-400 font-bold uppercase tracking-wider flex items-center space-x-1.5 cursor-pointer"
+                    className="text-xs text-gold-600 hover:text-gold-550 dark:text-gold-400 font-bold uppercase tracking-wider flex items-center space-x-1.5 py-1.5 cursor-pointer"
                   >
                     <FiEdit2 size={12} />
                     <span>Edit Profile Details</span>
@@ -392,19 +392,19 @@ export default function MyAccount() {
 
               {isVerifyingEmail ? (
                 <form onSubmit={handleVerifyEmailChangeOtp} className="space-y-5">
-                  <div className="bg-gold-50/10 dark:bg-gold-950/10 border border-gold-200/50 dark:border-gold-900/40 p-6 relative">
+                  <div className="bg-gold-50/10 dark:bg-gold-950/10 border border-gold-200/50 dark:border-gold-900/40 p-4 sm:p-6 relative">
                     <div className="absolute top-3 left-3 w-3 h-3 border-t border-l border-gold-400/50 pointer-events-none z-10"></div>
                     <div className="absolute bottom-3 right-3 w-3 h-3 border-b border-r border-gold-400/50 pointer-events-none z-10"></div>
                     
                     <h4 className="font-serif text-base font-bold text-primary dark:text-white mb-2 relative z-20">Verify Your New Email</h4>
                     <p className="text-sm text-secondary dark:text-gray-300 mb-6 leading-relaxed relative z-20">
-                      We have sent a 6-digit verification code to <strong className="text-primary dark:text-gold-200 font-semibold">{pendingEmail}</strong>.
+                      We have sent a 6-digit verification code to <strong className="text-primary dark:text-gold-200 font-semibold break-all">{pendingEmail}</strong>.
                       Please enter it below to complete your email address update.
                     </p>
 
                     <div className="space-y-2 relative z-20">
                       <label className="block text-xs font-bold text-secondary dark:text-gray-400 uppercase tracking-wider">Verification OTP</label>
-                      <div className="relative max-w-[200px]">
+                      <div className="relative w-full max-w-[220px]">
                         <FiKey className="absolute left-4 top-1/2 -translate-y-1/2 text-gold-600" size={16} />
                         <input
                           type="text"
@@ -419,11 +419,11 @@ export default function MyAccount() {
                     </div>
                   </div>
 
-                  <div className="flex space-x-3 select-none">
+                  <div className="flex flex-col sm:flex-row gap-3 select-none">
                     <button
                       type="submit"
                       disabled={otpLoading}
-                      className="bg-primary hover:bg-gold-500 text-white hover:text-primary font-bold py-3.5 px-6 text-xs tracking-widest uppercase transition-colors cursor-pointer flex items-center space-x-1.5 border border-primary hover:border-gold-500 dark:bg-gold-600 dark:border-gold-600 dark:text-primary dark:hover:bg-white dark:hover:border-white"
+                      className="bg-primary hover:bg-gold-500 text-white hover:text-primary font-bold py-3.5 px-6 text-xs tracking-widest uppercase transition-colors cursor-pointer flex items-center justify-center space-x-1.5 border border-primary hover:border-gold-500 dark:bg-gold-600 dark:border-gold-600 dark:text-primary dark:hover:bg-white dark:hover:border-white"
                     >
                       {otpLoading ? (
                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -528,10 +528,10 @@ export default function MyAccount() {
                     </div>
                   </div>
 
-                  <div className="flex space-x-3 pt-4 select-none">
+                  <div className="flex flex-col sm:flex-row gap-3 pt-4 select-none">
                     <button
                       type="submit"
-                      className="bg-primary hover:bg-gold-500 text-white hover:text-primary font-bold py-3.5 px-6 text-xs tracking-widest uppercase transition-colors cursor-pointer flex items-center space-x-1.5 border border-primary hover:border-gold-500 dark:bg-gold-600 dark:border-gold-600 dark:text-primary dark:hover:bg-white dark:hover:border-white"
+                      className="bg-primary hover:bg-gold-500 text-white hover:text-primary font-bold py-3.5 px-6 text-xs tracking-widest uppercase transition-colors cursor-pointer flex items-center justify-center space-x-1.5 border border-primary hover:border-gold-500 dark:bg-gold-600 dark:border-gold-600 dark:text-primary dark:hover:bg-white dark:hover:border-white"
                     >
                       <FiCheck size={14} />
                       <span>Save Profile Changes</span>
@@ -547,14 +547,14 @@ export default function MyAccount() {
                 </form>
               ) : (
                 <div className="space-y-6 text-sm font-sans">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-[#faf9f6]/45 dark:bg-[#100d07]/40 p-5 border border-gold-100/30 dark:border-gold-900/30">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 bg-[#faf9f6]/45 dark:bg-[#100d07]/40 p-4 sm:p-5 border border-gold-100/30 dark:border-gold-900/30">
                     <div>
                       <span className="text-[10px] text-secondary dark:text-gray-400 font-bold uppercase tracking-wider block mb-1">Full Name</span>
                       <strong className="text-primary dark:text-white font-semibold text-base block">{user.name}</strong>
                     </div>
                     <div>
                       <span className="text-[10px] text-secondary dark:text-gray-400 font-bold uppercase tracking-wider block mb-1">Email Address</span>
-                      <strong className="text-primary dark:text-white font-semibold text-base block">{user.email}</strong>
+                      <strong className="text-primary dark:text-white font-semibold text-base block break-all">{user.email}</strong>
                     </div>
                     <div>
                       <span className="text-[10px] text-secondary dark:text-gray-400 font-bold uppercase tracking-wider block mb-1">Phone Number</span>

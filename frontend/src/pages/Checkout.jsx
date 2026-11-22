@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
-import { FiCheckCircle, FiChevronRight, FiCreditCard, FiTruck, FiMapPin, FiPhone, FiX } from 'react-icons/fi';
+import { FiCheckCircle, FiCreditCard, FiTruck, FiMapPin, FiPhone } from 'react-icons/fi';
 import { clearCart } from '../store/cartSlice';
-import { addOrder } from '../store/authSlice';
 import { toast } from 'react-toastify';
 import api from '../services/api';
 import { getImageUrl } from '../utils/image';
@@ -27,16 +26,6 @@ export default function Checkout() {
   const [stateName, setStateName] = useState("");
   const [zipCode, setZipCode] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("UPI");
-
-  // Mock Razorpay States
-  const [showMockRazorpay, setShowMockRazorpay] = useState(false);
-  const [mockOptions, setMockOptions] = useState(null);
-  const [mockStep, setMockStep] = useState("options"); // "options", "card", "upi", "netbanking", "processing", "success"
-  const [mockCardNumber, setMockCardNumber] = useState("");
-  const [mockCardExpiry, setMockCardExpiry] = useState("");
-  const [mockCardCvv, setMockCardCvv] = useState("");
-  const [mockUpiId, setMockUpiId] = useState("");
-  const [mockBank, setMockBank] = useState("SBI");
 
   // Set initial payment method based on settings
   useEffect(() => {
@@ -113,50 +102,6 @@ export default function Checkout() {
     setAppliedPromoCode("");
     setAppliedDiscount(0);
     toast.info("Promo code removed.", { position: "bottom-center" });
-  };
-
-  const handleMockPaymentSubmit = () => {
-    if (mockStep === 'card') {
-      if (!mockCardNumber || mockCardNumber.replace(/\s/g, '').length !== 16) {
-        toast.warning("Please enter a valid 16-digit card number.", { position: "bottom-center" });
-        return;
-      }
-      if (!mockCardExpiry || !/^\d{2}\/\d{2}$/.test(mockCardExpiry)) {
-        toast.warning("Please enter a valid expiry date (MM/YY).", { position: "bottom-center" });
-        return;
-      }
-      if (!mockCardCvv || mockCardCvv.length !== 3) {
-        toast.warning("Please enter a valid 3-digit CVV.", { position: "bottom-center" });
-        return;
-      }
-    } else if (mockStep === 'upi') {
-      if (!mockUpiId || !mockUpiId.includes('@')) {
-        toast.warning("Please enter a valid UPI ID (e.g. name@okhdfcbank).", { position: "bottom-center" });
-        return;
-      }
-    }
-
-    setMockStep('processing');
-    setTimeout(() => {
-      setMockStep('success');
-      setTimeout(() => {
-        setShowMockRazorpay(false);
-        if (mockOptions && mockOptions.handler) {
-          mockOptions.handler({
-            razorpay_order_id: mockOptions.order_id,
-            razorpay_payment_id: `pay_mock_${Math.random().toString(36).substring(2, 15)}`,
-            razorpay_signature: `sig_mock_${Math.random().toString(36).substring(2, 15)}`
-          });
-        }
-      }, 1000);
-    }, 2000);
-  };
-
-  const handleMockPaymentCancel = () => {
-    setShowMockRazorpay(false);
-    if (mockOptions && mockOptions.modal && mockOptions.modal.ondismiss) {
-      mockOptions.modal.ondismiss();
-    }
   };
 
   const [isProcessing, setIsProcessing] = useState(false);
@@ -239,21 +184,16 @@ export default function Checkout() {
     if (isProcessing) return;
     setIsProcessing(true);
 
-    const orderTotal = cartState.subtotal + cartState.shipping - appliedDiscount;
+    // The server prices the order itself (product prices, shipping, coupon). We send only what was
+    // chosen, plus the total shown here so the server can refuse if prices changed meanwhile.
+    const displayedTotal = cartState.subtotal + cartState.shipping - appliedDiscount;
+    const couponCode = appliedPromoCode || undefined;
     const orderItems = cartItems.map(item => ({
       product: item.id,
-      name: item.name,
       quantity: item.quantity,
-      price: item.price,
-      image: item.image,
       color: item.selectedColor,
       size: item.selectedSize
     }));
-
-    const itemsPrice = cartState.subtotal;
-    const shippingPrice = cartState.shipping;
-    const taxPrice = Math.round(cartState.subtotal * ((cartState.taxRate || 3) / 100));
-    const totalPrice = orderTotal;
 
     const shippingAddress = {
       street: address,
@@ -271,11 +211,8 @@ export default function Checkout() {
           orderItems,
           shippingAddress,
           paymentMethod: 'COD',
-          itemsPrice: itemsPrice - taxPrice,
-          taxPrice,
-          shippingPrice,
-          discountPrice: appliedDiscount,
-          totalPrice
+          couponCode,
+          totalPrice: displayedTotal
         });
         const order = response.order;
         handleOrderSuccess(order);
@@ -293,8 +230,12 @@ export default function Checkout() {
       const keyRes = await api.get('/payments/key');
       const razorpayKey = keyRes.key;
 
-      // 2. Create a Razorpay order on the backend
-      const razorpayOrderRes = await api.post('/payments/order', { amount: totalPrice });
+      if (typeof window.Razorpay !== 'function') {
+        throw new Error('Payment window could not load. Please check your connection and try again.');
+      }
+
+      // 2. Create a Razorpay order on the backend (amount is calculated by the server from the cart)
+      const razorpayOrderRes = await api.post('/payments/order', { orderItems, couponCode });
       const { id: razorpayOrderId, amount: razorpayAmount, currency } = razorpayOrderRes;
 
       // 3. Open Razorpay Checkout Modal
@@ -314,33 +255,19 @@ export default function Checkout() {
           color: '#8B7355'
         },
         handler: async function (paymentResponse) {
-          // Payment successful — now create the order in our backend
+          // Payment successful — create the order. The server verifies the payment signature,
+          // owner and amount before saving it as paid.
           try {
             const orderRes = await api.post('/orders', {
               orderItems,
               shippingAddress,
               paymentMethod: 'Razorpay',
-              itemsPrice: itemsPrice - taxPrice,
-              taxPrice,
-              shippingPrice,
-              discountPrice: appliedDiscount,
-              totalPrice,
+              couponCode,
               razorpayOrderId: paymentResponse.razorpay_order_id,
               razorpayPaymentId: paymentResponse.razorpay_payment_id,
-              razorpaySignature: paymentResponse.razorpay_signature,
-              isPaid: true
+              razorpaySignature: paymentResponse.razorpay_signature
             });
-            const order = orderRes.order;
-
-            // Verify the payment signature on backend
-            await api.post('/payments/verify', {
-              razorpayOrderId: paymentResponse.razorpay_order_id,
-              razorpayPaymentId: paymentResponse.razorpay_payment_id,
-              razorpaySignature: paymentResponse.razorpay_signature,
-              orderId: order._id
-            });
-
-            handleOrderSuccess(order);
+            handleOrderSuccess(orderRes.order);
           } catch (err) {
             toast.error(err.message || "Order creation failed after payment. Contact support.");
           } finally {
@@ -354,13 +281,6 @@ export default function Checkout() {
           }
         }
       };
-
-      if (razorpayOrderId.startsWith('order_mock_')) {
-        setMockOptions(options);
-        setMockStep('options');
-        setShowMockRazorpay(true);
-        return;
-      }
 
       const rzp = new window.Razorpay(options);
       rzp.on('payment.failed', function (response) {
@@ -397,15 +317,15 @@ export default function Checkout() {
 
   if (isOrderCompleted && createdOrderDetails) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-16 text-center select-none animate-fade-in text-left">
-        <div className="bg-white dark:bg-[#0c0a06] border border-gold-200/50 dark:border-gold-900/40 p-8 sm:p-12 shadow-md relative">
+      <div className="max-w-3xl mx-auto px-4 py-10 sm:py-16 text-center select-none animate-fade-in text-left">
+        <div className="bg-white dark:bg-[#0c0a06] border border-gold-200/50 dark:border-gold-900/40 p-5 sm:p-12 shadow-md relative">
           <div className="absolute top-3 left-3 w-3 h-3 border-t border-l border-gold-400/50"></div>
           <div className="absolute bottom-3 right-3 w-3 h-3 border-b border-r border-gold-400/50"></div>
 
           <div className="flex flex-col items-center text-center mb-8 border-b border-gold-100 dark:border-gold-950/60 pb-8 relative z-20">
             <FiCheckCircle className="text-green-600 mb-4 animate-pulse" size={60} />
             <span className="text-[10px] font-bold tracking-[0.3em] text-gold-600 uppercase mb-2">ORDER PLACED SUCCESSFULLY</span>
-            <h1 className="font-serif text-3xl font-bold tracking-wide text-primary dark:text-white m-0 mb-3">
+            <h1 className="font-serif text-2xl sm:text-3xl font-bold tracking-wide text-primary dark:text-white m-0 mb-3">
               Thank You for Your Order!
             </h1>
             <p className="text-secondary dark:text-gray-300 text-sm font-sans max-w-sm leading-relaxed">
@@ -419,11 +339,11 @@ export default function Checkout() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
               <div>
                 <span className="text-xs text-secondary dark:text-gray-400 font-semibold uppercase tracking-wider block">Order ID</span>
-                <strong className="text-primary dark:text-white font-mono text-base font-bold">{createdOrderDetails.id}</strong>
+                <strong className="text-primary dark:text-white font-mono text-sm sm:text-base font-bold break-all">{createdOrderDetails.id}</strong>
               </div>
               <div>
                 <span className="text-xs text-secondary dark:text-gray-400 font-semibold uppercase tracking-wider block">SF Express Tracking ID</span>
-                <strong className="text-primary dark:text-white font-mono text-base font-bold">{createdOrderDetails.trackingId}</strong>
+                <strong className="text-primary dark:text-white font-mono text-sm sm:text-base font-bold break-all">{createdOrderDetails.trackingId}</strong>
               </div>
               <div>
                 <span className="text-xs text-secondary dark:text-gray-400 font-semibold uppercase tracking-wider block">Estimated Delivery</span>
@@ -442,7 +362,7 @@ export default function Checkout() {
 
             <div className="border-t border-gold-100 dark:border-gold-950/60 pt-6 text-left">
               <span className="text-xs text-secondary dark:text-gray-400 font-semibold uppercase tracking-wider block mb-1">Chosen Payment Channel</span>
-              <p className="text-primary dark:text-white font-semibold flex items-center"><FiCreditCard className="mr-2 text-gold-600" /> {createdOrderDetails.paymentMethod} (Authorized Securely)</p>
+              <p className="text-primary dark:text-white font-semibold flex items-start sm:items-center"><FiCreditCard className="mr-2 mt-1 sm:mt-0 shrink-0 text-gold-600" /> {createdOrderDetails.paymentMethod} (Authorized Securely)</p>
             </div>
           </div>
 
@@ -469,11 +389,11 @@ export default function Checkout() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 animate-fade-in text-left">
       {/* Page Header */}
       <div className="border-b border-gold-100 dark:border-gold-950/60 pb-4 mb-8">
-        <h1 className="font-serif text-3xl font-bold tracking-wide text-primary dark:text-white m-0">Secure Checkout</h1>
+        <h1 className="font-serif text-2xl sm:text-3xl font-bold tracking-wide text-primary dark:text-white m-0">Secure Checkout</h1>
       </div>
 
       {cartItems.length === 0 ? (
-        <div className="bg-white dark:bg-[#0c0a06] border border-gold-200/50 dark:border-gold-900/40 p-12 sm:p-20 text-center select-none relative">
+        <div className="bg-white dark:bg-[#0c0a06] border border-gold-200/50 dark:border-gold-900/40 px-6 py-12 sm:p-20 text-center select-none relative">
           <div className="absolute top-3 left-3 w-3 h-3 border-t border-l border-gold-400/50"></div>
           <div className="absolute bottom-3 right-3 w-3 h-3 border-b border-r border-gold-400/50"></div>
           
@@ -491,10 +411,10 @@ export default function Checkout() {
       ) : (
         <form onSubmit={handlePlaceOrder} className="flex flex-col lg:flex-row gap-8 items-start">
             {/* Left Side: Shipping & Billing Forms */}
-          <div className="w-full lg:w-2/3 space-y-6">
+          <div className="w-full lg:w-2/3 min-w-0 space-y-6">
             
             {/* Panel 1: Shipping Destination Address */}
-            <div className="bg-white dark:bg-[#0c0a06] border border-gold-200/50 dark:border-gold-900/40 p-6 sm:p-8 shadow-sm relative">
+            <div className="bg-white dark:bg-[#0c0a06] border border-gold-200/50 dark:border-gold-900/40 p-5 sm:p-8 shadow-sm relative">
               {/* Luxury Gold Corner Frames */}
               <div className="absolute top-4 left-4 w-4 h-4 border-t border-l border-gold-400/50 pointer-events-none z-10"></div>
               <div className="absolute bottom-4 right-4 w-4 h-4 border-b border-r border-gold-400/50 pointer-events-none z-10"></div>
@@ -593,7 +513,7 @@ export default function Checkout() {
             </div>
 
             {/* Panel 2: Secure Payment Channel Selection */}
-            <div className="bg-white dark:bg-[#0c0a06] border border-gold-200/50 dark:border-gold-900/40 p-6 shadow-sm relative">
+            <div className="bg-white dark:bg-[#0c0a06] border border-gold-200/50 dark:border-gold-900/40 p-5 sm:p-6 shadow-sm relative">
               {/* Luxury Gold Corner Frames */}
               <div className="absolute top-4 left-4 w-4 h-4 border-t border-l border-gold-400/50 pointer-events-none z-10"></div>
               <div className="absolute bottom-4 right-4 w-4 h-4 border-b border-r border-gold-400/50 pointer-events-none z-10"></div>
@@ -625,7 +545,7 @@ export default function Checkout() {
                       onChange={() => setPaymentMethod(pm.id)}
                       className="mt-1 mr-4 accent-gold-600 cursor-pointer"
                     />
-                    <div className="text-left">
+                    <div className="text-left min-w-0">
                       <span className="font-serif text-sm font-bold text-primary dark:text-white block">{pm.title}</span>
                       <span className="text-xs text-secondary dark:text-gray-300 font-medium leading-relaxed mt-0.5 block">{pm.desc}</span>
                     </div>
@@ -637,7 +557,7 @@ export default function Checkout() {
           </div>
 
           {/* Right Side: Order Review Panel */}
-          <aside className="w-full lg:w-1/3 bg-white dark:bg-[#0c0a06] border border-gold-200/60 dark:border-gold-900/40 p-6 shadow-sm sticky top-28 select-none relative">
+          <aside className="w-full lg:w-1/3 bg-white dark:bg-[#0c0a06] border border-gold-200/60 dark:border-gold-900/40 p-5 sm:p-6 shadow-sm lg:sticky lg:top-28 select-none relative">
             {/* Luxury Gold Corner Frames */}
             <div className="absolute top-4 left-4 w-4 h-4 border-t border-l border-gold-400/50 pointer-events-none z-10"></div>
             <div className="absolute bottom-4 right-4 w-4 h-4 border-b border-r border-gold-400/50 pointer-events-none z-10"></div>
@@ -650,14 +570,14 @@ export default function Checkout() {
             <div className="divide-y divide-gray-100 dark:divide-gold-950/60 max-h-[220px] overflow-y-auto pr-2 mb-6 relative z-20">
               {cartItems.map((item) => (
                 <div key={`${item.id}-${item.selectedColor}-${item.selectedSize}`} className="py-3 flex items-center justify-between text-xs font-sans text-secondary dark:text-gray-350">
-                  <div className="flex items-center space-x-3 max-w-[70%]">
+                  <div className="flex items-center space-x-3 min-w-0">
                     <img src={getImageUrl(item.image)} alt={item.name} className="w-10 h-10 border border-gold-100 dark:border-gold-900/40 object-cover flex-shrink-0" />
-                    <div className="text-left">
+                    <div className="text-left min-w-0">
                       <span className="font-serif font-bold text-primary dark:text-white line-clamp-1">{item.name}</span>
                       <span className="text-secondary dark:text-gray-400 text-[10px] font-medium">Qty: {item.quantity} | {item.selectedColor}</span>
                     </div>
                   </div>
-                  <span className="font-bold text-primary dark:text-white">₹{(item.price * item.quantity).toLocaleString('en-IN')}</span>
+                  <span className="font-bold text-primary dark:text-white shrink-0">₹{(item.price * item.quantity).toLocaleString('en-IN')}</span>
                 </div>
               ))}
             </div>
@@ -666,25 +586,25 @@ export default function Checkout() {
             <div className="border-t border-gold-100 dark:border-gold-950/60 pt-4 mb-5 relative z-20">
               <label className="block text-[10px] font-bold text-secondary dark:text-gray-300 uppercase tracking-wider mb-2">Promo Code</label>
               {!appliedPromoCode ? (
-                <div className="flex space-x-2">
+                <div className="flex gap-2">
                   <input
                     type="text"
                     value={promoCodeInput}
                     onChange={(e) => setPromoCodeInput(e.target.value)}
                     placeholder={`Try '${settings?.specialOfferCouponCode || "SHAMBHAVI10"}'`}
-                    className="flex-grow bg-[#faf9f6] dark:bg-[#100d07] border border-gold-300 dark:border-gold-900/60 py-2.5 px-3 text-xs tracking-wider outline-none uppercase font-mono focus:border-gold-500 text-primary dark:text-white"
+                    className="flex-1 min-w-0 bg-[#faf9f6] dark:bg-[#100d07] border border-gold-300 dark:border-gold-900/60 py-2.5 px-3 text-xs tracking-wider outline-none uppercase font-mono focus:border-gold-500 text-primary dark:text-white"
                   />
                   <button
                     type="button"
                     onClick={handleApplyPromoCode}
-                    className="bg-primary hover:bg-gold-500 text-white hover:text-primary font-bold py-2.5 px-4 text-xs tracking-widest uppercase transition-colors cursor-pointer border border-primary hover:border-gold-500 dark:bg-gold-600 dark:border-gold-600 dark:text-primary dark:hover:bg-white"
+                    className="shrink-0 bg-primary hover:bg-gold-500 text-white hover:text-primary font-bold py-2.5 px-4 text-xs tracking-widest uppercase transition-colors cursor-pointer border border-primary hover:border-gold-500 dark:bg-gold-600 dark:border-gold-600 dark:text-primary dark:hover:bg-white"
                   >
                     Apply
                   </button>
                 </div>
               ) : (
-                <div className="flex items-center justify-between bg-green-50/40 dark:bg-green-950/10 border border-green-150 p-2.5">
-                  <span className="text-xs text-green-700 dark:text-green-400 font-semibold uppercase tracking-wider">
+                <div className="flex flex-wrap items-center justify-between gap-2 bg-green-50/40 dark:bg-green-950/10 border border-green-150 p-2.5">
+                  <span className="text-xs text-green-700 dark:text-green-400 font-semibold uppercase tracking-wider min-w-0 break-all">
                     ✓ Code Applied: {appliedPromoCode}
                   </span>
                   <button
@@ -713,8 +633,8 @@ export default function Checkout() {
                 )}
               </div>
               {appliedDiscount > 0 && (
-                <div className="flex justify-between text-green-600 dark:text-green-400 font-semibold items-center bg-green-50/50 dark:bg-green-950/10 p-1.5 border border-green-200/30">
-                  <span className="flex items-center font-bold">Promo Discount ({appliedPromoCode})</span>
+                <div className="flex justify-between gap-3 text-green-600 dark:text-green-400 font-semibold items-center bg-green-50/50 dark:bg-green-950/10 p-1.5 border border-green-200/30">
+                  <span className="flex items-center font-bold min-w-0 break-all">Promo Discount ({appliedPromoCode})</span>
                   <span>-₹{appliedDiscount.toLocaleString('en-IN')}</span>
                 </div>
               )}
@@ -761,284 +681,6 @@ export default function Checkout() {
 
           </aside>
         </form>
-      )}
-
-      {/* Mock Razorpay Modal */}
-      {showMockRazorpay && (
-        <div className="fixed inset-0 bg-[#0a0a0d]/85 backdrop-blur-xs flex items-center justify-center z-[150] p-4 select-none animate-fade-in text-left">
-          <div className="w-full max-w-[400px] bg-[#14151b] border border-gray-800 text-white rounded-lg shadow-2xl overflow-hidden font-sans flex flex-col min-h-[480px]">
-            {/* Header */}
-            <div className="bg-[#1b1c24] px-5 py-4 border-b border-gray-800 flex justify-between items-center">
-              <div>
-                <span className="text-[10px] font-bold tracking-[0.25em] text-gold-500 uppercase block mb-1">RAZORPAY SECURE</span>
-                <h3 className="font-serif text-sm font-bold text-white tracking-wide">{mockOptions?.name || 'Shambhavi Imitation'}</h3>
-                <span className="text-xs text-gray-400">{mockOptions?.description}</span>
-              </div>
-              <button 
-                type="button"
-                onClick={handleMockPaymentCancel}
-                className="text-gray-400 hover:text-white p-1 hover:bg-gray-800 transition-colors rounded-none cursor-pointer"
-                title="Cancel Payment"
-              >
-                <FiX size={18} />
-              </button>
-            </div>
-
-            {/* Price Indicator */}
-            <div className="bg-[#111218] px-5 py-3 border-b border-gray-800 flex justify-between items-center text-xs">
-              <span className="text-gray-400">Paying to Merchant</span>
-              <span className="text-gold-400 font-extrabold text-sm font-sans">₹{(mockOptions?.amount / 100).toLocaleString('en-IN')}</span>
-            </div>
-
-            {/* Body */}
-            <div className="flex-grow p-5 flex flex-col justify-between">
-              {mockStep === 'options' && (
-                <div className="space-y-4">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Preferred Payment Methods</span>
-                  
-                  {/* Card Button */}
-                  <button 
-                    type="button"
-                    onClick={() => setMockStep('card')}
-                    className="w-full bg-[#1b1c24] hover:bg-[#21232d] border border-gray-800 p-4 flex items-center justify-between text-left transition-colors cursor-pointer"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <FiCreditCard size={18} className="text-gold-500" />
-                      <div>
-                        <span className="text-xs font-bold block text-white font-sans">Card</span>
-                        <span className="text-[10px] text-gray-400 font-sans">Visa, MasterCard, RuPay</span>
-                      </div>
-                    </div>
-                    <FiChevronRight size={14} className="text-gray-500" />
-                  </button>
-
-                  {/* UPI Button */}
-                  <button 
-                    type="button"
-                    onClick={() => setMockStep('upi')}
-                    className="w-full bg-[#1b1c24] hover:bg-[#21232d] border border-gray-800 p-4 flex items-center justify-between text-left transition-colors cursor-pointer"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <FiPhone size={18} className="text-gold-500" />
-                      <div>
-                        <span className="text-xs font-bold block text-white font-sans">UPI / Instant GPay / PhonePe</span>
-                        <span className="text-[10px] text-gray-400 font-sans">Pay directly from UPI App</span>
-                      </div>
-                    </div>
-                    <FiChevronRight size={14} className="text-gray-500" />
-                  </button>
-
-                  {/* Netbanking Button */}
-                  <button 
-                    type="button"
-                    onClick={() => setMockStep('netbanking')}
-                    className="w-full bg-[#1b1c24] hover:bg-[#21232d] border border-gray-800 p-4 flex items-center justify-between text-left transition-colors cursor-pointer"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <FiMapPin size={18} className="text-gold-500" />
-                      <div>
-                        <span className="text-xs font-bold block text-white font-sans">Netbanking</span>
-                        <span className="text-[10px] text-gray-400 font-sans">All major Indian banks</span>
-                      </div>
-                    </div>
-                    <FiChevronRight size={14} className="text-gray-500" />
-                  </button>
-                </div>
-              )}
-
-              {mockStep === 'card' && (
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <button type="button" onClick={() => setMockStep('options')} className="text-gold-500 hover:underline text-xs flex items-center gap-1 cursor-pointer font-sans">
-                      ← Back
-                    </button>
-                  </div>
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block font-sans">Card Details</span>
-                  
-                  {/* Card Number */}
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-bold text-gray-400 uppercase font-sans">Card Number</label>
-                    <input 
-                      type="text" 
-                      placeholder="4111 2222 3333 4444"
-                      maxLength={19}
-                      value={mockCardNumber}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/\D/g, '');
-                        const parts = [];
-                        for (let i = 0; i < val.length && i < 16; i += 4) {
-                          parts.push(val.substring(i, i + 4));
-                        }
-                        setMockCardNumber(parts.join(' '));
-                      }}
-                      className="w-full bg-[#111218] border border-gray-800 py-2.5 px-3 text-xs outline-none text-white focus:border-gold-500 font-mono"
-                    />
-                  </div>
-
-                  {/* Expiry & CVV */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-bold text-gray-400 uppercase font-sans">Expiry (MM/YY)</label>
-                      <input 
-                        type="text" 
-                        placeholder="12/28"
-                        maxLength={5}
-                        value={mockCardExpiry}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/\D/g, '');
-                          if (val.length >= 2) {
-                            setMockCardExpiry(`${val.substring(0,2)}/${val.substring(2,4)}`);
-                          } else {
-                            setMockCardExpiry(val);
-                          }
-                        }}
-                        className="w-full bg-[#111218] border border-gray-800 py-2.5 px-3 text-xs outline-none text-white focus:border-gold-500 font-mono"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-bold text-gray-400 uppercase font-sans">CVV</label>
-                      <input 
-                        type="password" 
-                        placeholder="•••"
-                        maxLength={3}
-                        value={mockCardCvv}
-                        onChange={(e) => setMockCardCvv(e.target.value.replace(/\D/g, ''))}
-                        className="w-full bg-[#111218] border border-gray-800 py-2.5 px-3 text-xs outline-none text-white focus:border-gold-500 font-mono"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Submit Button */}
-                  <button 
-                    type="button"
-                    onClick={handleMockPaymentSubmit}
-                    className="w-full bg-gold-600 hover:bg-gold-500 text-black font-bold py-3.5 px-6 text-xs uppercase tracking-widest mt-6 cursor-pointer text-center font-sans"
-                  >
-                    Pay ₹{(mockOptions?.amount / 100).toLocaleString('en-IN')}
-                  </button>
-                </div>
-              )}
-
-              {mockStep === 'upi' && (
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <button type="button" onClick={() => setMockStep('options')} className="text-gold-500 hover:underline text-xs flex items-center gap-1 cursor-pointer font-sans">
-                      ← Back
-                    </button>
-                  </div>
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block font-sans">UPI Payment</span>
-                  
-                  {/* Quick Shortcuts */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <button 
-                      type="button"
-                      onClick={() => setMockUpiId('shambhavi.jewelry@okaxis')}
-                      className="bg-[#1b1c24] border border-gray-800 hover:border-gold-500 p-2 text-[10px] font-bold cursor-pointer font-sans"
-                    >
-                      Autofill Test UPI
-                    </button>
-                    <button 
-                      type="button"
-                      onClick={() => setMockUpiId(`${phone}@ybl`)}
-                      className="bg-[#1b1c24] border border-gray-800 hover:border-gold-500 p-2 text-[10px] font-bold cursor-pointer font-sans"
-                    >
-                      Use Phone Number
-                    </button>
-                  </div>
-
-                  {/* UPI ID Field */}
-                  <div className="space-y-1 mt-2">
-                    <label className="text-[9px] font-bold text-gray-400 uppercase font-sans">UPI ID / VPA</label>
-                    <input 
-                      type="text" 
-                      placeholder="username@bankname"
-                      value={mockUpiId}
-                      onChange={(e) => setMockUpiId(e.target.value)}
-                      className="w-full bg-[#111218] border border-gray-800 py-2.5 px-3 text-xs outline-none text-white focus:border-gold-500 font-sans"
-                    />
-                  </div>
-
-                  {/* Submit Button */}
-                  <button 
-                    type="button"
-                    onClick={handleMockPaymentSubmit}
-                    className="w-full bg-gold-600 hover:bg-gold-500 text-black font-bold py-3.5 px-6 text-xs uppercase tracking-widest mt-6 cursor-pointer text-center font-sans"
-                  >
-                    Pay ₹{(mockOptions?.amount / 100).toLocaleString('en-IN')}
-                  </button>
-                </div>
-              )}
-
-              {mockStep === 'netbanking' && (
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <button type="button" onClick={() => setMockStep('options')} className="text-gold-500 hover:underline text-xs flex items-center gap-1 cursor-pointer font-sans">
-                      ← Back
-                    </button>
-                  </div>
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block font-sans">Netbanking Popular Banks</span>
-                  
-                  {/* Banks Grid */}
-                  <div className="grid grid-cols-2 gap-2.5">
-                    {['SBI', 'HDFC', 'ICICI', 'AXIS'].map((bank) => (
-                      <button
-                        type="button"
-                        key={bank}
-                        onClick={() => setMockBank(bank)}
-                        className={`p-3 text-xs font-bold border transition-colors cursor-pointer font-sans ${
-                          mockBank === bank
-                            ? 'bg-gold-600 border-gold-600 text-black'
-                            : 'bg-[#1b1c24] border-gray-800 hover:border-gold-500 text-white'
-                        }`}
-                      >
-                        {bank}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Submit Button */}
-                  <button 
-                    type="button"
-                    onClick={handleMockPaymentSubmit}
-                    className="w-full bg-gold-600 hover:bg-gold-500 text-black font-bold py-3.5 px-6 text-xs uppercase tracking-widest mt-6 cursor-pointer text-center font-sans"
-                  >
-                    Pay with {mockBank}
-                  </button>
-                </div>
-              )}
-
-              {mockStep === 'processing' && (
-                <div className="flex flex-col items-center justify-center py-10 space-y-4">
-                  <div className="w-12 h-12 border-4 border-gray-800 border-t-gold-550 rounded-full animate-spin"></div>
-                  <div className="text-center space-y-1.5">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-gold-400 animate-pulse font-sans">Processing secure payment...</h4>
-                    <p className="text-[10px] text-gray-400 font-sans">Do not refresh or click the back button.</p>
-                  </div>
-                </div>
-              )}
-
-              {mockStep === 'success' && (
-                <div className="flex flex-col items-center justify-center py-10 space-y-4">
-                  <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-white text-xl font-bold animate-bounce shadow-lg">
-                    ✓
-                  </div>
-                  <div className="text-center space-y-1">
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-green-500 font-sans">Payment Successful!</h4>
-                    <p className="text-[10px] text-gray-400 font-sans">Redirecting to Shambhavi checkout...</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Secure Lock Badge */}
-              {mockStep !== 'processing' && mockStep !== 'success' && (
-                <div className="mt-8 text-center flex items-center justify-center space-x-1.5 opacity-60 text-[9px] uppercase tracking-widest font-sans">
-                  <span>🔒</span>
-                  <span>Secured by 256-bit encryption</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );

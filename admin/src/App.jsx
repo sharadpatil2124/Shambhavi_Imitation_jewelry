@@ -1,4 +1,4 @@
-import React from 'react';
+import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -7,23 +7,26 @@ import AdminProtectedRoute from './routes/AdminProtectedRoute';
 import AdminLayout from './layouts/AdminLayout';
 
 import AdminLogin from './pages/AdminLogin';
-import AdminForgotPassword from './pages/AdminForgotPassword';
-import AdminResetPassword from './pages/AdminResetPassword';
-import AdminDashboard from './pages/AdminDashboard';
-import AdminProducts from './pages/AdminProducts';
-import AdminCategories from './pages/AdminCategories';
-import AdminOrders from './pages/AdminOrders';
-import AdminCustomers from './pages/AdminCustomers';
-import AdminReviews from './pages/AdminReviews';
-import AdminCartWishlist from './pages/AdminCartWishlist';
-import AdminSettings from './pages/AdminSettings';
-import AdminProfile from './pages/AdminProfile';
-import AdminEnquiries from './pages/AdminEnquiries';
+
+// Other pages load on demand, so signing in downloads less JavaScript (the dashboard charts are large).
+const AdminForgotPassword = lazy(() => import('./pages/AdminForgotPassword'));
+const AdminResetPassword = lazy(() => import('./pages/AdminResetPassword'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const AdminProducts = lazy(() => import('./pages/AdminProducts'));
+const AdminCategories = lazy(() => import('./pages/AdminCategories'));
+const AdminOrders = lazy(() => import('./pages/AdminOrders'));
+const AdminCustomers = lazy(() => import('./pages/AdminCustomers'));
+const AdminReviews = lazy(() => import('./pages/AdminReviews'));
+const AdminCartWishlist = lazy(() => import('./pages/AdminCartWishlist'));
+const AdminSettings = lazy(() => import('./pages/AdminSettings'));
+const AdminProfile = lazy(() => import('./pages/AdminProfile'));
+const AdminEnquiries = lazy(() => import('./pages/AdminEnquiries'));
 
 export default function App() {
   return (
     <Router>
       <div className="flex flex-col min-h-screen bg-[#FDFCF7] font-sans antialiased">
+        <Suspense fallback={<div className="min-h-[50vh] flex items-center justify-center text-xs tracking-widest uppercase text-gold-600">Loading…</div>}>
         <Routes>
           <Route path="/login" element={<AdminLogin />} />
           <Route path="/forgot-password" element={<AdminForgotPassword />} />
@@ -45,6 +48,7 @@ export default function App() {
             </Route>
           </Route>
         </Routes>
+        </Suspense>
 
         <ToastContainer 
           position="bottom-center"

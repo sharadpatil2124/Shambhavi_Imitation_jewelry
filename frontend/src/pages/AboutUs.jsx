@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import { FiCheckSquare, FiAward, FiHeart, FiGlobe } from 'react-icons/fi';
 
@@ -11,7 +10,7 @@ export default function AboutUs() {
         <span className="text-xs font-bold tracking-[0.25em] text-gold-600 uppercase block mb-2">
           OUR GOLDEN LEGACY
         </span>
-        <h1 className="font-serif text-3xl sm:text-4xl font-bold tracking-wide text-primary m-0 mb-3">
+        <h1 className="font-serif text-[1.65rem] leading-tight min-[400px]:text-3xl sm:text-4xl font-bold tracking-wide text-primary m-0 mb-3">
           The Craft of Shambhavi Imitation
         </h1>
         <p className="text-secondary text-xs sm:text-sm font-sans max-w-lg mx-auto leading-relaxed">
@@ -20,7 +19,7 @@ export default function AboutUs() {
       </div>
 
       {/* 2. Story Section (Split layout) */}
-      <section className="flex flex-col lg:flex-row gap-12 items-center mb-16">
+      <section className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-center mb-12 sm:mb-16">
         {/* Story Text */}
         <div className="w-full lg:w-1/2 space-y-5">
           <span className="text-xs font-bold tracking-[0.3em] text-gold-600 uppercase">SINCE 2018</span>
@@ -47,7 +46,7 @@ export default function AboutUs() {
       </section>
 
       {/* 3. The Pillars of Excellence (Grid of 4 benefits) */}
-      <section className="bg-white border border-gold-200/50 p-8 sm:p-12 shadow-sm mb-16">
+      <section className="bg-white border border-gold-200/50 p-6 sm:p-12 shadow-sm mb-12 sm:mb-16">
         <div className="text-center mb-12 select-none">
           <span className="text-xs font-bold tracking-[0.2em] text-gold-600 uppercase block mb-1">BRAND PROMISE</span>
           <h3 className="font-serif text-2xl font-bold tracking-wide text-primary">Pillars of Exquisite Excellence</h3>
@@ -88,7 +87,7 @@ export default function AboutUs() {
       </section>
 
       {/* 4. Artistic Showcase (Split layout reversed) */}
-      <section className="flex flex-col lg:flex-row-reverse gap-12 items-center mb-12">
+      <section className="flex flex-col lg:flex-row-reverse gap-8 lg:gap-12 items-center mb-12">
         <div className="w-full lg:w-1/2 space-y-5">
           <span className="text-xs font-bold tracking-[0.3em] text-gold-600 uppercase">THE DESIGN LABORATORY</span>
           <h2 className="font-serif text-2xl sm:text-3xl font-bold text-primary tracking-wide leading-tight">

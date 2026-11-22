@@ -2,6 +2,10 @@ import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import Cart from '../models/Cart.js';
 import User from '../models/userModel.js';
+import razorpayInstance from '../config/razorpay.js';
+import { priceOrder, PricingError, toPaise } from '../utils/orderPricing.js';
+import { isValidRazorpaySignature } from './paymentController.js';
+import { escapeRegex, parsePagination, queryString } from '../utils/queryHelpers.js';
 import {
   sendOrderConfirmationEmail,
   sendOrderCancellationEmail,
@@ -11,31 +15,120 @@ import {
   sendOrderShippedEmail
 } from '../utils/sendEmail.js';
 
+// Puts an order's items back into stock at most once (cancellation or refund).
+// The flag is claimed atomically, so two simultaneous admin actions cannot both restore.
+// Orders created before this flag existed count as already restored once Cancelled or Refunded.
+const restoreOrderStockOnce = async (order, previousStatus) => {
+  if (order.stockRestored || ['Cancelled', 'Refunded'].includes(previousStatus)) return false;
+
+  const claimed = await Order.findOneAndUpdate(
+    { _id: order._id, stockRestored: { $ne: true } },
+    { $set: { stockRestored: true } }
+  );
+  order.stockRestored = true;
+  if (!claimed) return false;
+
+  for (const item of order.orderItems) {
+    if (item.product) {
+      await Product.findByIdAndUpdate(item.product, { $inc: { stock: item.quantity } });
+    }
+  }
+  return true;
+};
+
 // @desc    Create new order
 // @route   POST /api/orders
 // @access  Private
 export const createOrder = async (req, res, next) => {
   try {
     const {
-      orderItems,
+      orderItems: requestedItems,
       shippingAddress,
       paymentMethod,
-      itemsPrice,
-      taxPrice,
-      shippingPrice,
-      discountPrice,
-      totalPrice,
+      couponCode,
+      totalPrice: displayedTotal,
       razorpayOrderId,
       razorpayPaymentId,
       razorpaySignature
     } = req.body;
 
-    if (!orderItems || orderItems.length === 0) {
+    if (!['COD', 'Razorpay'].includes(paymentMethod)) {
       res.status(400);
-      throw new Error('No items specified to create an order');
+      throw new Error('Please choose a valid payment method');
     }
 
-    // 1. Atomic Concurrency Stock Deduction (Prevents Race Conditions & Overselling)
+    // Check the delivery address before reserving any stock.
+    const requiredAddressFields = ['street', 'city', 'state', 'pincode', 'phone', 'email'];
+    const missingAddressFields = requiredAddressFields.filter(
+      (field) => typeof shippingAddress?.[field] !== 'string' || !shippingAddress[field].trim()
+    );
+    if (missingAddressFields.length > 0) {
+      res.status(400);
+      throw new Error(`Please complete the delivery address: ${missingAddressFields.join(', ')} missing`);
+    }
+
+    // 1. Price the order on the server. Prices, discount and total sent by the browser are ignored.
+    let pricing;
+    try {
+      pricing = await priceOrder({ orderItems: requestedItems, couponCode });
+    } catch (err) {
+      if (err instanceof PricingError) res.status(err.status);
+      throw err;
+    }
+    const { items: orderItems, settings } = pricing;
+
+    if (paymentMethod === 'COD' && settings.codEnabled === false) {
+      res.status(400);
+      throw new Error('Cash on Delivery is currently unavailable. Please choose online payment.');
+    }
+    if (paymentMethod === 'Razorpay' && settings.onlinePaymentEnabled === false) {
+      res.status(400);
+      throw new Error('Online payment is currently unavailable. Please choose Cash on Delivery.');
+    }
+
+    // 2. For Razorpay, prove the payment before anything else: genuine signature, paid by this
+    //    customer, for exactly this total, and not already used for another order.
+    let paymentProof = null;
+    if (paymentMethod === 'Razorpay') {
+      if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+        res.status(400);
+        throw new Error('Payment details are missing. Please complete the payment to place this order.');
+      }
+      if (!isValidRazorpaySignature(razorpayOrderId, razorpayPaymentId, razorpaySignature)) {
+        res.status(400);
+        throw new Error('Payment verification failed: Invalid transaction signature');
+      }
+
+      let gatewayOrder;
+      try {
+        gatewayOrder = await razorpayInstance.orders.fetch(String(razorpayOrderId));
+      } catch (err) {
+        console.error('❌ [Razorpay] Could not fetch order for verification:', err?.error?.description || err.message);
+        res.status(502);
+        throw new Error('We could not confirm your payment with the payment gateway. Please contact support with your payment ID: ' + razorpayPaymentId);
+      }
+
+      if (String(gatewayOrder?.notes?.userId || '') !== String(req.user._id)) {
+        res.status(400);
+        throw new Error('Payment verification failed: this payment does not belong to your account');
+      }
+      if (Number(gatewayOrder.amount) !== toPaise(pricing.totalPrice)) {
+        console.error(`❌ [Razorpay] Amount mismatch for ${razorpayOrderId}: paid ${gatewayOrder.amount} paise, order total ${toPaise(pricing.totalPrice)} paise`);
+        res.status(409);
+        throw new Error('The amount paid does not match your order total. Please contact support with your payment ID: ' + razorpayPaymentId);
+      }
+      if (await Order.exists({ razorpayOrderId: String(razorpayOrderId) })) {
+        res.status(409);
+        throw new Error('This payment has already been used for another order');
+      }
+      paymentProof = { razorpayOrderId: String(razorpayOrderId), razorpayPaymentId: String(razorpayPaymentId), razorpaySignature: String(razorpaySignature) };
+    } else if (displayedTotal !== undefined && Number(displayedTotal) !== pricing.totalPrice) {
+      // COD: do not place an order for a different amount than the customer was shown.
+      res.status(409);
+      throw new Error(`Prices in your cart have changed. Your order total is now ₹${pricing.totalPrice.toLocaleString('en-IN')}. Please review your cart and try again.`);
+    }
+
+    // 3. Atomic Concurrency Stock Deduction (Prevents Race Conditions & Overselling)
     const deductedProducts = [];
     for (const item of orderItems) {
       const updatedProduct = await Product.findOneAndUpdate(
@@ -62,28 +155,38 @@ export const createOrder = async (req, res, next) => {
       deductedProducts.push({ id: item.product, quantity: item.quantity });
     }
 
-    // 2. Create the Order
-    const order = await Order.create({
-      user: req.user._id,
-      orderItems,
-      shippingAddress,
-      paymentMethod,
-      itemsPrice,
-      taxPrice,
-      shippingPrice,
-      discountPrice,
-      totalPrice,
-      razorpayOrderId,
-      razorpayPaymentId,
-      razorpaySignature,
-      isPaid: paymentMethod === 'Razorpay' ? true : false,
-      paidAt: paymentMethod === 'Razorpay' ? Date.now() : null
-    });
+    // 4. Create the Order with server-calculated amounts. Paid only when the payment was proven above.
+    //    If saving fails for any reason, put the deducted stock back so no units are lost.
+    let order;
+    try {
+      order = await Order.create({
+        user: req.user._id,
+        orderItems,
+        shippingAddress,
+        paymentMethod,
+        itemsPrice: pricing.itemsPrice,
+        taxPrice: pricing.taxPrice,
+        shippingPrice: pricing.shippingPrice,
+        discountPrice: pricing.discountPrice,
+        totalPrice: pricing.totalPrice,
+        ...(paymentProof || {}),
+        isPaid: Boolean(paymentProof),
+        paidAt: paymentProof ? Date.now() : null,
+        paymentResult: paymentProof
+          ? { id: paymentProof.razorpayPaymentId, status: 'Success', email_address: req.user.email }
+          : undefined
+      });
+    } catch (createError) {
+      for (const reverted of deductedProducts) {
+        await Product.findByIdAndUpdate(reverted.id, { $inc: { stock: reverted.quantity } });
+      }
+      throw createError;
+    }
 
-    // 3. Clear user's Shopping Cart
+    // 5. Clear user's Shopping Cart
     await Cart.findOneAndUpdate({ user: req.user._id }, { items: [] });
 
-    // 4. Send order confirmation email asynchronously
+    // 6. Send order confirmation email asynchronously
     if (order.shippingAddress && order.shippingAddress.email) {
       sendOrderConfirmationEmail(order.shippingAddress.email, order).catch(err => {
         console.error('⚠️ [Order Email Error]: Failed to send confirmation email:', err.message);
@@ -153,7 +256,9 @@ export const getMyOrders = async (req, res, next) => {
 // @access  Private/Admin
 export const getOrders = async (req, res, next) => {
   try {
-    const { search, status, page = 1, limit = 10 } = req.query;
+    const search = queryString(req.query.search);
+    const status = queryString(req.query.status);
+    const { page, limit, skip } = parsePagination(req.query.page, req.query.limit, { defaultLimit: 10, maxLimit: 100 });
     const query = {};
 
     if (status) {
@@ -164,38 +269,38 @@ export const getOrders = async (req, res, next) => {
       if (/^[0-9a-fA-F]{24}$/.test(search)) {
         query._id = search;
       } else {
+        const pattern = escapeRegex(search);
         const users = await User.find({
           isVerified: true,
           $or: [
-            { name: { $regex: search, $options: 'i' } },
-            { email: { $regex: search, $options: 'i' } }
+            { name: { $regex: pattern, $options: 'i' } },
+            { email: { $regex: pattern, $options: 'i' } }
           ]
         }).select('_id');
-        
+
         const userIds = users.map(u => u._id);
-        
+
         query.$or = [
           { user: { $in: userIds } },
-          { 'shippingAddress.name': { $regex: search, $options: 'i' } },
-          { 'shippingAddress.email': { $regex: search, $options: 'i' } },
-          { 'shippingAddress.phone': { $regex: search, $options: 'i' } }
+          { 'shippingAddress.name': { $regex: pattern, $options: 'i' } },
+          { 'shippingAddress.email': { $regex: pattern, $options: 'i' } },
+          { 'shippingAddress.phone': { $regex: pattern, $options: 'i' } }
         ];
       }
     }
 
-    const skip = (Number(page) - 1) * Number(limit);
     const total = await Order.countDocuments(query);
     const orders = await Order.find(query)
       .populate('user', 'id name email')
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(Number(limit));
+      .limit(limit);
 
     res.json({
       success: true,
       orders,
-      page: Number(page),
-      pages: Math.ceil(total / Number(limit)),
+      page,
+      pages: Math.ceil(total / limit),
       total
     });
   } catch (error) {
@@ -223,14 +328,8 @@ export const updateOrderStatus = async (req, res, next) => {
 
     // A. Check if Admin is approving cancellation (changing to Cancelled)
     if (status === 'Cancelled' && previousStatus !== 'Cancelled') {
-      // 1. Restore product inventory stocks
-      for (const item of order.orderItems) {
-        const product = await Product.findById(item.product);
-        if (product) {
-          product.stock += item.quantity;
-          await product.save();
-        }
-      }
+      // 1. Restore product inventory stocks (skipped if a refund already did)
+      await restoreOrderStockOnce(order, previousStatus);
 
       order.orderStatus = 'Cancelled';
       await order.save();
@@ -275,14 +374,8 @@ export const updateOrderStatus = async (req, res, next) => {
         throw new Error('Cannot process refund: Order payment status is unpaid');
       }
 
-      // Restore product inventory stocks if not already cancelled
-      if (previousStatus !== 'Cancelled') {
-        for (const item of order.orderItems) {
-          if (item.product) {
-            await Product.findByIdAndUpdate(item.product, { $inc: { stock: item.quantity } });
-          }
-        }
-      }
+      // Restore product inventory stocks unless already restored
+      await restoreOrderStockOnce(order, previousStatus);
 
       order.orderStatus = 'Refunded';
       order.isRefunded = true;
@@ -377,6 +470,11 @@ export const cancelOrder = async (req, res, next) => {
       throw new Error('Order has already been cancelled');
     }
 
+    if (order.orderStatus === 'Refunded' || order.isRefunded) {
+      res.status(400);
+      throw new Error('Order has already been refunded');
+    }
+
     // Set Status to Cancellation Requested & save reason
     order.orderStatus = 'Cancellation Requested';
     order.cancellationReason = reason || 'No reason provided';
@@ -434,16 +532,8 @@ export const refundOrder = async (req, res, next) => {
       throw new Error(`Refund amount (₹${refundAmount}) cannot exceed total order value (₹${order.totalPrice})`);
     }
 
-    // 1. Restore product inventory stocks if not already restored by cancellation
-    if (order.orderStatus !== 'Cancelled' && order.orderItems && order.orderItems.length > 0) {
-      for (const item of order.orderItems) {
-        if (item.product) {
-          await Product.findByIdAndUpdate(item.product, {
-            $inc: { stock: item.quantity }
-          });
-        }
-      }
-    }
+    // 1. Restore product inventory stocks unless already restored by cancellation
+    await restoreOrderStockOnce(order, order.orderStatus);
 
     // 2. Mark order as Refunded
     order.orderStatus = 'Refunded';
@@ -484,11 +574,18 @@ export const trackOrderPublicly = async (req, res, next) => {
       throw new Error('Please provide a valid Order ID to track');
     }
 
-    const cleanOrderId = orderId.trim();
+    const cleanOrderId = String(orderId).trim();
 
     if (!/^[0-9a-fA-F]{24}$/.test(cleanOrderId)) {
       res.status(404);
       throw new Error('Order not found: Please check the Order ID format');
+    }
+
+    // Tracking always needs the email or phone used for the order, so an order ID alone reveals nothing.
+    const cleanInput = identifier === undefined || identifier === null ? '' : String(identifier).trim().toLowerCase();
+    if (!cleanInput) {
+      res.status(400);
+      throw new Error('Please enter the email address or phone number used for this order');
     }
 
     const order = await Order.findById(cleanOrderId);
@@ -497,21 +594,19 @@ export const trackOrderPublicly = async (req, res, next) => {
       throw new Error('No order found with this Order ID');
     }
 
-    // Security verification: If user is not authenticated or not the owner/admin,
-    // they must provide either the matching phone number or email address
-    if (identifier) {
-      const cleanInput = identifier.trim().toLowerCase();
-      const orderEmail = (order.shippingAddress?.email || '').toLowerCase();
-      const orderPhone = (order.shippingAddress?.phone || '').replace(/\D/g, '');
-      const inputPhone = cleanInput.replace(/\D/g, '');
+    const orderEmail = (order.shippingAddress?.email || '').toLowerCase();
+    // Phones are compared on their last 10 digits, so "+91 98765 43210" matches "9876543210"
+    // but a short fragment like "0" does not.
+    const lastTen = (value) => String(value || '').replace(/\D/g, '').slice(-10);
+    const orderPhone = lastTen(order.shippingAddress?.phone);
+    const inputPhone = lastTen(cleanInput);
 
-      const isEmailMatch = orderEmail && orderEmail === cleanInput;
-      const isPhoneMatch = orderPhone && inputPhone && (orderPhone.endsWith(inputPhone) || inputPhone.endsWith(orderPhone));
+    const isEmailMatch = Boolean(orderEmail) && orderEmail === cleanInput;
+    const isPhoneMatch = orderPhone.length === 10 && inputPhone === orderPhone;
 
-      if (!isEmailMatch && !isPhoneMatch) {
-        res.status(403);
-        throw new Error('Verification failed: The provided email or phone does not match this order');
-      }
+    if (!isEmailMatch && !isPhoneMatch) {
+      res.status(403);
+      throw new Error('Verification failed: The provided email or phone does not match this order');
     }
 
     // Return safe public tracking payload without sensitive payment tokens

@@ -1,4 +1,3 @@
-import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { FiHeart, FiShoppingBag, FiEye } from 'react-icons/fi';
@@ -29,8 +28,10 @@ export default function ProductCard({ product, onQuickView }) {
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    dispatch(addToCart({ product, quantity: 1 }));
-    toast.success(`Added to Cart: ${product.name}`, { position: "bottom-right", autoClose: 2000 });
+    dispatch(addToCart({ product, quantity: 1 }))
+      .unwrap()
+      .then(() => toast.success(`Added to Cart: ${product.name}`, { position: "bottom-right", autoClose: 2000 }))
+      .catch((message) => toast.error(message || "Could not add this item to your cart.", { position: "bottom-right" }));
   };
 
   return (
@@ -130,9 +131,9 @@ export default function ProductCard({ product, onQuickView }) {
         </div>
 
         {/* Price & Add to Cart */}
-        <div className="mt-auto flex items-center justify-between pt-3 border-t border-gold-200/40 dark:border-gold-950/60">
-          <div className="flex flex-col text-left">
-            <div className="flex items-center space-x-2">
+        <div className="mt-auto flex items-center justify-between gap-2 pt-3 border-t border-gold-200/40 dark:border-gold-950/60">
+          <div className="flex flex-col text-left min-w-0">
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
               <span className="font-sans text-sm sm:text-base font-bold text-transparent bg-clip-text bg-gradient-to-r from-gold-600 to-gold-800 dark:from-gold-300 dark:to-gold-500">
                 ₹{product.price.toLocaleString('en-IN')}
               </span>
@@ -146,7 +147,7 @@ export default function ProductCard({ product, onQuickView }) {
 
           <button
             onClick={handleAddToCart}
-            className="bg-primary hover:bg-gold-500 text-white hover:text-primary py-2 px-3 border border-primary hover:border-gold-500 transition-all duration-300 flex items-center space-x-1.5 font-sans text-xs font-semibold cursor-pointer dark:bg-gold-600 dark:border-gold-600 dark:text-primary dark:hover:bg-white dark:hover:border-white"
+            className="shrink-0 bg-primary hover:bg-gold-500 text-white hover:text-primary py-2.5 px-3 border border-primary hover:border-gold-500 transition-all duration-300 flex items-center space-x-1.5 font-sans text-xs font-semibold cursor-pointer dark:bg-gold-600 dark:border-gold-600 dark:text-primary dark:hover:bg-white dark:hover:border-white"
             title="Add to Cart"
           >
             <FiShoppingBag size={14} />

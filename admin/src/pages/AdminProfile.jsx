@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { updateProfile } from '../store/authSlice';
 import adminService from '../services/adminService';
@@ -118,16 +118,16 @@ export default function AdminProfile() {
   };
 
   return (
-    <div className="space-y-8 animate-fade-in text-left">
+    <div className="space-y-6 sm:space-y-8 animate-fade-in text-left">
       {/* Header */}
       <div className="border-b border-gold-100 pb-5">
-        <h1 className="font-serif text-2xl font-bold tracking-wide text-primary m-0">Admin Profile Settings</h1>
+        <h1 className="font-serif text-xl sm:text-2xl font-bold tracking-wide text-primary m-0">Admin Profile Settings</h1>
         <p className="text-xs text-secondary/60 font-sans mt-1">
           Manage your personal administrative access credentials and login security.
         </p>
       </div>
 
-      <div className="max-w-2xl bg-white border border-gold-200/40 shadow-sm p-6 sm:p-8 space-y-6 font-sans text-xs">
+      <div className="max-w-2xl bg-white border border-gold-200/40 shadow-sm p-4 sm:p-8 space-y-6 font-sans text-xs">
         <div>
           <h3 className="font-serif text-base font-bold text-primary tracking-wide mb-1">Account Credentials</h3>
           <p className="text-[10px] text-secondary/50 uppercase tracking-widest font-semibold">Verify email changes through live SMTP verification</p>
@@ -240,7 +240,7 @@ export default function AdminProfile() {
             <button
               type="submit"
               disabled={loading}
-              className="bg-primary hover:bg-gold-600 text-white font-bold py-3 px-8 text-xs tracking-wider uppercase flex items-center transition-colors cursor-pointer"
+              className="w-full sm:w-auto justify-center bg-primary hover:bg-gold-600 text-white font-bold py-3 px-8 text-xs tracking-wider uppercase flex items-center transition-colors cursor-pointer"
             >
               <FiSave className="mr-2" size={14} />
               {loading ? 'Saving Changes...' : 'Save Profile Settings'}
@@ -251,11 +251,11 @@ export default function AdminProfile() {
 
       {/* OTP Verification Modal */}
       {showOtpModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs px-4">
-          <div className="bg-white border border-gold-200 shadow-2xl p-6 sm:p-8 max-w-sm w-full relative">
+        <div className="scroll-lock fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-3 sm:px-4 overflow-y-auto overscroll-contain">
+          <div className="bg-white border border-gold-200 shadow-2xl p-5 sm:p-8 max-w-sm w-full relative my-auto">
             <button
               onClick={() => setShowOtpModal(false)}
-              className="absolute right-4 top-4 text-secondary/60 hover:text-primary transition-colors p-1"
+              className="absolute right-2 top-2 sm:right-3 sm:top-3 text-secondary/60 hover:text-primary transition-colors p-2" aria-label="Close"
             >
               <FiX size={18} />
             </button>
@@ -270,7 +270,7 @@ export default function AdminProfile() {
                 <p className="text-[11px] text-secondary/70">
                   Please enter the 6-digit OTP code sent to your pending email address:
                 </p>
-                <strong className="block text-xs font-mono text-gold-600 mt-1 select-all">{pendingEmail}</strong>
+                <strong className="block text-xs font-mono text-gold-600 mt-1 select-all break-all">{pendingEmail}</strong>
               </div>
 
               <form onSubmit={handleVerifyOtp} className="space-y-4 pt-2">

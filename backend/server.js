@@ -16,7 +16,6 @@ import paymentRoutes from './routes/paymentRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import enquiryRoutes from './routes/enquiryRoutes.js';
-import Settings from './models/Settings.js';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 import { sanitizeInputs } from './middleware/sanitizeMiddleware.js';
 
@@ -29,23 +28,45 @@ if (!process.env.JWT_SECRET) {
 
 connectDB();
 
-Settings.updateOne({}, { contactPhone: '+91 70838 74227' }).catch(err => {
-  console.error('⚠️ Failed to pre-update default settings phone:', err.message);
-});
-
 const app = express();
 
+// Render (and Cloudflare in front of it) proxies every request. Without this, Express sees the proxy's
+// address instead of the visitor's, and every visitor shares one rate-limit allowance.
+// TRUST_PROXY_HOPS = number of proxies between the visitor and this server (default 1).
+app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS || 1));
+
 app.use(helmet({
-  crossOriginResourcePolicy: false
+  crossOriginResourcePolicy: false,
+  // Browsers must use HTTPS for this API for 1 year (Render already redirects http:// to https://).
+  strictTransportSecurity: { maxAge: 31536000, includeSubDomains: true }
 }));
+
+// CORS: only the store's own sites may call this API from a browser.
+// ALLOWED_ORIGINS = comma-separated list, e.g. "https://your-store.vercel.app,https://your-admin.vercel.app".
+// Local development addresses are always allowed outside production.
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map((o) => o.trim().replace(/\/+$/, ''))
+  .filter(Boolean);
+const isDevOrigin = (origin) => process.env.NODE_ENV !== 'production' && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+
+if (allowedOrigins.length === 0) {
+  console.warn('⚠️ ALLOWED_ORIGINS is not set: the API accepts browser requests from any website. Set it on Render to your storefront and admin URLs.');
+}
 
 const corsOptions = {
   origin: (origin, callback) => {
-    callback(null, true);
+    // Requests without an Origin header (server-to-server, curl, health checks) are not browser cross-site requests.
+    if (!origin || allowedOrigins.length === 0) return callback(null, true);
+    const allowed = allowedOrigins.includes(origin) || isDevOrigin(origin);
+    // Refused origins get no CORS headers, so the browser blocks the page from reading the response.
+    return callback(null, allowed);
   },
-  credentials: true,
+  // Sessions use a Bearer token, not cookies, so browsers never need to send credentials.
+  credentials: false,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  maxAge: 600
 };
 app.use(cors(corsOptions));
 
@@ -64,6 +85,9 @@ const apiLimiter = rateLimit({
   legacyHeaders: false
 });
 app.use('/api/', apiLimiter);
+
+// Shows the address the server sees for the caller, to confirm TRUST_PROXY_HOPS is right after deploys.
+app.get('/api/health/ip', (req, res) => res.json({ success: true, ip: req.ip }));
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,

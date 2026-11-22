@@ -1,4 +1,5 @@
 import Category from '../models/Category.js';
+import Product from '../models/Product.js';
 import { uploadToImageKit } from '../utils/upload.js';
 
 // @desc    Get all categories
@@ -98,6 +99,14 @@ export const deleteCategory = async (req, res, next) => {
     if (!category) {
       res.status(404);
       throw new Error('Category not found: Catalog node does not exist');
+    }
+
+    // Deleting a category that products still use would leave them with no category
+    // (they would disappear from category pages), so it must be emptied first.
+    const productCount = await Product.countDocuments({ category: category._id });
+    if (productCount > 0) {
+      res.status(400);
+      throw new Error(`"${category.name}" still has ${productCount} product${productCount === 1 ? '' : 's'}. Move them to another category or delete them first.`);
     }
 
     await category.deleteOne();

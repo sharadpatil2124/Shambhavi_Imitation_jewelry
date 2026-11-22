@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchReviewsThunk, toggleReviewApprovalThunk, deleteReviewThunk } from '../store/adminSlice';
 import { 
@@ -17,7 +17,7 @@ import { toast } from 'react-toastify';
 
 export default function AdminReviews() {
   const dispatch = useDispatch();
-  const { reviews, totalReviewsCount, reviewsPage, reviewsPages, loading } = useSelector((state) => state.admin);
+  const { reviews, reviewsPages, loading } = useSelector((state) => state.admin);
 
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -89,11 +89,11 @@ export default function AdminReviews() {
   };
 
   return (
-    <div className="space-y-8 animate-fade-in text-left">
+    <div className="space-y-6 sm:space-y-8 animate-fade-in text-left">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="font-serif text-2xl font-bold tracking-wide text-primary m-0">Review Moderation</h1>
+          <h1 className="font-serif text-xl sm:text-2xl font-bold tracking-wide text-primary m-0">Review Moderation</h1>
           <p className="text-xs text-secondary/60 font-sans mt-1">Approve, hide, or delete customer comments and ratings for catalog transparency.</p>
         </div>
       </div>
@@ -151,7 +151,7 @@ export default function AdminReviews() {
       ) : filteredReviews.length > 0 ? (
         <div className="bg-white border border-gold-200/40 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs font-sans border-collapse">
+            <table className="w-full min-w-[820px] text-left text-xs font-sans border-collapse [&_th]:whitespace-nowrap">
               <thead>
                 <tr className="border-b border-gold-100 bg-[#FAF8F2] text-secondary/50 uppercase font-semibold text-[10px] tracking-wider">
                   <th className="p-4">Product Details</th>
@@ -199,7 +199,7 @@ export default function AdminReviews() {
                     </td>
 
                     {/* Star count and comments */}
-                    <td className="p-4 max-w-sm">
+                    <td className="p-4 max-w-sm min-w-[240px]">
                       <div className="space-y-1.5">
                         <div className="flex items-center space-x-2">
                           {renderStars(rev.rating)}

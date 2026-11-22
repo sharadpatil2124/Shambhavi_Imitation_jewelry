@@ -1,4 +1,3 @@
-import React from 'react';
 
 export default function PrivacyPolicy() {
   return (
@@ -6,7 +5,7 @@ export default function PrivacyPolicy() {
       
       {/* Header */}
       <div className="border-b border-gold-100 pb-4 mb-8">
-        <h1 className="font-serif text-3xl font-bold tracking-wide text-primary m-0">
+        <h1 className="font-serif text-2xl sm:text-3xl font-bold tracking-wide text-primary m-0">
           Privacy Policy
         </h1>
         <span className="text-xs text-secondary font-medium mt-2 block">

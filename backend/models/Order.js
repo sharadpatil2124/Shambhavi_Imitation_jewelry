@@ -59,6 +59,8 @@ const orderSchema = new mongoose.Schema({
     default: 'Processing'
   },
   cancellationReason: { type: String },
+  // True once this order's items have been put back into stock (cancel or refund), so it never happens twice.
+  stockRestored: { type: Boolean, default: false },
   isRefunded: { type: Boolean, default: false },
   refundAmount: { type: Number, default: 0.0 },
   refundReason: { type: String, default: '' },

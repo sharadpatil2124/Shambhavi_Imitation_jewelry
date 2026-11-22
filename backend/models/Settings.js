@@ -7,7 +7,7 @@ const settingsSchema = new mongoose.Schema({
   },
   contactEmail: {
     type: String,
-    default: 'contact@shambhaviimitation.com'
+    default: 'kadamshambhavi1@gmail.com'
   },
   contactPhone: {
     type: String,

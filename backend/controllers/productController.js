@@ -1,6 +1,7 @@
 import Product from '../models/Product.js';
 import Category from '../models/Category.js';
 import { uploadToImageKit } from '../utils/upload.js';
+import { escapeRegex, parsePagination, queryString } from '../utils/queryHelpers.js';
 
 // @desc    Get all products (with pagination, search, sorting and filters)
 // @route   GET /api/products
@@ -15,23 +16,22 @@ export const getProducts = async (req, res, next) => {
       rating,
       sort,
       isTrending,
-      isNewArrival,
-      page = 1,
-      limit = 12
+      isNewArrival
     } = req.query;
 
     const query = {};
 
     // Normalize potential parameter pollution arrays/inputs to safe string values
-    const searchStr = search ? (Array.isArray(search) ? String(search[0]) : String(search)).trim() : '';
-    const categoryStr = category ? (Array.isArray(category) ? String(category[0]) : String(category)).trim() : '';
+    const searchStr = queryString(search);
+    const categoryStr = queryString(category);
 
-    // 1. Text Search matching name or description
+    // 1. Text Search matching name or description (user text is matched literally)
     if (searchStr) {
+      const pattern = escapeRegex(searchStr);
       query.$or = [
-        { name: { $regex: searchStr, $options: 'i' } },
-        { description: { $regex: searchStr, $options: 'i' } },
-        { sku: { $regex: searchStr, $options: 'i' } }
+        { name: { $regex: pattern, $options: 'i' } },
+        { description: { $regex: pattern, $options: 'i' } },
+        { sku: { $regex: pattern, $options: 'i' } }
       ];
     }
 
@@ -50,7 +50,7 @@ export const getProducts = async (req, res, next) => {
           $or: [
             { slug: categoryStr },
             { slug: categorySlug },
-            { name: { $regex: new RegExp(`^${categoryStr}$`, 'i') } }
+            { name: { $regex: new RegExp(`^${escapeRegex(categoryStr)}$`, 'i') } }
           ]
         });
 
@@ -107,22 +107,23 @@ export const getProducts = async (req, res, next) => {
     }
 
     // 7. Parallel Execution & Lean Projection for High Concurrency Performance
-    const skip = (Number(page) - 1) * Number(limit);
+    //    Page >= 1 and page size capped at 100 (the storefront asks for 12).
+    const { page, limit, skip } = parsePagination(req.query.page, req.query.limit, { defaultLimit: 12, maxLimit: 100 });
     const [total, products] = await Promise.all([
       Product.countDocuments(query),
       Product.find(query)
         .populate('category', 'name slug')
         .sort(sortOptions)
         .skip(skip)
-        .limit(Number(limit))
+        .limit(limit)
         .lean()
     ]);
 
     res.json({
       success: true,
       products,
-      page: Number(page),
-      pages: Math.ceil(total / Number(limit)),
+      page,
+      pages: Math.ceil(total / limit),
       total
     });
   } catch (error) {

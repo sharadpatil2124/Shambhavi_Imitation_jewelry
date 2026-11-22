@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { FiHeart, FiShoppingBag, FiMinus, FiPlus, FiArrowLeft, FiCheck, FiTruck, FiShield, FiRefreshCw, FiAlertTriangle } from 'react-icons/fi';
+import { FiHeart, FiShoppingBag, FiMinus, FiPlus, FiArrowLeft, FiTruck, FiShield, FiRefreshCw, FiAlertTriangle } from 'react-icons/fi';
 import { FaHeart, FaStar, FaWhatsapp } from 'react-icons/fa';
 import { getImageUrl } from '../utils/image';
+import { canHoverZoom } from '../utils/pointer';
 import { addToCart } from '../store/cartSlice';
 import { toggleWishlist } from '../store/wishlistSlice';
 import ProductCard from '../components/ProductCard';
@@ -28,7 +29,7 @@ export default function ProductDetails() {
   const dispatch = useDispatch();
 
   const wishlistItems = useSelector((state) => state.wishlist.items);
-  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const { isAuthenticated } = useSelector((state) => state.auth);
   const { settings } = useSelector((state) => state.settings);
 
   // Dynamic state bindings
@@ -126,8 +127,10 @@ export default function ProductDetails() {
     }
   };
 
+  // Reload reviews when the product changes (fetchReviews reads the current id).
   useEffect(() => {
     fetchReviews();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   // Calculate rating statistics dynamically
@@ -227,12 +230,19 @@ export default function ProductDetails() {
   };
 
   const handleAddToCart = () => {
-    dispatch(addToCart({ product, quantity, color: selectedColor, size: selectedSize }));
-    toast.success(`Added ${quantity}x to Cart: ${product.name}`, { position: "bottom-right", autoClose: 2000 });
+    dispatch(addToCart({ product, quantity, color: selectedColor, size: selectedSize }))
+      .unwrap()
+      .then(() => toast.success(`Added ${quantity}x to Cart: ${product.name}`, { position: "bottom-right", autoClose: 2000 }))
+      .catch((message) => toast.error(message || "Could not add this item to your cart.", { position: "bottom-right" }));
   };
 
-  const handleBuyNow = () => {
-    dispatch(addToCart({ product, quantity, color: selectedColor, size: selectedSize }));
+  const handleBuyNow = async () => {
+    try {
+      await dispatch(addToCart({ product, quantity, color: selectedColor, size: selectedSize })).unwrap();
+    } catch (message) {
+      toast.error(message || "Could not add this item to your cart.", { position: "bottom-right" });
+      return;
+    }
     if (!isAuthenticated) {
       toast.warning("Please Login or Sign Up to purchase items!");
       navigate('/login?redirect=checkout');
@@ -254,18 +264,18 @@ export default function ProductDetails() {
   const categoryName = typeof product.category === 'object' ? product.category?.name : product.category;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 animate-fade-in">
       
       {/* 1. Breadcrumbs / Go Back */}
-      <div className="mb-6 flex items-center justify-between select-none">
+      <div className="mb-6 flex items-center justify-between gap-4 select-none">
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center space-x-1 text-xs text-secondary hover:text-gold-600 font-semibold tracking-wide uppercase transition-colors cursor-pointer"
+          className="flex items-center space-x-1 py-2 shrink-0 text-xs text-secondary hover:text-gold-600 font-semibold tracking-wide uppercase transition-colors cursor-pointer"
         >
           <FiArrowLeft />
           <span>Go Back</span>
         </button>
-        <div className="hidden sm:flex items-center space-x-2 text-xs font-medium text-secondary">
+        <div className="hidden sm:flex items-center space-x-2 min-w-0 text-xs font-medium text-secondary">
           <Link to="/" className="hover:text-gold-600">Home</Link>
           <span>/</span>
           <Link to="/shop" className="hover:text-gold-600">Shop</Link>
@@ -277,16 +287,16 @@ export default function ProductDetails() {
       </div>
 
       {/* 2. Main Product Info Layout */}
-      <div className="flex flex-col lg:flex-row gap-12 bg-white dark:bg-[#0c0a06] border border-gold-200/50 dark:border-gold-900/40 p-6 sm:p-8 lg:p-10 shadow-sm mb-16 relative">
+      <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 bg-white dark:bg-[#0c0a06] border border-gold-200/50 dark:border-gold-900/40 p-4 sm:p-8 lg:p-10 shadow-sm mb-10 sm:mb-16 relative">
         {/* Luxury Gold Corner Frames */}
         <div className="absolute top-4 left-4 w-4 h-4 border-t border-l border-gold-400/50 pointer-events-none z-10"></div>
         <div className="absolute bottom-4 right-4 w-4 h-4 border-b border-r border-gold-400/50 pointer-events-none z-10"></div>
         
         {/* Left Side: Image Selector Galleries */}
-        <div className="w-full lg:w-1/2 flex flex-col md:flex-row gap-4 relative z-20">
+        <div className="w-full lg:w-1/2 min-w-0 flex flex-col md:flex-row gap-4 relative z-20">
           
           {/* Thumbnails vertical stack for desktop/large screens */}
-          <div className="flex flex-row md:flex-col gap-2.5 order-2 md:order-1 overflow-x-auto md:overflow-y-auto md:w-20 md:h-[450px]">
+          <div className="flex flex-row md:flex-col gap-2.5 order-2 md:order-1 overflow-x-auto md:overflow-y-auto md:w-20 md:shrink-0 md:h-[450px] pb-1 md:pb-0">
             {product.images?.map((img, idx) => (
               <button
                 key={idx}
@@ -303,7 +313,7 @@ export default function ProductDetails() {
           {/* Large Main Image */}
           <div 
             className="flex-grow order-1 md:order-2 aspect-square relative bg-[#faf9f6] dark:bg-[#12100b] overflow-hidden border border-gold-100 dark:border-gold-900/40 max-h-[450px] cursor-zoom-in"
-            onMouseEnter={() => setIsZoomed(true)}
+            onMouseEnter={() => canHoverZoom && setIsZoomed(true)}
             onMouseLeave={() => setIsZoomed(false)}
             onMouseMove={handleMouseMove}
           >
@@ -325,10 +335,10 @@ export default function ProductDetails() {
         </div>
 
         {/* Right Side: Product Details & Actions */}
-        <div className="w-full lg:w-1/2 flex flex-col justify-between relative z-20">
+        <div className="w-full lg:w-1/2 min-w-0 flex flex-col justify-between relative z-20">
           <div className="text-left">
             {/* Category / SKU */}
-            <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-widest text-gold-600 mb-3 select-none">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[11px] font-bold uppercase tracking-widest text-gold-600 mb-3 select-none">
               <span>{categoryName}</span>
               <span>SKU: {product.sku}</span>
             </div>
@@ -339,7 +349,7 @@ export default function ProductDetails() {
             </h1>
 
             {/* Rating */}
-            <div className="flex items-center space-x-2 mb-6 select-none">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-6 select-none">
               <div className="flex text-amber-400">
                 {[...Array(5)].map((_, i) => (
                   <FaStar
@@ -354,8 +364,8 @@ export default function ProductDetails() {
             </div>
 
             {/* Pricing Panel */}
-            <div className="flex items-baseline space-x-3 mb-6 bg-gold-50/40 dark:bg-gold-950/20 p-4 border border-gold-100/35 dark:border-gold-900/35 justify-start">
-              <span className="font-sans text-3xl font-bold text-primary dark:text-white">
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-2 mb-6 bg-gold-50/40 dark:bg-gold-950/20 p-4 border border-gold-100/35 dark:border-gold-900/35 justify-start">
+              <span className="font-sans text-2xl sm:text-3xl font-bold text-primary dark:text-white">
                 ₹{product.price?.toLocaleString('en-IN')}
               </span>
               {product.originalPrice > product.price && (
@@ -381,7 +391,7 @@ export default function ProductDetails() {
                 <span className="block text-xs font-bold uppercase tracking-wider text-primary mb-2 dark:text-white">
                   Select Color: <span className="text-gold-600 font-semibold">{selectedColor}</span>
                 </span>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {product.colors.map((color) => (
                     <button
                       key={color}
@@ -405,7 +415,7 @@ export default function ProductDetails() {
                 <span className="block text-xs font-bold uppercase tracking-wider text-primary mb-2 dark:text-white">
                   Select Size: <span className="text-gold-600 font-semibold">{selectedSize}</span>
                 </span>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {product.sizes.map((size) => (
                     <button
                       key={size}
@@ -426,12 +436,12 @@ export default function ProductDetails() {
 
           <div>
             {/* Quantity Selector */}
-            <div className="flex items-center space-x-4 mb-6 select-none text-left">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-6 select-none text-left">
               <span className="text-xs font-bold uppercase tracking-wider text-primary dark:text-white">Quantity:</span>
               <div className="flex items-center border border-gold-300 dark:border-gold-900/60 bg-white dark:bg-[#100d07]">
                 <button
                   onClick={handleDecrement}
-                  className="px-3.5 py-2 text-secondary hover:text-gold-600 transition-colors cursor-pointer"
+                  className="px-3.5 py-2.5 text-secondary hover:text-gold-600 transition-colors cursor-pointer"
                   aria-label="Decrease quantity"
                 >
                   <FiMinus size={14} />
@@ -441,7 +451,7 @@ export default function ProductDetails() {
                 </span>
                 <button
                   onClick={handleIncrement}
-                  className="px-3.5 py-2 text-secondary hover:text-gold-600 transition-colors cursor-pointer"
+                  className="px-3.5 py-2.5 text-secondary hover:text-gold-600 transition-colors cursor-pointer"
                   aria-label="Increase quantity"
                 >
                   <FiPlus size={14} />
@@ -496,13 +506,13 @@ export default function ProductDetails() {
             </div>
 
             {/* Key Quality Indicators */}
-            <div className="border-t border-gold-100 dark:border-gold-950/60 pt-6 grid grid-cols-3 gap-4 text-center select-none">
+            <div className="border-t border-gold-100 dark:border-gold-950/60 pt-6 grid grid-cols-3 gap-2 sm:gap-4 text-center select-none">
               <div className="flex flex-col items-center">
                 <FiTruck className="text-gold-600 mb-1" size={18} />
                 <span className="text-[10px] font-bold text-primary uppercase tracking-wide dark:text-white">Free Shipping</span>
                 <span className="text-[9px] text-secondary mt-0.5 dark:text-gray-405">On orders &gt; ₹{(settings?.freeShippingThreshold ?? 5000).toLocaleString('en-IN')}</span>
               </div>
-              <div className="flex flex-col items-center border-x border-gold-100 dark:border-gold-950/60">
+              <div className="flex flex-col items-center px-1 border-x border-gold-100 dark:border-gold-950/60">
                 <FiShield className="text-gold-600 mb-1" size={18} />
                 <span className="text-[10px] font-bold text-primary uppercase tracking-wide dark:text-white">100% Secure</span>
                 <span className="text-[9px] text-secondary mt-0.5 dark:text-gray-405">Encrypted Payments</span>
@@ -520,7 +530,7 @@ export default function ProductDetails() {
       </div>
 
       {/* 3. Customer Reviews Section */}
-      <section className="bg-white dark:bg-[#0c0a06] border border-gold-200/50 dark:border-gold-900/40 p-6 sm:p-8 lg:p-10 shadow-sm mb-16 relative">
+      <section className="bg-white dark:bg-[#0c0a06] border border-gold-200/50 dark:border-gold-900/40 p-4 sm:p-8 lg:p-10 shadow-sm mb-10 sm:mb-16 relative">
         {/* Luxury Gold Corner Frames */}
         <div className="absolute top-4 left-4 w-4 h-4 border-t border-l border-gold-400/50 pointer-events-none z-10"></div>
         <div className="absolute bottom-4 right-4 w-4 h-4 border-b border-r border-gold-400/50 pointer-events-none z-10"></div>
@@ -539,14 +549,14 @@ export default function ProductDetails() {
 
         {/* Dynamic Interactive Review Form */}
         {showReviewForm && (
-          <div className="mb-10 p-6 border border-gold-200/80 dark:border-gold-900/40 bg-gold-50/10 dark:bg-gold-950/10 text-left transition-all duration-300 relative z-20">
+          <div className="mb-10 p-4 sm:p-6 border border-gold-200/80 dark:border-gold-900/40 bg-gold-50/10 dark:bg-gold-950/10 text-left transition-all duration-300 relative z-20">
             <h4 className="font-serif text-base font-bold text-primary dark:text-white mb-4">Share Your Experience</h4>
             
             {isAuthenticated ? (
               <form onSubmit={handleReviewSubmit} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-secondary dark:text-gray-400 uppercase tracking-wider mb-2">Your Rating</label>
-                  <div className="flex items-center space-x-1.5 mb-2">
+                  <div className="flex flex-wrap items-center gap-1.5 mb-2">
                     {[1, 2, 3, 4, 5].map((starValue) => (
                       <button
                         type="button"
@@ -554,7 +564,7 @@ export default function ProductDetails() {
                         onClick={() => setRating(starValue)}
                         onMouseEnter={() => setHoverRating(starValue)}
                         onMouseLeave={() => setHoverRating(0)}
-                        className="text-amber-400 hover:scale-110 transition-transform duration-100 cursor-pointer"
+                        className="text-amber-400 hover:scale-110 transition-transform duration-100 cursor-pointer p-1"
                         aria-label={`Rate ${starValue} stars`}
                       >
                         <FaStar
@@ -620,7 +630,7 @@ export default function ProductDetails() {
 
         <div className="flex flex-col md:flex-row gap-8 items-start mb-10 pb-8 border-b border-gold-100 dark:border-gold-950/60 text-left relative z-20">
           {/* Average Rating Scorecard */}
-          <div className="bg-gold-50/15 dark:bg-gold-950/10 border border-gold-200/40 dark:border-gold-900/40 p-6 text-center w-full md:w-56">
+          <div className="bg-gold-50/15 dark:bg-gold-950/10 border border-gold-200/40 dark:border-gold-900/40 p-6 text-center w-full md:w-56 shrink-0">
             <span className="text-4xl font-serif font-bold text-primary dark:text-white">{product.rating || 5}</span>
             <div className="flex text-gold-500 justify-center my-2">
               {[...Array(5)].map((_, i) => <FaStar key={i} size={15} className={i < Math.floor(product.rating || 5) ? 'text-gold-550' : 'text-gray-200 dark:text-gold-950/40'} />)}
@@ -638,11 +648,11 @@ export default function ProductDetails() {
               { label: "1 Star", percentage: getRatingBarPercentage(1), count: ratingCounts[1] }
             ].map((bar) => (
               <div key={bar.label} className="flex items-center text-xs text-secondary dark:text-gray-400 font-medium">
-                <span className="w-14 text-left">{bar.label}</span>
+                <span className="w-14 shrink-0 text-left">{bar.label}</span>
                 <div className="flex-grow bg-gray-100 h-2 mx-3 rounded-none overflow-hidden dark:bg-gray-800">
                   <div className="bg-gold-500 h-full" style={{ width: bar.percentage }}></div>
                 </div>
-                <span className="w-8 text-right font-semibold">{bar.count}</span>
+                <span className="w-8 shrink-0 text-right font-semibold">{bar.count}</span>
               </div>
             ))}
           </div>
@@ -658,7 +668,7 @@ export default function ProductDetails() {
           ) : reviews && reviews.length > 0 ? (
             reviews.map((rev, idx) => (
               <div key={idx} className="pb-6 border-b border-gray-100 last:border-b-0 last:pb-0 dark:border-gray-800/80">
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mb-2">
                   <h4 className="font-serif text-sm font-bold text-primary dark:text-white">{rev.user?.name || rev.name || "Customer"}</h4>
                   <span className="text-[10px] text-secondary dark:text-gray-400 font-semibold">
                     {rev.createdAt ? new Date(rev.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : "Recently"}
@@ -690,7 +700,7 @@ export default function ProductDetails() {
 
       {/* 4. Related Products Grid */}
       {relatedProductsList.length > 0 && (
-        <section className="border-t border-gold-200/50 pt-16 dark:border-gold-900/60">
+        <section className="border-t border-gold-200/50 pt-12 sm:pt-16 dark:border-gold-900/60">
           <div className="flex flex-col items-center text-center mb-12">
             <span className="text-xs font-bold tracking-[0.25em] text-gold-600 uppercase block mb-2">CURATED RECOMMENDATIONS</span>
             <h2 className="font-serif text-3xl font-bold tracking-wide text-primary dark:text-white">Related masterpieces</h2>

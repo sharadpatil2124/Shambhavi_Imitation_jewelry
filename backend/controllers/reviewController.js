@@ -1,5 +1,6 @@
 import Review from '../models/Review.js';
 import Product from '../models/Product.js';
+import { escapeRegex, parsePagination, queryString } from '../utils/queryHelpers.js';
 
 // Helper utility to recalculate and update product ratings and review counts
 const updateProductRatingStats = async (productId) => {
@@ -28,6 +29,12 @@ export const addReview = async (req, res, next) => {
     if (!productId || !rating || !comment) {
       res.status(400);
       throw new Error('Please specify product ID, rating star score, and comment content');
+    }
+
+    // Reviews can only be written for products that exist
+    if (!(await Product.exists({ _id: productId }))) {
+      res.status(404);
+      throw new Error('Product not found: cannot review an item that is not in the catalog');
     }
 
     // Check if user already submitted a review for this product
@@ -152,18 +159,19 @@ export const deleteReview = async (req, res, next) => {
 // @access  Private/Admin
 export const getAllReviews = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, search } = req.query;
+    const search = queryString(req.query.search);
+    const { page, limit, skip } = parsePagination(req.query.page, req.query.limit, { defaultLimit: 20, maxLimit: 100 });
     const query = {};
 
     if (search) {
+      const pattern = escapeRegex(search);
       query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { comment: { $regex: search, $options: 'i' } },
-        { title: { $regex: search, $options: 'i' } }
+        { name: { $regex: pattern, $options: 'i' } },
+        { comment: { $regex: pattern, $options: 'i' } },
+        { title: { $regex: pattern, $options: 'i' } }
       ];
     }
 
-    const skip = (Number(page) - 1) * Number(limit);
     const total = await Review.countDocuments(query);
     const reviews = await Review.find(query)
       .populate('product', 'name sku price images')

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiChevronLeft, FiChevronRight, FiGift, FiCopy, FiCheck } from 'react-icons/fi';
@@ -142,6 +142,20 @@ export default function Home() {
     setCurrentSlide((prev) => (prev - 1 + heroSlides.length) % heroSlides.length);
   };
 
+  // Touch swipe for the hero: the arrow buttons only appear on mouse hover
+  const touchStartX = useRef(null);
+  const handleHeroTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const handleHeroTouchEnd = (e) => {
+    if (touchStartX.current === null) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    touchStartX.current = null;
+    if (Math.abs(deltaX) < 40) return;
+    if (deltaX < 0) handleNextSlide();
+    else handlePrevSlide();
+  };
+
   // Coupon Copy Simulation
   const [copiedCoupon, setCopiedCoupon] = useState(false);
   const handleCopyCoupon = () => {
@@ -167,11 +181,13 @@ export default function Home() {
   return (
     <div className="pb-12 animate-fade-in">
       
-      {/* 1. Hero Banner Slider Section */}
+      {/* 1. Hero Banner Slider Section (autoplay pauses only for a real mouse hover; phones get swipe) */}
       <section 
-        className="relative h-[480px] sm:h-[600px] w-full overflow-hidden bg-primary select-none group"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+        className="relative h-[440px] min-[400px]:h-[480px] sm:h-[600px] w-full overflow-hidden bg-primary select-none group touch-pan-y"
+        onPointerEnter={(e) => e.pointerType === 'mouse' && setIsHovered(true)}
+        onPointerLeave={(e) => e.pointerType === 'mouse' && setIsHovered(false)}
+        onTouchStart={handleHeroTouchStart}
+        onTouchEnd={handleHeroTouchEnd}
       >
         {heroSlides.map((slide, index) => (
           <div
@@ -191,11 +207,11 @@ export default function Home() {
             {/* Slide Content */}
             <div className="absolute inset-0 z-20 flex items-center">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full text-left">
-                <div className="max-w-xl text-white flex flex-col space-y-4">
-                  <span className="text-xs sm:text-sm font-bold tracking-[0.3em] text-gold-300 uppercase animate-tagline">
+                <div className="max-w-xl text-white flex flex-col space-y-3 sm:space-y-4 pb-8 sm:pb-0">
+                  <span className="text-[11px] sm:text-sm font-bold tracking-[0.2em] sm:tracking-[0.3em] text-gold-300 uppercase animate-tagline">
                     {slide.tagline}
                   </span>
-                  <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-bold leading-tight tracking-wide text-white m-0 animate-title">
+                  <h1 className="font-serif text-[1.7rem] leading-tight min-[400px]:text-3xl sm:text-5xl lg:text-6xl font-bold sm:leading-tight tracking-wide text-white m-0 animate-title">
                     {slide.title}
                   </h1>
                   <p className="font-sans text-sm sm:text-base text-gray-200 leading-relaxed max-w-md animate-desc">
@@ -224,24 +240,30 @@ export default function Home() {
         </button>
 
         {/* Slide Indicators */}
-        <div className="absolute bottom-6 left-0 right-0 z-30 flex justify-center space-x-3">
+        <div className="absolute bottom-3 sm:bottom-4 left-0 right-0 z-30 flex justify-center space-x-1">
           {heroSlides.map((_, i) => (
+            // Padded button gives a finger-sized tap area around the thin indicator bar
             <button
               key={i}
               onClick={() => setCurrentSlide(i)}
-              className={`h-1.5 transition-all duration-500 ease-out cursor-pointer rounded-full ${
-                currentSlide === i ? 'w-10 bg-gold-400' : 'w-4 bg-white/40 hover:bg-white/75'
-              }`}
-            ></button>
+              className="py-3 px-1 cursor-pointer group/dot"
+              aria-label={`Go to slide ${i + 1}`}
+            >
+              <span
+                className={`block h-1.5 transition-all duration-500 ease-out rounded-full ${
+                  currentSlide === i ? 'w-10 bg-gold-400' : 'w-4 bg-white/40 group-hover/dot:bg-white/75'
+                }`}
+              ></span>
+            </button>
           ))}
         </div>
       </section>
 
       {/* 2. Shop By Category Circular Grid */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center select-none">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 text-center select-none">
         <span className="text-xs font-bold tracking-[0.25em] text-gold-600 uppercase block mb-2">CURATED COLLECTIONS</span>
-        <h2 className="font-serif text-3xl font-bold tracking-wide text-primary mb-12">Shop by Category</h2>
-        <div className="flex flex-wrap justify-center gap-6 sm:gap-8 max-w-5xl mx-auto">
+        <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-wide text-primary mb-8 sm:mb-12">Shop by Category</h2>
+        <div className="flex flex-wrap justify-center gap-x-4 gap-y-6 min-[375px]:gap-x-6 sm:gap-8 max-w-5xl mx-auto">
           {loadingCategories ? (
             [...Array(5)].map((_, i) => (
               <div key={i} className="flex flex-col items-center animate-pulse select-none">
@@ -268,7 +290,7 @@ export default function Home() {
                     />
                   </div>
                 </div>
-                <span className="font-serif text-xs sm:text-sm font-bold text-primary dark:text-gray-300 group-hover:text-gold-600 dark:group-hover:text-gold-400 transition-colors tracking-[0.15em] uppercase">
+                <span className="font-serif text-xs sm:text-sm font-bold text-primary dark:text-gray-300 group-hover:text-gold-600 dark:group-hover:text-gold-400 transition-colors tracking-[0.15em] uppercase text-center max-w-[8rem] sm:max-w-[10rem]">
                   {cat.name}
                 </span>
               </div>
@@ -304,7 +326,7 @@ export default function Home() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="flex flex-col lg:flex-row border border-gold-200/60 shadow-lg bg-white overflow-hidden group/banner dark:bg-[#090805] dark:border-gold-900/60 transition-all duration-500 hover:shadow-xl hover:border-gold-300">
           {/* Image side */}
-          <div className="w-full lg:w-1/2 h-80 lg:h-auto min-h-[380px] relative overflow-hidden">
+          <div className="w-full lg:w-1/2 h-72 sm:h-80 lg:h-auto lg:min-h-[380px] relative overflow-hidden">
             <div className="absolute inset-0 bg-gold-950/10 z-10 transition-colors duration-500 group-hover/banner:bg-gold-950/20"></div>
             <img
               src="https://images.unsplash.com/photo-1630019852942-f89202989a59?q=80&w=800&auto=format&fit=crop"
@@ -313,7 +335,7 @@ export default function Home() {
             />
           </div>
           {/* Text content side */}
-          <div className="w-full lg:w-1/2 p-8 sm:p-12 lg:p-16 flex flex-col justify-center bg-gold-50/10 border-l border-gold-100/40 text-left dark:bg-[#090805] dark:border-gold-900/30">
+          <div className="w-full lg:w-1/2 p-6 sm:p-12 lg:p-16 flex flex-col justify-center bg-gold-50/10 border-t lg:border-t-0 lg:border-l border-gold-100/40 text-left dark:bg-[#090805] dark:border-gold-900/30">
             <span className="text-xs font-bold tracking-[0.35em] text-gold-600 uppercase mb-3">ARTISANAL CRAFTED LUXURY</span>
             <h3 className="font-serif text-3xl sm:text-4xl font-bold tracking-wide text-primary leading-tight mb-5 dark:text-white">
               The Shambhavi Signature Edit
@@ -343,7 +365,7 @@ export default function Home() {
 
       {/* 5. Festival Offers & Promos Section */}
       {settings?.showSpecialOffer !== false && (
-        <section className="bg-gradient-to-r from-gold-950 via-gold-900 to-gold-950 text-gold-100 py-16 px-6 border-y border-gold-800 relative shadow-2xl overflow-hidden">
+        <section className="bg-gradient-to-r from-gold-950 via-gold-900 to-gold-950 text-gold-100 py-14 sm:py-16 px-6 border-y border-gold-800 relative shadow-2xl overflow-hidden">
           {/* Inner Decorative luxury border */}
           <div className="absolute inset-4 border border-gold-500/20 pointer-events-none z-10"></div>
           
@@ -358,13 +380,13 @@ export default function Home() {
             <p className="text-gold-200/80 text-xs sm:text-sm font-sans max-w-md leading-relaxed">
               {settings?.specialOfferSubtitle || 'Save on jewelry sets for upcoming festivals! Apply our coupon code at checkout to claim additional discounts.'}
             </p>
-            <div className="flex items-center bg-gold-950/70 border border-gold-500/30 p-2 pl-5 pr-2 space-x-4 max-w-sm w-full justify-between shadow-inner">
-              <span className="font-mono text-sm tracking-widest text-white font-bold">
+            <div className="flex items-center bg-gold-950/70 border border-gold-500/30 p-2 pl-4 sm:pl-5 pr-2 gap-3 sm:gap-4 max-w-sm w-full justify-between shadow-inner">
+              <span className="font-mono text-sm tracking-widest text-white font-bold min-w-0 truncate">
                 {settings?.specialOfferCouponCode || 'SHAMBHAVI10'}
               </span>
               <button
                 onClick={handleCopyCoupon}
-                className="bg-gradient-to-r from-gold-400 to-gold-600 hover:from-gold-500 hover:to-gold-700 text-gold-950 font-extrabold py-2 px-5 text-xs tracking-widest uppercase transition-colors duration-200 flex items-center space-x-1.5 cursor-pointer shadow-md"
+                className="shrink-0 bg-gradient-to-r from-gold-400 to-gold-600 hover:from-gold-500 hover:to-gold-700 text-gold-950 font-extrabold py-2.5 px-4 sm:px-5 text-xs tracking-widest uppercase transition-colors duration-200 flex items-center space-x-1.5 cursor-pointer shadow-md"
               >
                 {copiedCoupon ? <FiCheck size={14} /> : <FiCopy size={14} />}
                 <span>{copiedCoupon ? 'Copied' : 'Copy'}</span>
@@ -400,7 +422,7 @@ export default function Home() {
       <section className="bg-white dark:bg-[#070604] border-t border-gold-200/40 dark:border-gold-950/60 py-20 transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center select-none">
           <span className="text-xs font-bold tracking-[0.25em] text-gold-600 uppercase block mb-2">TESTIMONIALS</span>
-          <h2 className="font-serif text-3xl font-bold tracking-wide text-primary dark:text-white mb-16">Whispers of Luxury</h2>
+          <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-wide text-primary dark:text-white mb-10 sm:mb-16">Whispers of Luxury</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
@@ -423,7 +445,7 @@ export default function Home() {
                 stars: 5
               }
             ].map((t, idx) => (
-              <div key={idx} className="bg-gold-50/15 dark:bg-[#0c0a06] border border-gold-200/40 dark:border-gold-900/40 p-8 shadow-xs flex flex-col justify-between text-left relative group hover:shadow-xl hover:-translate-y-1.5 hover:border-gold-400 transition-all duration-500">
+              <div key={idx} className="bg-gold-50/15 dark:bg-[#0c0a06] border border-gold-200/40 dark:border-gold-900/40 p-6 sm:p-8 shadow-xs flex flex-col justify-between text-left relative group hover:shadow-xl hover:-translate-y-1.5 hover:border-gold-400 transition-all duration-500">
                 {/* Decorative Corner Accents */}
                 <div className="absolute top-3 left-3 w-3 h-3 border-t border-l border-gold-300/40 group-hover:border-gold-500 transition-all duration-500"></div>
                 <div className="absolute bottom-3 right-3 w-3 h-3 border-b border-r border-gold-300/40 group-hover:border-gold-500 transition-all duration-500"></div>
@@ -448,15 +470,15 @@ export default function Home() {
       </section>
 
       {/* 8. The Craftsmanship Journey Section */}
-      <section className="bg-gradient-to-b from-gold-50/15 via-white to-gold-50/15 border-y border-gold-200/50 py-24 dark:from-[#060504] dark:via-[#090806] dark:to-[#060504] dark:border-gold-950/60 overflow-hidden">
+      <section className="bg-gradient-to-b from-gold-50/15 via-white to-gold-50/15 border-y border-gold-200/50 py-16 sm:py-24 dark:from-[#060504] dark:via-[#090806] dark:to-[#060504] dark:border-gold-950/60 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-20 select-none">
+          <div className="text-center mb-12 sm:mb-20 select-none">
             <div className="flex items-center justify-center gap-3 mb-4">
-              <span className="w-8 h-[1px] bg-gold-400/60"></span>
-              <span className="text-xs font-bold tracking-[0.35em] text-gold-600 uppercase">BEHIND THE SPARKLE</span>
-              <span className="w-8 h-[1px] bg-gold-400/60"></span>
+              <span className="w-6 sm:w-8 h-[1px] shrink-0 bg-gold-400/60"></span>
+              <span className="text-xs font-bold tracking-[0.25em] sm:tracking-[0.35em] text-gold-600 uppercase">BEHIND THE SPARKLE</span>
+              <span className="w-6 sm:w-8 h-[1px] shrink-0 bg-gold-400/60"></span>
             </div>
-            <h2 className="font-serif text-3xl sm:text-4xl font-extrabold tracking-wide text-primary leading-tight dark:text-white max-w-2xl mx-auto">
+            <h2 className="font-serif text-2xl min-[400px]:text-3xl sm:text-4xl font-extrabold tracking-wide text-primary leading-tight dark:text-white max-w-2xl mx-auto">
               Crafted with Passion,<br />
               <span className="text-gold-600 font-serif italic font-normal mt-1 block">Designed for Every Occasion</span>
             </h2>
@@ -470,7 +492,7 @@ export default function Home() {
             {craftSteps.map((step, idx) => (
               <div 
                 key={idx} 
-                className="flex flex-col text-left group bg-white border border-gold-100/80 p-7 dark:bg-[#0a0907] dark:border-gold-900/40 relative shadow-sm hover:shadow-xl hover:-translate-y-2 hover:border-gold-400/60 transition-all duration-500 select-none"
+                className="flex flex-col text-left group bg-white border border-gold-100/80 p-5 sm:p-7 dark:bg-[#0a0907] dark:border-gold-900/40 relative shadow-sm hover:shadow-xl hover:-translate-y-2 hover:border-gold-400/60 transition-all duration-500 select-none"
               >
                 {/* Decorative Luxury Gold Corner Frames */}
                 <div className="absolute top-3 left-3 w-4 h-4 border-t border-l border-gold-300/40 group-hover:border-gold-500/80 group-hover:-translate-x-1 group-hover:-translate-y-1 transition-all duration-500"></div>
@@ -511,10 +533,10 @@ export default function Home() {
 
       {/* 9. Newsletter Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
-        <div className="bg-gold-50/30 border border-gold-200/80 p-8 sm:p-12 lg:p-16 text-center shadow-xs">
+        <div className="bg-gold-50/30 border border-gold-200/80 px-5 py-8 sm:p-12 lg:p-16 text-center shadow-xs">
           <div className="max-w-2xl mx-auto flex flex-col items-center">
             <span className="text-xs font-bold tracking-[0.3em] text-gold-600 uppercase mb-3">SHAMBHAVI CIRCLE</span>
-            <h2 className="font-serif text-3xl font-bold tracking-wide text-primary leading-tight mb-4">
+            <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-wide text-primary leading-tight mb-4">
               Join the Circle of Elegance
             </h2>
             <p className="text-secondary text-sm font-sans leading-relaxed mb-8">

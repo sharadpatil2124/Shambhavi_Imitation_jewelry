@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { FiPhone, FiMail, FiMapPin, FiClock, FiSend, FiInstagram, FiFacebook, FiYoutube } from 'react-icons/fi';
 import { toast } from 'react-toastify';
@@ -50,7 +50,7 @@ export default function ContactUs() {
         <span className="text-xs font-bold tracking-[0.25em] text-gold-600 uppercase block mb-2">
           CLIENT CONCIERGE
         </span>
-        <h1 className="font-serif text-3xl sm:text-4xl font-bold tracking-wide text-primary m-0 mb-3">
+        <h1 className="font-serif text-[1.65rem] leading-tight min-[400px]:text-3xl sm:text-4xl font-bold tracking-wide text-primary m-0 mb-3">
           Contact Customer Care
         </h1>
         <p className="text-secondary text-xs sm:text-sm font-sans max-w-lg mx-auto leading-relaxed">
@@ -62,7 +62,7 @@ export default function ContactUs() {
       <div className="flex flex-col lg:flex-row border border-gold-200/60 shadow-lg bg-white overflow-hidden">
         
         {/* Left Side: Contact Information Cards */}
-        <div className="w-full lg:w-5/12 bg-gold-50/20 p-8 sm:p-12 border-b lg:border-b-0 lg:border-r border-gold-100/50 flex flex-col justify-between">
+        <div className="w-full lg:w-5/12 bg-gold-50/20 p-6 sm:p-12 border-b lg:border-b-0 lg:border-r border-gold-100/50 flex flex-col justify-between">
           <div className="space-y-8">
             <h3 className="font-serif text-xl font-bold tracking-wide text-primary border-b border-gold-100 pb-2">
               Concierge Desk
@@ -83,7 +83,7 @@ export default function ContactUs() {
                 <FiPhone className="text-gold-600 mt-1 mr-4 flex-shrink-0" size={20} />
                 <div className="text-left">
                   <strong className="block text-xs font-bold uppercase tracking-wider text-primary mb-1">Boutique Telephones</strong>
-                  <a href={`tel:${settings?.contactPhone || '+91 70838 74227'}`} className="text-secondary hover:text-gold-600 text-sm transition-colors block">
+                  <a href={`tel:${settings?.contactPhone || '+91 70838 74227'}`} className="text-secondary hover:text-gold-600 text-sm transition-colors block break-all">
                     {settings?.contactPhone || '+91 70838 74227'}
                   </a>
                 </div>
@@ -93,8 +93,8 @@ export default function ContactUs() {
                 <FiMail className="text-gold-600 mt-1 mr-4 flex-shrink-0" size={20} />
                 <div className="text-left">
                   <strong className="block text-xs font-bold uppercase tracking-wider text-primary mb-1">Email Queries</strong>
-                  <a href={`mailto:${settings?.contactEmail || 'support@shambhaviimitation.com'}`} className="text-secondary hover:text-gold-600 text-sm transition-colors block">
-                    {settings?.contactEmail || 'support@shambhaviimitation.com'}
+                  <a href={`mailto:${settings?.contactEmail || 'kadamshambhavi1@gmail.com'}`} className="text-secondary hover:text-gold-600 text-sm transition-colors block break-all">
+                    {settings?.contactEmail || 'kadamshambhavi1@gmail.com'}
                   </a>
                 </div>
               </li>
@@ -131,7 +131,7 @@ export default function ContactUs() {
         </div>
 
         {/* Right Side: Contact Query Form */}
-        <div className="w-full lg:w-7/12 p-8 sm:p-12">
+        <div className="w-full lg:w-7/12 p-6 sm:p-12">
           <h3 className="font-serif text-xl font-bold tracking-wide text-primary border-b border-gold-100 pb-2 mb-6">
             Send an Enquiry
           </h3>

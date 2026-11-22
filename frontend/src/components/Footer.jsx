@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { FiPhone, FiMail, FiMapPin, FiInstagram, FiFacebook, FiYoutube } from 'react-icons/fi';
@@ -6,12 +5,12 @@ import { FiPhone, FiMail, FiMapPin, FiInstagram, FiFacebook, FiYoutube } from 'r
 export default function Footer() {
   const { settings } = useSelector((state) => state.settings);
   return (
-    <footer className="bg-white dark:bg-[#070604] border-t border-gold-200/40 dark:border-gold-950/60 pt-16 pb-8 text-primary relative transition-colors duration-300">
+    <footer className="bg-white dark:bg-[#070604] border-t border-gold-200/40 dark:border-gold-950/60 pt-12 sm:pt-16 pb-8 text-primary relative transition-colors duration-300">
       {/* Decorative Top Gold Border */}
       <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-gold-400 to-transparent"></div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12 mb-10 sm:mb-12">
           
           {/* Column 1: Brand & Bio */}
           <div>
@@ -114,16 +113,16 @@ export default function Footer() {
                   {settings?.address || 'Shambhavi Imitation, Main Road, Kurani, Kagal, Kolhapur, 416219, Maharashtra, India.'}
                 </span>
               </li>
-              <li className="flex items-center">
+              <li className="flex items-center min-w-0">
                 <FiPhone className="text-gold-600 mr-3 flex-shrink-0" size={18} />
-                <a href={`tel:${settings?.contactPhone || '+91 70589 15328'}`} className="text-secondary dark:text-gray-300 hover:text-gold-600 dark:hover:text-gold-400 text-sm transition-colors duration-200">
+                <a href={`tel:${settings?.contactPhone || '+91 70589 15328'}`} className="text-secondary dark:text-gray-300 hover:text-gold-600 dark:hover:text-gold-400 text-sm transition-colors duration-200 min-w-0 break-all">
                   {settings?.contactPhone || '+91 70589 15328'}
                 </a>
               </li>
-              <li className="flex items-center">
+              <li className="flex items-center min-w-0">
                 <FiMail className="text-gold-600 mr-3 flex-shrink-0" size={18} />
-                <a href={`mailto:${settings?.contactEmail || 'support@shambhaviimitation.com'}`} className="text-secondary dark:text-gray-300 hover:text-gold-600 dark:hover:text-gold-400 text-sm transition-colors duration-200">
-                  {settings?.contactEmail || 'support@shambhaviimitation.com'}
+                <a href={`mailto:${settings?.contactEmail || 'kadamshambhavi1@gmail.com'}`} className="text-secondary dark:text-gray-300 hover:text-gold-600 dark:hover:text-gold-400 text-sm transition-colors duration-200 min-w-0 break-all">
+                  {settings?.contactEmail || 'kadamshambhavi1@gmail.com'}
                 </a>
               </li>
             </ul>
@@ -132,12 +131,12 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar: Copyright & Payment Security icons */}
-        <div className="border-t border-gold-100/40 dark:border-gold-950/60 pt-8 flex flex-col md:flex-row items-center justify-between">
-          <p className="text-xs text-secondary dark:text-gray-300 font-medium tracking-wide text-center md:text-left mb-4 md:mb-0">
+        <div className="border-t border-gold-100/40 dark:border-gold-950/60 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-secondary dark:text-gray-300 font-medium tracking-wide text-center md:text-left">
             © {new Date().getFullYear()} Shambhavi Imitation Jewelry. All Rights Reserved. Crafted for premium luxury.
           </p>
-          <div className="flex items-center space-x-3 opacity-80 select-none">
-            <span className="text-[9px] text-secondary dark:text-gold-300 font-bold uppercase tracking-widest mr-2">Secure checkout via</span>
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 opacity-80 select-none">
+            <span className="text-[9px] text-secondary dark:text-gold-300 font-bold uppercase tracking-widest w-full text-center sm:w-auto sm:mr-1">Secure checkout via</span>
             <div className="bg-gold-50/50 dark:bg-gold-950/20 border border-gold-300/40 text-gold-700 dark:text-gold-300 text-[9px] font-bold px-2 py-1 tracking-wide">VISA</div>
             <div className="bg-gold-50/50 dark:bg-gold-950/20 border border-gold-300/40 text-gold-700 dark:text-gold-300 text-[9px] font-bold px-2 py-1 tracking-wide">MASTERCARD</div>
             <div className="bg-gold-50/50 dark:bg-gold-950/20 border border-gold-300/40 text-gold-700 dark:text-gold-300 text-[9px] font-bold px-2 py-1 tracking-wide">UPI</div>

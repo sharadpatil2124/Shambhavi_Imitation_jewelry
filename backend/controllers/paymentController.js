@@ -1,6 +1,23 @@
 import crypto from 'crypto';
 import razorpayInstance from '../config/razorpay.js';
 import Order from '../models/Order.js';
+import { priceOrder, PricingError, toPaise } from '../utils/orderPricing.js';
+
+// Razorpay signs `${order_id}|${payment_id}` with the key secret only when a payment succeeds.
+// Compared in constant time. There is no mock/bypass path.
+export const isValidRazorpaySignature = (razorpayOrderId, razorpayPaymentId, razorpaySignature) => {
+  const secret = process.env.RAZORPAY_KEY_SECRET;
+  if (!secret || !razorpayOrderId || !razorpayPaymentId || typeof razorpaySignature !== 'string') return false;
+
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+    .digest('hex');
+
+  const a = Buffer.from(expected, 'utf8');
+  const b = Buffer.from(razorpaySignature, 'utf8');
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+};
 
 // @desc    Get Razorpay Public Key ID
 // @route   GET /api/payments/key
@@ -12,35 +29,46 @@ export const getRazorpayKey = (req, res) => {
   });
 };
 
-// @desc    Create Razorpay Order
+// @desc    Create Razorpay Order for the customer's cart. The amount is calculated on the server.
 // @route   POST /api/payments/order
 // @access  Private
 export const createRazorpayOrder = async (req, res, next) => {
   try {
-    const { amount } = req.body;
+    const { orderItems, couponCode } = req.body;
 
-    if (!amount) {
+    if (!Array.isArray(orderItems) || orderItems.length === 0) {
       res.status(400);
-      throw new Error('Please specify a transaction amount');
+      throw new Error('Your cart is empty or out of date. Please refresh the page and try again.');
+    }
+
+    let pricing;
+    try {
+      pricing = await priceOrder({ orderItems, couponCode });
+    } catch (err) {
+      if (err instanceof PricingError) res.status(err.status);
+      throw err;
+    }
+
+    if (pricing.settings.onlinePaymentEnabled === false) {
+      res.status(400);
+      throw new Error('Online payment is currently unavailable. Please choose Cash on Delivery.');
     }
 
     const options = {
-      amount: Math.round(Number(amount) * 100), // Amount in paise (Razorpay standard)
+      amount: toPaise(pricing.totalPrice),
       currency: 'INR',
-      receipt: `receipt_order_${Date.now()}`
+      receipt: `receipt_order_${Date.now()}`,
+      // Binds this payment to the customer; checked again when the order is created.
+      notes: { userId: String(req.user._id), couponCode: pricing.couponCode || '' }
     };
 
     let order;
     try {
       order = await razorpayInstance.orders.create(options);
     } catch (err) {
-      console.warn('⚠️ Razorpay order creation failed, falling back to mock order:', err.message);
-      order = {
-        id: `order_mock_${Math.random().toString(36).substring(2, 15)}`,
-        amount: options.amount,
-        currency: options.currency,
-        receipt: options.receipt
-      };
+      console.error('❌ [Razorpay] Order creation failed:', err?.error?.description || err.message);
+      res.status(502);
+      throw new Error('Online payment is temporarily unavailable. Please try again in a few minutes or choose Cash on Delivery.');
     }
 
     res.status(201).json({
@@ -56,7 +84,7 @@ export const createRazorpayOrder = async (req, res, next) => {
   }
 };
 
-// @desc    Verify Razorpay Signature & Save Payment details
+// @desc    Verify Razorpay Signature for an order the customer owns
 // @route   POST /api/payments/verify
 // @access  Private
 export const verifyPayment = async (req, res, next) => {
@@ -68,48 +96,32 @@ export const verifyPayment = async (req, res, next) => {
       orderId
     } = req.body;
 
-    if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+    if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature || !orderId) {
       res.status(400);
       throw new Error('Please provide complete payment signature parameters');
     }
 
-    // 1. Re-generate HMAC signature for security validation
-    const isMock = razorpayOrderId.startsWith('order_mock_');
-    const secret = process.env.RAZORPAY_KEY_SECRET || 'mockKeySecret6543210987';
-    const generated_signature = isMock ? razorpaySignature : crypto
-      .createHmac('sha256', secret)
-      .update(`${razorpayOrderId}|${razorpayPaymentId}`)
-      .digest('hex');
-
-    // 2. Validate Signatures match
-    if (isMock || generated_signature === razorpaySignature) {
-      // Payment Verified!
-      // If a local order ID is passed, update the order status
-      if (orderId) {
-        const order = await Order.findById(orderId);
-        if (order) {
-          order.isPaid = true;
-          order.paidAt = Date.now();
-          order.razorpayOrderId = razorpayOrderId;
-          order.razorpayPaymentId = razorpayPaymentId;
-          order.razorpaySignature = razorpaySignature;
-          order.paymentResult = {
-            id: razorpayPaymentId,
-            status: 'Success',
-            email_address: req.user.email
-          };
-          await order.save();
-        }
-      }
-
-      res.json({
-        success: true,
-        message: 'Payment verification succeeded: Secure signature validated successfully'
-      });
-    } else {
+    if (!isValidRazorpaySignature(razorpayOrderId, razorpayPaymentId, razorpaySignature)) {
       res.status(400);
       throw new Error('Payment verification failed: Invalid transaction signature');
     }
+
+    const order = await Order.findById(orderId);
+    if (!order || String(order.user) !== String(req.user._id)) {
+      res.status(404);
+      throw new Error('Order not found');
+    }
+
+    // The payment must be the one this order was created and paid with.
+    if (order.razorpayOrderId !== String(razorpayOrderId) || order.razorpayPaymentId !== String(razorpayPaymentId)) {
+      res.status(400);
+      throw new Error('Payment verification failed: this payment does not belong to this order');
+    }
+
+    res.json({
+      success: true,
+      message: 'Payment verification succeeded: Secure signature validated successfully'
+    });
   } catch (error) {
     next(error);
   }

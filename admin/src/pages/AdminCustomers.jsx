@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchUsers, fetchUserDetails } from '../store/adminSlice';
 import { 
@@ -9,23 +9,21 @@ import {
   FiPhone, 
   FiCalendar, 
   FiShoppingBag, 
-  FiDollarSign, 
   FiMapPin, 
   FiChevronLeft, 
   FiChevronRight, 
   FiEye,
-  FiArrowUpRight,
   FiTrendingUp
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 
 export default function AdminCustomers() {
   const dispatch = useDispatch();
-  const { users, totalUsersCount, usersPage, usersPages, selectedUser, selectedUserOrders, loading } = useSelector((state) => state.admin);
+  const { users, totalUsersCount, usersPages, selectedUser, selectedUserOrders, loading } = useSelector((state) => state.admin);
 
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [, setSelectedUserId] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   useEffect(() => {
@@ -66,11 +64,11 @@ export default function AdminCustomers() {
   };
 
   return (
-    <div className="space-y-8 animate-fade-in text-left">
+    <div className="space-y-6 sm:space-y-8 animate-fade-in text-left">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="font-serif text-2xl font-bold tracking-wide text-primary m-0">Customers</h1>
+          <h1 className="font-serif text-xl sm:text-2xl font-bold tracking-wide text-primary m-0">Customers</h1>
           <p className="text-xs text-secondary/60 font-sans mt-1">Monitor registered customer profiles, purchasing analytics, and address lists.</p>
         </div>
       </div>
@@ -113,7 +111,7 @@ export default function AdminCustomers() {
       </div>
 
       {/* Filters and Search */}
-      <div className="bg-white border border-gold-200/50 p-4 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="bg-white border border-gold-200/50 p-4 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
         <div className="relative max-w-md w-full">
           <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gold-600" size={16} />
           <input
@@ -138,7 +136,7 @@ export default function AdminCustomers() {
       ) : users.length > 0 ? (
         <div className="bg-white border border-gold-200/40 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs font-sans border-collapse">
+            <table className="w-full min-w-[760px] text-left text-xs font-sans border-collapse [&_th]:whitespace-nowrap">
               <thead>
                 <tr className="border-b border-gold-100 bg-[#FAF8F2] text-secondary/50 uppercase font-semibold text-[10px] tracking-wider">
                   <th className="p-4">Customer Name</th>
@@ -250,36 +248,36 @@ export default function AdminCustomers() {
       {/* CUSTOMER DETAILS SLIDE-OVER DRAWER */}
       {/* ========================================================================= */}
       {isDrawerOpen && selectedUser && (
-        <div className="fixed inset-0 z-50 overflow-hidden">
+        <div className="scroll-lock fixed inset-0 z-50 overflow-hidden">
           {/* Overlay backdrop */}
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={closeDrawer} />
 
-          <div className="absolute inset-y-0 right-0 pl-10 max-w-full flex">
+          <div className="absolute inset-y-0 right-0 pl-6 sm:pl-10 max-w-full flex">
             <div className="w-screen max-w-xl bg-white border-l border-gold-200 shadow-2xl flex flex-col justify-between animate-slide-left">
               
               {/* Drawer Header */}
-              <div className="h-20 bg-[#FAF8F2] border-b border-gold-200/55 px-6 flex justify-between items-center shrink-0">
+              <div className="min-h-16 sm:h-20 bg-[#FAF8F2] border-b border-gold-200/55 px-4 sm:px-6 py-3 flex justify-between items-center gap-3 shrink-0">
                 <div>
                   <h3 className="font-serif text-base font-bold text-primary tracking-wide">Client Profile Dossier</h3>
                   <p className="text-[10px] text-secondary/60 uppercase tracking-widest font-sans mt-0.5">Admin Analytics Registry</p>
                 </div>
-                <button onClick={closeDrawer} className="text-secondary/60 hover:text-primary transition-colors cursor-pointer p-1">
+                <button onClick={closeDrawer} className="text-secondary/60 hover:text-primary transition-colors cursor-pointer p-2 -mr-2" aria-label="Close">
                   <FiX size={20} />
                 </button>
               </div>
 
               {/* Drawer Body */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-6">
                 
                 {/* 1. Profile overview */}
-                <div className="flex items-center space-x-4 border-b border-gold-100 pb-5">
-                  <div className="w-16 h-16 rounded-full bg-gold-600 text-white font-serif font-bold text-2xl flex items-center justify-center border border-gold-300 shadow-sm">
+                <div className="flex items-center space-x-4 border-b border-gold-100 pb-5 min-w-0">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-full bg-gold-600 text-white font-serif font-bold text-2xl flex items-center justify-center border border-gold-300 shadow-sm">
                     {selectedUser.name.charAt(0).toUpperCase()}
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <h4 className="font-serif text-lg font-bold text-primary tracking-wide">{selectedUser.name}</h4>
                     <p className="text-xs text-gold-600 font-bold uppercase tracking-wider mt-0.5">{selectedUser.role} client</p>
-                    <p className="text-[10px] font-mono text-secondary/50 mt-1">UUID: {selectedUser._id}</p>
+                    <p className="text-[10px] font-mono text-secondary/50 mt-1 break-all">UUID: {selectedUser._id}</p>
                   </div>
                 </div>
 
@@ -289,7 +287,7 @@ export default function AdminCustomers() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                     <div className="space-y-0.5">
                       <span className="text-[9px] font-bold text-secondary/50 uppercase block">Email Address</span>
-                      <span className="font-semibold text-primary select-all">{selectedUser.email}</span>
+                      <span className="font-semibold text-primary select-all break-all">{selectedUser.email}</span>
                     </div>
                     <div className="space-y-0.5">
                       <span className="text-[9px] font-bold text-secondary/50 uppercase block">Telephone Number</span>
@@ -342,14 +340,14 @@ export default function AdminCustomers() {
                           {/* Order Products */}
                           <div className="divide-y divide-gold-50/50 text-[11px] text-secondary">
                             {order.orderItems?.map((item, idx) => (
-                              <div key={idx} className="py-1.5 flex justify-between items-center">
+                              <div key={idx} className="py-1.5 flex justify-between items-center gap-3">
                                 <span>{item.name} <strong className="text-secondary/60">x {item.quantity}</strong></span>
                                 <span className="font-semibold text-primary">₹{(item.price * item.quantity).toLocaleString()}</span>
                               </div>
                             ))}
                           </div>
 
-                          <div className="border-t border-gold-50 pt-2 flex justify-between items-center text-xs">
+                          <div className="border-t border-gold-50 pt-2 flex flex-wrap justify-between items-center gap-2 text-xs">
                             <span className="text-[10px] text-secondary/40 font-mono">Date: {new Date(order.createdAt).toLocaleDateString('en-IN')}</span>
                             <div className="text-right">
                               <span className="text-[10px] text-secondary/50 font-bold block">Total Amount</span>
@@ -369,7 +367,7 @@ export default function AdminCustomers() {
               </div>
 
               {/* Drawer Footer */}
-              <div className="h-20 border-t border-gold-100 bg-[#FAF8F2] px-6 flex items-center justify-between shrink-0">
+              <div className="min-h-20 border-t border-gold-100 bg-[#FAF8F2] px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0">
                 <div className="text-xs">
                   <span className="text-[10px] text-secondary/50 uppercase block font-bold">Contribution Aggregate</span>
                   <strong className="text-base text-primary font-serif font-bold">

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { FiMail, FiArrowLeft } from 'react-icons/fi';
 import { toast } from 'react-toastify';
@@ -31,12 +31,12 @@ export default function AdminForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFCF7] flex items-center justify-center p-6 relative overflow-hidden select-none">
+    <div className="min-h-dvh bg-[#FDFCF7] flex items-center justify-center p-4 sm:p-6 relative overflow-hidden select-none">
       {/* Decorative luxury abstract circles */}
       <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-gold-100/30 blur-3xl"></div>
       <div className="absolute -bottom-40 -right-40 w-96 h-96 rounded-full bg-gold-200/20 blur-3xl"></div>
       
-      <div className="w-full max-w-md bg-white border border-gold-200/60 p-8 shadow-xl relative z-10">
+      <div className="w-full max-w-md bg-white border border-gold-200/60 p-6 sm:p-8 shadow-xl relative z-10">
         {/* Brand Header */}
         <div className="text-center mb-8 pb-4 border-b border-gold-100">
           <span className="text-[10px] font-bold tracking-[0.4em] text-gold-600 uppercase mb-1.5 block">

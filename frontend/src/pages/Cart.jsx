@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiTrash2, FiMinus, FiPlus, FiShoppingBag, FiArrowRight, FiArrowLeft, FiTag } from 'react-icons/fi';
@@ -90,7 +90,7 @@ export default function Cart() {
   if (cartItems.length === 0) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center select-none animate-fade-in">
-        <div className="flex flex-col items-center max-w-sm mx-auto bg-white dark:bg-[#0c0a06] border border-gold-200/50 p-8 shadow-sm relative">
+        <div className="flex flex-col items-center max-w-sm mx-auto bg-white dark:bg-[#0c0a06] border border-gold-200/50 p-6 sm:p-8 shadow-sm relative">
           <div className="absolute top-3 left-3 w-3 h-3 border-t border-l border-gold-300/40"></div>
           <div className="absolute bottom-3 right-3 w-3 h-3 border-b border-r border-gold-300/40"></div>
           
@@ -117,7 +117,7 @@ export default function Cart() {
       
       {/* Page Header */}
       <div className="border-b border-gold-100 dark:border-gold-950/60 pb-4 mb-8">
-        <h1 className="font-serif text-3xl font-bold tracking-wide text-primary dark:text-white m-0">
+        <h1 className="font-serif text-2xl sm:text-3xl font-bold tracking-wide text-primary dark:text-white m-0">
           Shopping Cart ({cartItems.length} items)
         </h1>
       </div>
@@ -126,11 +126,11 @@ export default function Cart() {
       <div className="flex flex-col lg:flex-row gap-8 items-start">
         
         {/* Left Side: Cart Items List */}
-        <div className="w-full lg:w-2/3 space-y-4">
+        <div className="w-full lg:w-2/3 min-w-0 space-y-4">
           {cartItems.map((item) => (
             <div
               key={`${item.id}-${item.selectedColor}-${item.selectedSize}`}
-              className="flex flex-col sm:flex-row items-center border border-gold-200/50 dark:border-gold-900/40 bg-white dark:bg-[#0c0a06] p-4 sm:p-5 gap-4 relative shadow-xs hover:border-gold-500/50 transition-all duration-300"
+              className="flex flex-col sm:flex-row items-center border border-gold-200/50 dark:border-gold-900/40 bg-white dark:bg-[#0c0a06] p-4 pt-5 sm:p-5 sm:pr-12 gap-4 relative shadow-xs hover:border-gold-500/50 transition-all duration-300"
             >
               
               {/* Product Thumbnail */}
@@ -139,7 +139,7 @@ export default function Cart() {
               </div>
 
               {/* Product Info */}
-              <div className="flex-grow text-center sm:text-left space-y-1">
+              <div className="flex-grow min-w-0 w-full sm:w-auto text-center sm:text-left space-y-1 px-6 sm:px-0">
                 <span className="text-[10px] uppercase tracking-widest font-bold text-gold-600">
                   {item.category}
                 </span>
@@ -158,8 +158,8 @@ export default function Cart() {
               {/* Quantity Changer */}
               <div className="flex items-center border border-gold-300 dark:border-gold-900/60 bg-white dark:bg-[#100d07] select-none">
                 <button
-                  onClick={() => dispatch(updateQuantity({ ...item, quantity: item.quantity - 1 }))}
-                  className="px-2.5 py-1.5 text-secondary hover:text-gold-600 transition-colors cursor-pointer"
+                  onClick={() => dispatch(updateQuantity({ ...item, quantity: item.quantity - 1 })).unwrap().catch((message) => toast.error(message || "Could not update the quantity.", { position: "bottom-right" }))}
+                  className="px-3 py-2.5 text-secondary hover:text-gold-600 transition-colors cursor-pointer"
                   aria-label="Decrease quantity"
                 >
                   <FiMinus size={12} />
@@ -168,8 +168,8 @@ export default function Cart() {
                   {item.quantity}
                 </span>
                 <button
-                  onClick={() => dispatch(updateQuantity({ ...item, quantity: item.quantity + 1 }))}
-                  className="px-2.5 py-1.5 text-secondary hover:text-gold-600 transition-colors cursor-pointer"
+                  onClick={() => dispatch(updateQuantity({ ...item, quantity: item.quantity + 1 })).unwrap().catch((message) => toast.error(message || "Could not update the quantity.", { position: "bottom-right" }))}
+                  className="px-3 py-2.5 text-secondary hover:text-gold-600 transition-colors cursor-pointer"
                   aria-label="Increase quantity"
                 >
                   <FiPlus size={12} />
@@ -177,7 +177,7 @@ export default function Cart() {
               </div>
 
               {/* Price & Trash */}
-              <div className="flex flex-col sm:items-end justify-center text-center sm:text-right min-w-[100px]">
+              <div className="flex flex-col sm:items-end justify-center text-center sm:text-right sm:min-w-[100px] shrink-0">
                 <span className="font-sans text-sm sm:text-base font-bold text-primary dark:text-white">
                   ₹{(item.price * item.quantity).toLocaleString('en-IN')}
                 </span>
@@ -192,7 +192,7 @@ export default function Cart() {
                   dispatch(removeFromCart(item));
                   toast.info(`Removed from cart: ${item.name}`, { position: "bottom-right", autoClose: 2000 });
                 }}
-                className="absolute top-3 right-3 text-secondary hover:text-red-500 p-1.5 transition-colors cursor-pointer"
+                className="absolute top-2 right-2 text-secondary hover:text-red-500 p-2 transition-colors cursor-pointer"
                 aria-label="Remove item"
               >
                 <FiTrash2 size={16} />
@@ -224,7 +224,7 @@ export default function Cart() {
         </div>
 
         {/* Right Side: Order Summary Panel */}
-        <aside className="w-full lg:w-1/3 sticky top-28 bg-white dark:bg-[#0c0a06] border border-gold-200/50 dark:border-gold-900/40 p-6 shadow-sm select-none relative">
+        <aside className="w-full lg:w-1/3 lg:sticky lg:top-28 bg-white dark:bg-[#0c0a06] border border-gold-200/50 dark:border-gold-900/40 p-5 sm:p-6 shadow-sm select-none relative">
           {/* Luxury Gold Corner Frames */}
           <div className="absolute top-4 left-4 w-4 h-4 border-t border-l border-gold-400/50 pointer-events-none z-10"></div>
           <div className="absolute bottom-4 right-4 w-4 h-4 border-b border-r border-gold-400/50 pointer-events-none z-10"></div>
@@ -258,8 +258,8 @@ export default function Cart() {
 
             {/* Promo discount display */}
             {appliedDiscount > 0 && (
-              <div className="flex justify-between text-green-600 dark:text-green-400 font-semibold items-center bg-green-50/50 dark:bg-green-950/10 p-2 border border-green-200/30">
-                <span className="flex items-center"><FiTag className="mr-1.5" /> Code: {appliedPromoCode}</span>
+              <div className="flex flex-wrap justify-between gap-x-3 gap-y-1 text-green-600 dark:text-green-400 font-semibold items-center bg-green-50/50 dark:bg-green-950/10 p-2 border border-green-200/30">
+                <span className="flex items-center min-w-0 break-all"><FiTag className="mr-1.5 shrink-0" /> Code: {appliedPromoCode}</span>
                 <span>-₹{appliedDiscount.toLocaleString('en-IN')}</span>
                 <button onClick={handleRemovePromo} className="text-red-500 hover:text-red-700 text-[10px] font-bold uppercase tracking-wider ml-1 cursor-pointer">Remove</button>
               </div>
@@ -280,11 +280,11 @@ export default function Cart() {
                 placeholder={`Try '${settings?.specialOfferCouponCode || "SHAMBHAVI10"}'`}
                 value={promoCode}
                 onChange={(e) => setPromoCode(e.target.value)}
-                className="flex-grow bg-[#faf9f6] dark:bg-[#100d07] border border-gold-350 dark:border-gold-900/60 py-2.5 px-3 text-xs tracking-widest outline-none uppercase font-mono focus:border-gold-500 text-primary dark:text-white"
+                className="flex-1 min-w-0 bg-[#faf9f6] dark:bg-[#100d07] border border-gold-350 dark:border-gold-900/60 py-2.5 px-3 text-xs tracking-widest outline-none uppercase font-mono focus:border-gold-500 text-primary dark:text-white"
               />
               <button
                 type="submit"
-                className="bg-primary hover:bg-gold-500 text-white hover:text-primary font-bold py-2.5 px-4 text-xs tracking-widest uppercase transition-colors cursor-pointer border border-primary hover:border-gold-500 dark:bg-gold-600 dark:border-gold-600 dark:text-primary dark:hover:bg-white"
+                className="shrink-0 bg-primary hover:bg-gold-500 text-white hover:text-primary font-bold py-2.5 px-4 text-xs tracking-widest uppercase transition-colors cursor-pointer border border-primary hover:border-gold-500 dark:bg-gold-600 dark:border-gold-600 dark:text-primary dark:hover:bg-white"
               >
                 Apply
               </button>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { registerUser } from '../store/authSlice';
@@ -132,8 +132,8 @@ export default function Register() {
   };
 
   return (
-    <div className="max-w-md mx-auto my-16 px-4 select-none animate-fade-in text-left">
-      <div className="bg-white dark:bg-[#0c0a06] border border-gold-200/50 dark:border-gold-900/40 p-8 shadow-md relative">
+    <div className="max-w-md mx-auto my-8 sm:my-16 px-4 select-none animate-fade-in text-left">
+      <div className="bg-white dark:bg-[#0c0a06] border border-gold-200/50 dark:border-gold-900/40 p-6 sm:p-8 shadow-md relative">
         {/* Luxury Gold Corner Frames */}
         <div className="absolute top-4 left-4 w-4 h-4 border-t border-l border-gold-400/50 pointer-events-none z-10"></div>
         <div className="absolute bottom-4 right-4 w-4 h-4 border-b border-r border-gold-400/50 pointer-events-none z-10"></div>
@@ -212,7 +212,7 @@ export default function Register() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-secondary hover:text-gold-600 transition-colors"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-secondary hover:text-gold-600 transition-colors"
                   >
                     {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
                   </button>
@@ -284,7 +284,7 @@ export default function Register() {
             {/* OTP Verification Form */}
             <form onSubmit={handleVerifyOtp} className="space-y-5 relative z-20">
               <div>
-                <div className="flex justify-between items-center mb-2">
+                <div className="flex flex-wrap justify-between items-center gap-x-3 gap-y-1 mb-2">
                   <label className="block text-xs font-bold text-secondary dark:text-gray-400 uppercase tracking-wider">Verification OTP</label>
                   <button
                     type="button"

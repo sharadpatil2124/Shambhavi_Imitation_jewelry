@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { FiMail, FiArrowLeft } from 'react-icons/fi';
 import { toast } from 'react-toastify';
@@ -31,8 +31,8 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="max-w-md mx-auto my-16 px-4 select-none animate-fade-in text-left">
-      <div className="bg-white dark:bg-[#0c0a06] border border-gold-200/50 dark:border-gold-900/40 p-8 shadow-md relative">
+    <div className="max-w-md mx-auto my-8 sm:my-16 px-4 select-none animate-fade-in text-left">
+      <div className="bg-white dark:bg-[#0c0a06] border border-gold-200/50 dark:border-gold-900/40 p-6 sm:p-8 shadow-md relative">
         {/* Luxury Gold Corner Frames */}
         <div className="absolute top-4 left-4 w-4 h-4 border-t border-l border-gold-400/50 pointer-events-none z-10"></div>
         <div className="absolute bottom-4 right-4 w-4 h-4 border-b border-r border-gold-400/50 pointer-events-none z-10"></div>
@@ -79,7 +79,7 @@ export default function ForgotPassword() {
         </form>
 
         {/* Footer info link */}
-        <div className="mt-8 pt-6 border-t border-gold-100 dark:border-gold-950/60 text-center text-xs font-sans text-secondary dark:text-gray-400 font-medium flex justify-between items-center relative z-20">
+        <div className="mt-8 pt-6 border-t border-gold-100 dark:border-gold-950/60 text-center text-xs font-sans text-secondary dark:text-gray-400 font-medium flex flex-wrap justify-between items-center gap-3 relative z-20">
           <Link to="/login" className="text-secondary dark:text-gold-300 hover:text-gold-600 font-semibold flex items-center gap-1.5 transition-colors">
             <FiArrowLeft size={14} /> Back to Sign In
           </Link>

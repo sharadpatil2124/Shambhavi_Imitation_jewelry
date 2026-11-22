@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useSearchParams } from 'react-router-dom';
 import { FiSearch, FiTruck, FiBox, FiCheckCircle, FiPackage, FiAlertCircle, FiRotateCcw, FiPrinter, FiFileText } from 'react-icons/fi';
@@ -23,6 +23,8 @@ export default function OrderTracking() {
     if (user?.email && !emailInput) {
       setEmailInput(user.email);
     }
+    // Only when the signed-in user changes; a typed email must not be overwritten.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   // Execute tracking query against backend
@@ -83,10 +85,16 @@ export default function OrderTracking() {
   // Check URL query parameters on mount
   useEffect(() => {
     const orderIdParam = searchParams.get('orderId');
+    const emailParam = searchParams.get('email') || '';
     if (orderIdParam) {
       setOrderIdInput(orderIdParam);
-      fetchTracking(orderIdParam, emailInput);
+      if (emailParam) setEmailInput(emailParam);
+      // Tracking needs the order's email or phone; look it up straight away only when we have one.
+      const identifier = emailParam || emailInput;
+      if (identifier) fetchTracking(orderIdParam, identifier);
     }
+    // Only when the URL changes; the email box is read once as a fallback.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   const handleTrackSubmit = (e) => {
@@ -115,14 +123,14 @@ export default function OrderTracking() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-10 animate-fade-in text-left">
+    <div className="max-w-4xl mx-auto px-4 py-8 sm:py-10 animate-fade-in text-left">
       
       {/* Page Header */}
       <div className="border-b border-gold-100 dark:border-gold-950/60 pb-4 mb-8 text-center select-none">
         <span className="text-[10px] font-bold tracking-[0.3em] text-gold-600 uppercase mb-2 block font-sans">
           REAL-TIME SHIPMENTS
         </span>
-        <h1 className="font-serif text-3xl font-bold tracking-wide text-primary dark:text-white m-0">
+        <h1 className="font-serif text-2xl sm:text-3xl font-bold tracking-wide text-primary dark:text-white m-0">
           Track Your Order
         </h1>
         <p className="text-secondary dark:text-gray-300 text-xs sm:text-sm max-w-md mx-auto leading-normal mt-2">
@@ -131,7 +139,7 @@ export default function OrderTracking() {
       </div>
 
       {/* Query Search Form */}
-      <div className="bg-white dark:bg-[#0c0a06] border border-gold-200/50 dark:border-gold-900/40 p-6 shadow-sm mb-10 relative">
+      <div className="bg-white dark:bg-[#0c0a06] border border-gold-200/50 dark:border-gold-900/40 p-4 sm:p-6 shadow-sm mb-8 sm:mb-10 relative">
         <div className="absolute top-4 left-4 w-4 h-4 border-t border-l border-gold-400/50 pointer-events-none z-10"></div>
         <div className="absolute bottom-4 right-4 w-4 h-4 border-b border-r border-gold-400/50 pointer-events-none z-10"></div>
 
@@ -156,6 +164,7 @@ export default function OrderTracking() {
             <input
               type="text"
               placeholder="Registered Email or Phone"
+              required
               value={emailInput}
               onChange={(e) => setEmailInput(e.target.value)}
               className="w-full bg-[#faf9f6] dark:bg-[#100d07] border border-gold-300 dark:border-gold-900/60 py-3 px-4 text-xs font-sans focus:border-gold-500 text-primary dark:text-white outline-none"
@@ -175,7 +184,7 @@ export default function OrderTracking() {
       {/* Query Search Results */}
       {isSearched && (
         queriedOrder ? (
-          <div className="bg-white dark:bg-[#0c0a06] border border-gold-200/50 dark:border-gold-900/40 p-6 sm:p-8 shadow-sm space-y-8 relative">
+          <div className="bg-white dark:bg-[#0c0a06] border border-gold-200/50 dark:border-gold-900/40 p-4 sm:p-8 shadow-sm space-y-8 relative">
             <div className="absolute top-4 left-4 w-4 h-4 border-t border-l border-gold-400/50 pointer-events-none z-10"></div>
             <div className="absolute bottom-4 right-4 w-4 h-4 border-b border-r border-gold-400/50 pointer-events-none z-10"></div>
 
@@ -194,7 +203,7 @@ export default function OrderTracking() {
                     {queriedOrder.status}
                   </span>
                 </div>
-                <div className="font-mono text-secondary/70 dark:text-gray-400">Order ID: #{queriedOrder.id}</div>
+                <div className="font-mono text-secondary/70 dark:text-gray-400 break-all">Order ID: #{queriedOrder.id}</div>
               </div>
               <div className="mt-2 sm:mt-0 text-left sm:text-right">
                 <span>Placed Date: <strong>{queriedOrder.date}</strong></span>
@@ -205,13 +214,13 @@ export default function OrderTracking() {
             {/* Dispatch / Courier Card if Shipped */}
             {queriedOrder.trackingId && (
               <div className="bg-[#FAF8F2] dark:bg-[#13100a] border border-gold-300/70 dark:border-gold-900/50 p-4 rounded-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-20">
-                <div className="text-left space-y-0.5">
+                <div className="text-left space-y-0.5 min-w-0">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-gold-700 dark:text-gold-400 block">Courier Dispatch Details</span>
                   <p className="text-xs text-primary dark:text-white font-semibold m-0">
                     Partner: <span className="font-bold">{queriedOrder.courierName}</span>
                   </p>
                   <p className="text-xs text-secondary dark:text-gray-300 font-mono m-0">
-                    AWB Tracking: <span className="font-bold text-gold-800 dark:text-gold-300">{queriedOrder.trackingId}</span>
+                    AWB Tracking: <span className="font-bold text-gold-800 dark:text-gold-300 break-all">{queriedOrder.trackingId}</span>
                   </p>
                 </div>
                 <div className="px-3 py-1.5 bg-white dark:bg-gold-950/40 border border-gold-200 dark:border-gold-900/60 rounded-xs text-[10px] font-bold uppercase tracking-wider text-gold-700 dark:text-gold-300">
@@ -223,7 +232,7 @@ export default function OrderTracking() {
             {/* Stepper Progress Bar or Cancelled/Refunded Banners */}
             {queriedOrder.status === 'Refunded' ? (
               <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-900/50 p-4 rounded-sm text-center relative z-20 space-y-2">
-                <p className="text-purple-800 dark:text-purple-300 font-bold text-xs uppercase tracking-wider m-0 flex items-center justify-center space-x-1.5">
+                <p className="text-purple-800 dark:text-purple-300 font-bold text-xs uppercase tracking-wider m-0 flex items-center justify-center gap-1.5 flex-wrap">
                   <FiRotateCcw className="text-purple-600 dark:text-purple-400" />
                   <span>This order has been Refunded (₹{(queriedOrder.refundAmount || queriedOrder.total).toLocaleString('en-IN')})</span>
                 </p>
@@ -231,7 +240,7 @@ export default function OrderTracking() {
                   {queriedOrder.refundReason ? `Reason: "${queriedOrder.refundReason}". ` : ''}The refund payment has been returned to your original payment method and inventory restocked.
                 </p>
                 {queriedOrder.refundTransactionId && (
-                  <p className="text-[10px] font-mono text-purple-600 dark:text-purple-400/80 m-0">
+                  <p className="text-[10px] font-mono text-purple-600 dark:text-purple-400/80 m-0 break-all">
                     Refund Transaction Reference: {queriedOrder.refundTransactionId}
                   </p>
                 )}
@@ -277,7 +286,7 @@ export default function OrderTracking() {
                         }`}>
                           {step.icon}
                         </div>
-                        <span className={`text-[10px] sm:text-xs font-bold mt-2.5 ${isActive ? 'text-primary dark:text-gold-200' : 'text-secondary dark:text-gray-400'}`}>
+                        <span className={`text-[10px] sm:text-xs font-bold mt-2.5 text-center leading-tight ${isActive ? 'text-primary dark:text-gold-200' : 'text-secondary dark:text-gray-400'}`}>
                           {step.label}
                         </span>
                         <span className="text-[8px] sm:text-[9px] text-secondary dark:text-gray-500 font-medium mt-0.5 hidden sm:block">
@@ -295,17 +304,17 @@ export default function OrderTracking() {
               <h4 className="font-serif text-sm font-bold text-primary dark:text-white mb-4">Shipment Contents</h4>
               <div className="space-y-4">
                 {queriedOrder.items.map((item, index) => (
-                  <div key={index} className="flex items-center justify-between text-xs sm:text-sm">
-                    <div className="flex items-center space-x-3 max-w-[75%]">
-                      <img src={getImageUrl(item.image)} alt={item.name} className="w-12 h-12 object-cover border border-gold-100 dark:border-gold-900/40" />
-                      <div className="text-left">
+                  <div key={index} className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-x-3 gap-y-2 text-xs sm:text-sm">
+                    <div className="flex items-center space-x-3 min-w-0 flex-1">
+                      <img src={getImageUrl(item.image)} alt={item.name} className="w-12 h-12 shrink-0 object-cover border border-gold-100 dark:border-gold-900/40" />
+                      <div className="text-left min-w-0">
                         <span className="font-serif font-bold text-primary dark:text-white line-clamp-1">{item.name}</span>
                         <span className="text-xs text-secondary dark:text-gray-400 font-medium">
                           Quantity: {item.quantity} {item.color ? `| Color: ${item.color}` : ''} {item.size ? `| Size: ${item.size}` : ''}
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center gap-3 ml-auto shrink-0">
                       {(queriedOrder.status === 'Refunded' || queriedOrder.isRefunded) && (
                         <button
                           type="button"
@@ -344,14 +353,14 @@ export default function OrderTracking() {
 
           </div>
         ) : (
-          <div className="bg-white dark:bg-[#0c0a06] border border-gold-200/50 dark:border-gold-900/40 p-12 text-center select-none relative">
+          <div className="bg-white dark:bg-[#0c0a06] border border-gold-200/50 dark:border-gold-900/40 px-5 py-10 sm:p-12 text-center select-none relative">
             <div className="absolute top-4 left-4 w-4 h-4 border-t border-l border-gold-400/50 pointer-events-none z-10"></div>
             <div className="absolute bottom-4 right-4 w-4 h-4 border-b border-r border-gold-400/50 pointer-events-none z-10"></div>
             
             <FiAlertCircle className="mx-auto text-amber-500 mb-2" size={32} />
             <h3 className="font-serif text-lg font-bold text-primary dark:text-white mb-2 relative z-20">Order Not Located</h3>
             <p className="text-secondary dark:text-gray-300 text-xs font-sans max-w-md mx-auto mb-0 relative z-20">
-              We couldn't locate any records matching Order ID <strong className="text-primary dark:text-gold-300 font-mono">"{orderIdInput}"</strong>. Please ensure the 24-digit Order ID and matching Email/Phone are accurate.
+              We couldn't locate any records matching Order ID <strong className="text-primary dark:text-gold-300 font-mono break-all">"{orderIdInput}"</strong>. Please ensure the 24-digit Order ID and matching Email/Phone are accurate.
             </p>
           </div>
         )

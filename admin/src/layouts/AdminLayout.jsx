@@ -58,6 +58,21 @@ export default function AdminLayout() {
     return () => clearInterval(interval);
   }, []);
 
+  // Close the mobile menu and any open header dropdown whenever the route changes
+  // (including browser back/forward). Adjusting state during render avoids an extra effect pass.
+  const [lastPathname, setLastPathname] = useState(location.pathname);
+  if (lastPathname !== location.pathname) {
+    setLastPathname(location.pathname);
+    setSidebarOpen(false);
+    setProfileDropdownOpen(false);
+    setNotificationsOpen(false);
+  }
+
+  const closeHeaderDropdowns = () => {
+    setProfileDropdownOpen(false);
+    setNotificationsOpen(false);
+  };
+
 
   const handleLogout = () => {
     dispatch(logoutUser());
@@ -76,6 +91,11 @@ export default function AdminLayout() {
     { name: 'Cart & Wishlist', path: '/cart-wishlist', icon: FiHeart },
     { name: 'Store Settings', path: '/settings', icon: FiSettings },
   ];
+
+  // Page title shown in the header on phones, where the breadcrumb trail is hidden
+  const currentPageTitle =
+    navItems.find((item) => item.path === location.pathname)?.name ||
+    (location.pathname === '/profile' ? 'Admin Profile' : 'Admin');
 
   // Helper to compile breadcrumbs
   const getBreadcrumbs = () => {
@@ -100,9 +120,11 @@ export default function AdminLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFCF7] text-secondary font-sans flex overflow-hidden">
+    // The document itself scrolls (header and desktop sidebar are sticky), so mobile
+    // browser toolbars collapse naturally and modals can lock page scroll.
+    <div className="min-h-dvh bg-[#FDFCF7] text-secondary font-sans flex">
       {/* 1. Desktop Sidebar */}
-      <aside className="hidden lg:flex flex-col w-72 bg-white border-r border-gold-200/50 shadow-sm shrink-0">
+      <aside className="hidden lg:flex flex-col w-72 bg-white border-r border-gold-200/50 shadow-sm shrink-0 sticky top-0 h-dvh">
         {/* Brand Header */}
         <div className="h-20 flex items-center justify-center border-b border-gold-100 px-6">
           <Link to="/" className="text-center group">
@@ -151,24 +173,25 @@ export default function AdminLayout() {
 
       {/* 2. Mobile Sidebar Overlay */}
       {sidebarOpen && (
-        <div className="fixed inset-0 z-50 flex lg:hidden bg-black/40 backdrop-blur-sm animate-fade-in" onClick={() => setSidebarOpen(false)}>
-          <aside 
-            className="w-72 bg-white h-full flex flex-col shadow-xl animate-slide-right"
+        <div className="scroll-lock fixed inset-0 z-50 flex lg:hidden bg-black/40 backdrop-blur-sm animate-fade-in" onClick={() => setSidebarOpen(false)}>
+          <aside
+            className="w-[85vw] max-w-72 bg-white h-full flex flex-col shadow-xl animate-slide-right"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="h-20 flex items-center justify-between border-b border-gold-100 px-6">
+            <div className="h-16 sm:h-20 flex items-center justify-between border-b border-gold-100 px-5 sm:px-6 shrink-0">
               <span className="text-[10px] font-bold tracking-[0.3em] text-gold-600 uppercase block">
                 SHAMBHAVI IMITATION
               </span>
-              <button 
+              <button
                 onClick={() => setSidebarOpen(false)}
-                className="text-gold-600 hover:text-primary transition-colors p-1"
+                className="text-gold-600 hover:text-primary transition-colors p-2 -mr-2 cursor-pointer"
+                aria-label="Close menu"
               >
                 <FiX size={20} />
               </button>
             </div>
 
-            <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
+            <nav className="flex-1 min-h-0 px-4 py-5 space-y-1 overflow-y-auto overscroll-contain">
               {navItems.map((item) => {
                 const isActive = location.pathname === item.path;
                 const Icon = item.icon;
@@ -190,7 +213,7 @@ export default function AdminLayout() {
               })}
             </nav>
 
-            <div className="p-4 border-t border-gold-100">
+            <div className="p-4 border-t border-gold-100 shrink-0">
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center justify-center px-4 py-3 bg-red-50 text-red-600 border border-red-200 text-xs tracking-wider uppercase font-semibold transition-all duration-300 cursor-pointer"
@@ -204,25 +227,34 @@ export default function AdminLayout() {
       )}
 
       {/* 3. Main Workspace Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 min-w-0 flex flex-col">
         {/* Top Navbar */}
-        <header className="h-20 bg-white border-b border-gold-200/50 flex items-center justify-between px-6 z-30 shadow-[0_1px_4px_rgba(240,235,220,0.3)] shrink-0">
+        <header className="sticky top-0 h-16 sm:h-20 bg-white border-b border-gold-200/50 flex items-center justify-between gap-3 px-4 sm:px-6 z-30 shadow-[0_1px_4px_rgba(240,235,220,0.3)] shrink-0">
+          {/* Invisible click-catcher: tapping anywhere outside an open dropdown closes it */}
+          {(notificationsOpen || profileDropdownOpen) && (
+            <div className="fixed inset-0 z-40" onClick={closeHeaderDropdowns} aria-hidden="true"></div>
+          )}
+
           {/* Mobile Sidebar Trigger & Breadcrumbs */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden text-gold-600 hover:text-primary transition-colors p-1"
+              className="lg:hidden text-gold-600 hover:text-primary transition-colors p-2 -ml-2 shrink-0 cursor-pointer"
+              aria-label="Open menu"
             >
               <FiMenu size={22} />
             </button>
-            <div className="hidden sm:flex items-center text-xs tracking-wider text-secondary/50 font-semibold uppercase">
+            <span className="sm:hidden font-serif text-sm font-bold text-primary tracking-wide truncate">
+              {currentPageTitle}
+            </span>
+            <div className="hidden sm:flex items-center min-w-0 text-xs tracking-wider text-secondary/50 font-semibold uppercase whitespace-nowrap overflow-hidden">
               <Link to="/" className="hover:text-gold-600 transition-colors">Admin</Link>
               {getBreadcrumbs()}
             </div>
           </div>
 
           {/* Right Header Navigation Panel */}
-          <div className="flex items-center space-x-5">
+          <div className="flex items-center gap-2 sm:gap-5 shrink-0">
             {/* Notifications Dropdown */}
             <div className="relative">
               <button
@@ -230,7 +262,9 @@ export default function AdminLayout() {
                   setNotificationsOpen(!notificationsOpen);
                   setProfileDropdownOpen(false);
                 }}
-                className="relative p-2 bg-[#FAF8F2] border border-gold-200/60 rounded-full text-gold-600 hover:bg-gold-50 hover:text-gold-700 transition-all cursor-pointer shadow-sm"
+                className="relative z-50 p-2.5 bg-[#FAF8F2] border border-gold-200/60 rounded-full text-gold-600 hover:bg-gold-50 hover:text-gold-700 transition-all cursor-pointer shadow-sm"
+                aria-label="Notifications"
+                aria-expanded={notificationsOpen}
               >
                 <FiBell size={18} />
                 {notificationCount > 0 && (
@@ -239,7 +273,9 @@ export default function AdminLayout() {
               </button>
 
               {notificationsOpen && (
-                <div className="absolute right-0 mt-3 w-80 bg-white border border-gold-200 shadow-xl rounded-lg overflow-hidden z-50 animate-fade-in">
+                // Phones: full-width panel pinned under the header (a 320px box anchored to the
+                // bell would run off the left edge). From sm up: the usual dropdown under the bell.
+                <div className="fixed left-3 right-3 top-17 sm:absolute sm:left-auto sm:top-auto sm:right-0 sm:mt-3 sm:w-80 bg-white border border-gold-200 shadow-xl rounded-lg overflow-hidden z-50 animate-fade-in">
                   <div className="px-4 py-3 bg-[#FAF8F2] border-b border-gold-100 flex justify-between items-center select-none">
                     <span className="text-xs font-bold uppercase tracking-wider text-gold-800">Notifications</span>
                     {notificationCount > 0 && (
@@ -248,7 +284,7 @@ export default function AdminLayout() {
                       </span>
                     )}
                   </div>
-                  <div className="divide-y divide-gold-50 max-h-72 overflow-y-auto">
+                  <div className="divide-y divide-gold-50 max-h-[min(18rem,calc(100dvh-8rem))] overflow-y-auto overscroll-contain">
                     {notificationsLoading && notifications.length === 0 ? (
                       <div className="p-4 text-center text-xs text-secondary/50 font-sans">
                         Loading notifications...
@@ -292,7 +328,9 @@ export default function AdminLayout() {
                   setProfileDropdownOpen(!profileDropdownOpen);
                   setNotificationsOpen(false);
                 }}
-                className="flex items-center space-x-3 p-1.5 bg-[#FAF8F2] border border-gold-200/60 rounded-full hover:bg-gold-50 transition-all cursor-pointer shadow-sm"
+                className="relative z-50 flex items-center space-x-3 p-1.5 bg-[#FAF8F2] border border-gold-200/60 rounded-full hover:bg-gold-50 transition-all cursor-pointer shadow-sm"
+                aria-label="Account menu"
+                aria-expanded={profileDropdownOpen}
               >
                 <div className="w-8 h-8 rounded-full bg-gold-600 text-white flex items-center justify-center font-serif text-sm font-bold border border-gold-300">
                   {user && user.name ? user.name.charAt(0).toUpperCase() : 'A'}
@@ -305,7 +343,7 @@ export default function AdminLayout() {
               </button>
 
               {profileDropdownOpen && (
-                <div className="absolute right-0 mt-3 w-48 bg-white border border-gold-200 shadow-xl rounded-lg overflow-hidden z-50 animate-fade-in">
+                <div className="absolute right-0 mt-3 w-56 max-w-[calc(100vw-1.5rem)] bg-white border border-gold-200 shadow-xl rounded-lg overflow-hidden z-50 animate-fade-in">
                   <div className="p-3 border-b border-gold-100 bg-[#FAF8F2]">
                     <p className="text-xs font-bold text-primary truncate">{user?.name || 'Administrator'}</p>
                     <p className="text-[10px] text-secondary/60 truncate">{user?.email || 'admin@shambhavi.com'}</p>
@@ -314,7 +352,7 @@ export default function AdminLayout() {
                     <Link
                       to="/profile"
                       onClick={() => setProfileDropdownOpen(false)}
-                      className="flex items-center px-4 py-2 text-xs font-semibold text-secondary hover:bg-gold-50/50 hover:text-gold-600 transition-colors"
+                      className="flex items-center px-4 py-2.5 text-xs font-semibold text-secondary hover:bg-gold-50/50 hover:text-gold-600 transition-colors"
                     >
                       <FiUser className="mr-3 text-gold-500" size={14} />
                       Admin Profile
@@ -322,14 +360,14 @@ export default function AdminLayout() {
                     <Link
                       to="/settings"
                       onClick={() => setProfileDropdownOpen(false)}
-                      className="flex items-center px-4 py-2 text-xs font-semibold text-secondary hover:bg-gold-50/50 hover:text-gold-600 transition-colors"
+                      className="flex items-center px-4 py-2.5 text-xs font-semibold text-secondary hover:bg-gold-50/50 hover:text-gold-600 transition-colors"
                     >
                       <FiSettings className="mr-3 text-gold-500" size={14} />
                       Store Settings
                     </Link>
                     <button
                       onClick={handleLogout}
-                      className="w-full flex items-center px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors text-left cursor-pointer"
+                      className="w-full flex items-center px-4 py-2.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors text-left cursor-pointer"
                     >
                       <FiLogOut className="mr-3" size={14} />
                       Logout
@@ -342,7 +380,7 @@ export default function AdminLayout() {
         </header>
 
         {/* Central Scrollable Viewport */}
-        <main className="flex-1 overflow-y-auto p-6 md:p-8">
+        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">
           <Outlet />
         </main>
       </div>

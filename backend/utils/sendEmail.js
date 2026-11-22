@@ -212,7 +212,8 @@ export const sendOtpEmail = async (to, otp, type) => {
     ? getVerifyEmailHtml(otp)
     : getResetEmailHtml(otp);
 
-  console.log(`🔑 [OTP DISPATCH] ${type.toUpperCase()} OTP for ${to}: ${otp}`);
+  // Never log the code itself: anyone with log access could use it.
+  console.log(`🔑 [OTP DISPATCH] ${type.toUpperCase()} OTP requested for ${to}`);
 
   return await sendMailUniversal({ to, subject, html, logType: `${type.toUpperCase()} OTP` });
 };
@@ -576,11 +577,20 @@ export const sendCancellationRejectedEmail = async (to, order, reason) => {
   }
 };
 
+// Live storefront address for links in emails. Set STOREFRONT_URL on Render (e.g. https://your-store.vercel.app);
+// falls back to the first CLIENT_URL entry.
+const getStorefrontUrl = () => {
+  const configured = clean(process.env.STOREFRONT_URL) || clean((process.env.CLIENT_URL || '').split(',')[0]);
+  return (configured || 'http://localhost:5175').replace(/\/+$/, '');
+};
+
 const getShippedEmailHtml = (order) => {
   const courier = order.courierName || 'Standard Express Courier';
   const trackingNum = order.trackingNumber || order.trackingId || 'N/A';
   
-  let trackingUrl = `http://localhost:5175/order-tracking?orderId=${order._id}`;
+  // Couriers without their own tracking page link to the store's tracking page (/tracking), prefilled
+  // with the order ID and the customer's email so it opens straight on this order.
+  let trackingUrl = `${getStorefrontUrl()}/tracking?orderId=${order._id}&email=${encodeURIComponent(order.shippingAddress?.email || '')}`;
   const cLower = courier.toLowerCase();
   if (cLower.includes('delhivery')) {
     trackingUrl = `https://www.delhivery.com/track/package/${trackingNum}`;

@@ -1,12 +1,28 @@
 import Wishlist from '../models/Wishlist.js';
 import Product from '../models/Product.js';
 
+// Returns the user's wishlist, creating it in one atomic step (a find-then-create fails with a
+// duplicate-key error when two requests create the same wishlist at once).
+const getOrCreateWishlist = async (userId) => {
+  try {
+    return await Wishlist.findOneAndUpdate(
+      { user: userId },
+      { $setOnInsert: { user: userId, products: [] } },
+      { upsert: true, new: true }
+    );
+  } catch (err) {
+    if (err?.code === 11000) return Wishlist.findOne({ user: userId });
+    throw err;
+  }
+};
+
 // @desc    Get user's saved wishlist products
 // @route   GET /api/wishlist
 // @access  Private
 export const getUserWishlist = async (req, res, next) => {
   try {
-    let wishlist = await Wishlist.findOne({ user: req.user._id }).populate({
+    const wishlist = await getOrCreateWishlist(req.user._id);
+    await wishlist.populate({
       path: 'products',
       select: 'name price originalPrice discount images stock rating sku category',
       populate: {
@@ -14,10 +30,6 @@ export const getUserWishlist = async (req, res, next) => {
         select: 'name'
       }
     });
-
-    if (!wishlist) {
-      wishlist = await Wishlist.create({ user: req.user._id, products: [] });
-    }
 
     res.json({
       success: true,
@@ -47,10 +59,7 @@ export const addToWishlist = async (req, res, next) => {
       throw new Error('Product not found: Cannot save invalid item to wishlist');
     }
 
-    let wishlist = await Wishlist.findOne({ user: req.user._id });
-    if (!wishlist) {
-      wishlist = await Wishlist.create({ user: req.user._id, products: [] });
-    }
+    const wishlist = await getOrCreateWishlist(req.user._id);
 
     // Add product if not already saved
     if (!wishlist.products.includes(productId)) {

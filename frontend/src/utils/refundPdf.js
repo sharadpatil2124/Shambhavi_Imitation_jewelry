@@ -258,7 +258,7 @@ export const generateRefundPDF = (order, specificItem = null) => {
 
       <div class="notice-box">
         <strong>Official Confirmation of Refund:</strong><br />
-        This credit document confirms that a refund of <strong>₹${effectiveRefundAmount.toLocaleString('en-IN')}</strong> has been successfully processed by <strong>Shambhavi Imitation Jewelry</strong>. The amount has been credited back to your original payment method or registered bank account. For inquiries, email us at <strong>support@shambhaviimitation.com</strong>.
+        This credit document confirms that a refund of <strong>₹${effectiveRefundAmount.toLocaleString('en-IN')}</strong> has been successfully processed by <strong>Shambhavi Imitation Jewelry</strong>. The amount has been credited back to your original payment method or registered bank account. For inquiries, email us at <strong>kadamshambhavi1@gmail.com</strong>.
       </div>
 
       <div class="footer-note">

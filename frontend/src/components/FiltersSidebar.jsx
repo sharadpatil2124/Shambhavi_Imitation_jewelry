@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setSelectedCategory, setSortBy, setSelectedPriceRange, resetFilters } from '../store/productSlice';
 import { FiSliders, FiRotateCcw, FiChevronDown } from 'react-icons/fi';

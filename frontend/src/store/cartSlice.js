@@ -173,7 +173,7 @@ export const removeFromCartThunk = createAsyncThunk(
 
 export const clearCartThunk = createAsyncThunk(
   'cart/clearCart',
-  async (_, { rejectWithValue }) => {
+  async () => {
     return [];
   }
 );
@@ -185,14 +185,19 @@ export const mergeCartThunk = createAsyncThunk(
       if (!hasAuthToken()) return [];
       const guestItems = getState().cart.items;
       if (guestItems.length > 0) {
-        // Merge guest items into database cart
+        // Merge guest items into database cart. An item the server refuses (e.g. not enough stock)
+        // is skipped so the rest of the cart still merges.
         for (const item of guestItems) {
-          await api.post('/cart', {
-            productId: item.id,
-            quantity: item.quantity,
-            color: item.selectedColor,
-            size: item.selectedSize
-          });
+          try {
+            await api.post('/cart', {
+              productId: item.id,
+              quantity: item.quantity,
+              color: item.selectedColor,
+              size: item.selectedSize
+            });
+          } catch (err) {
+            console.warn(`Cart merge skipped "${item.name}": ${err.message}`);
+          }
         }
       }
       

@@ -1,4 +1,5 @@
 import Order from '../models/Order.js';
+import { escapeRegex, parsePagination, queryString } from '../utils/queryHelpers.js';
 import User from '../models/userModel.js';
 import Product from '../models/Product.js';
 import Review from '../models/Review.js';
@@ -158,24 +159,25 @@ export const getRevenueStats = async (req, res, next) => {
 // @access  Private/Admin
 export const getAllUsers = async (req, res, next) => {
   try {
-    const { search, page = 1, limit = 10 } = req.query;
+    const search = queryString(req.query.search);
+    const { page, limit, skip } = parsePagination(req.query.page, req.query.limit, { defaultLimit: 10, maxLimit: 100 });
     const query = { role: 'customer', isVerified: true };
 
     if (search) {
+      const pattern = escapeRegex(search);
       query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
-        { phone: { $regex: search, $options: 'i' } }
+        { name: { $regex: pattern, $options: 'i' } },
+        { email: { $regex: pattern, $options: 'i' } },
+        { phone: { $regex: pattern, $options: 'i' } }
       ];
     }
 
-    const skip = (Number(page) - 1) * Number(limit);
     const total = await User.countDocuments(query);
     const users = await User.find(query)
       .select('-password')
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(Number(limit));
+      .limit(limit);
 
     const usersData = [];
     for (const user of users) {

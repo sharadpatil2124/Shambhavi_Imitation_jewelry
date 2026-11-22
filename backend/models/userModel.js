@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+import validator from 'validator';
 
 const addressSchema = new mongoose.Schema({
   street: { type: String, trim: true },
@@ -22,10 +23,12 @@ const userSchema = new mongoose.Schema({
     index: true,
     lowercase: true,
     trim: true,
-    match: [
-      /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-      'Please provide a valid email address'
-    ]
+    // Accepts all valid addresses, including plus-aliases (name+shop@gmail.com) and longer
+    // domain endings (.info, .store); the old pattern rejected both.
+    validate: {
+      validator: (value) => validator.isEmail(value),
+      message: 'Please provide a valid email address'
+    }
   },
   password: {
     type: String,
@@ -57,8 +60,10 @@ const userSchema = new mongoose.Schema({
   },
   otp: String,
   otpExpires: Date,
+  otpAttempts: { type: Number, default: 0 },
   resetPasswordOtp: String,
   resetPasswordOtpExpires: Date,
+  resetPasswordOtpAttempts: { type: Number, default: 0 },
   pendingEmail: String
 }, {
   timestamps: true

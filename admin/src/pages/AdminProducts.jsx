@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import productService from '../services/productService';
 import adminService from '../services/adminService';
@@ -32,7 +32,7 @@ export default function AdminProducts() {
   const [marketingFilter, setMarketingFilter] = useState(""); // "trending", "new"
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalProducts, setTotalProducts] = useState(0);
+  const [, setTotalProducts] = useState(0);
 
   // Modals state
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -60,11 +60,6 @@ export default function AdminProducts() {
   });
 
   const [existingImages, setExistingImages] = useState([]); // Images currently on server (during edit)
-
-  useEffect(() => {
-    loadProducts();
-    loadCategories();
-  }, [page, categoryFilter, stockFilter, marketingFilter]);
 
   const loadProducts = async () => {
     setLoading(true);
@@ -113,6 +108,14 @@ export default function AdminProducts() {
       console.error("Failed to load categories dropdown:", error.message);
     }
   };
+
+  // Reload when paging or a filter changes. The search text is deliberately left out:
+  // searching runs on submit (handleSearchSubmit), not on every keystroke.
+  useEffect(() => {
+    loadProducts();
+    loadCategories();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, categoryFilter, stockFilter, marketingFilter]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -290,23 +293,23 @@ export default function AdminProducts() {
   };
 
   return (
-    <div className="space-y-8 animate-fade-in text-left">
+    <div className="space-y-6 sm:space-y-8 animate-fade-in text-left">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="font-serif text-2xl font-bold tracking-wide text-primary m-0">Jewelry Masterpieces</h1>
+          <h1 className="font-serif text-xl sm:text-2xl font-bold tracking-wide text-primary m-0">Jewelry Masterpieces</h1>
           <p className="text-xs text-secondary/60 font-sans mt-1">Manage luxury jewelry listings, finish types, weight details, and inventory stock.</p>
         </div>
         <button
           onClick={openAddModal}
-          className="bg-primary hover:bg-gold-600 text-white font-bold py-2.5 px-5 text-xs tracking-wider uppercase transition-colors flex items-center shrink-0 cursor-pointer"
+          className="self-start sm:self-auto bg-primary hover:bg-gold-600 text-white font-bold py-2.5 px-5 text-xs tracking-wider uppercase transition-colors flex items-center shrink-0 cursor-pointer"
         >
           <FiPlus className="mr-2" size={16} /> Add Product
         </button>
       </div>
 
       {/* Search and Filter Panel */}
-      <div className="bg-white border border-gold-200/50 p-5 shadow-[0_2px_12px_rgba(240,235,220,0.1)]">
+      <div className="bg-white border border-gold-200/50 p-4 sm:p-5 shadow-[0_2px_12px_rgba(240,235,220,0.1)]">
         <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Search bar */}
           <div className="relative md:col-span-2">
@@ -355,35 +358,35 @@ export default function AdminProducts() {
         </form>
 
         {/* Extended filters */}
-        <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-gold-100 text-xs font-sans text-secondary/70">
-          <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap gap-x-4 gap-y-3 mt-4 pt-4 border-t border-gold-100 text-xs font-sans text-secondary/70">
+          <div className="flex flex-wrap items-center gap-2">
             <FiFilter className="text-gold-500" />
             <span className="font-semibold">Stock Status:</span>
             <button 
               onClick={() => setStockFilter(stockFilter === 'low' ? '' : 'low')}
-              className={`px-3 py-1 border transition-colors ${stockFilter === 'low' ? 'bg-amber-50 text-amber-700 border-amber-300 font-bold' : 'bg-white border-gold-200 hover:bg-gold-50/20'}`}
+              className={`px-3 py-1.5 border transition-colors cursor-pointer ${stockFilter === 'low' ? 'bg-amber-50 text-amber-700 border-amber-300 font-bold' : 'bg-white border-gold-200 hover:bg-gold-50/20'}`}
             >
               Low Stock (&lt;5)
             </button>
             <button 
               onClick={() => setStockFilter(stockFilter === 'out' ? '' : 'out')}
-              className={`px-3 py-1 border transition-colors ${stockFilter === 'out' ? 'bg-red-50 text-red-700 border-red-300 font-bold' : 'bg-white border-gold-200 hover:bg-gold-50/20'}`}
+              className={`px-3 py-1.5 border transition-colors cursor-pointer ${stockFilter === 'out' ? 'bg-red-50 text-red-700 border-red-300 font-bold' : 'bg-white border-gold-200 hover:bg-gold-50/20'}`}
             >
               Out of Stock
             </button>
           </div>
 
-          <div className="flex items-center space-x-2 ml-auto">
+          <div className="flex flex-wrap items-center gap-2 lg:ml-auto">
             <span className="font-semibold">Marketing Flags:</span>
             <button 
               onClick={() => setMarketingFilter(marketingFilter === 'trending' ? '' : 'trending')}
-              className={`px-3 py-1 border transition-colors ${marketingFilter === 'trending' ? 'bg-gold-600 text-white border-gold-600 font-bold' : 'bg-white border-gold-200 hover:bg-gold-50/20'}`}
+              className={`px-3 py-1.5 border transition-colors cursor-pointer ${marketingFilter === 'trending' ? 'bg-gold-600 text-white border-gold-600 font-bold' : 'bg-white border-gold-200 hover:bg-gold-50/20'}`}
             >
               Trending Design
             </button>
             <button 
               onClick={() => setMarketingFilter(marketingFilter === 'new' ? '' : 'new')}
-              className={`px-3 py-1 border transition-colors ${marketingFilter === 'new' ? 'bg-primary text-white border-primary font-bold' : 'bg-white border-gold-200 hover:bg-gold-50/20'}`}
+              className={`px-3 py-1.5 border transition-colors cursor-pointer ${marketingFilter === 'new' ? 'bg-primary text-white border-primary font-bold' : 'bg-white border-gold-200 hover:bg-gold-50/20'}`}
             >
               New Arrival
             </button>
@@ -400,7 +403,7 @@ export default function AdminProducts() {
           </div>
         ) : products.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs font-sans border-collapse">
+            <table className="w-full min-w-[980px] text-left text-xs font-sans border-collapse [&_th]:whitespace-nowrap">
               <thead>
                 <tr className="bg-[#FAF8F2] border-b border-gold-150 text-secondary/60 uppercase font-semibold text-[10px] tracking-wider">
                   <th className="p-4 w-20">Image</th>
@@ -499,7 +502,7 @@ export default function AdminProducts() {
 
         {/* Pagination bar */}
         {totalPages > 1 && (
-          <div className="bg-[#FAF8F2] border-t border-gold-200/50 px-6 py-4 flex items-center justify-between font-sans text-xs">
+          <div className="bg-[#FAF8F2] border-t border-gold-200/50 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3 font-sans text-xs">
             <span className="text-secondary/60 font-semibold">
               Showing page <strong className="text-primary">{page}</strong> of <strong className="text-primary">{totalPages}</strong>
             </span>
@@ -507,14 +510,14 @@ export default function AdminProducts() {
               <button
                 disabled={page === 1}
                 onClick={() => setPage(page - 1)}
-                className="bg-white border border-gold-250 p-2 text-gold-600 disabled:opacity-40 hover:bg-gold-50 cursor-pointer rounded-sm"
+                className="bg-white border border-gold-250 p-2.5 text-gold-600 disabled:opacity-40 hover:bg-gold-50 cursor-pointer rounded-sm"
               >
                 <FiChevronLeft size={16} />
               </button>
               <button
                 disabled={page === totalPages}
                 onClick={() => setPage(page + 1)}
-                className="bg-white border border-gold-250 p-2 text-gold-600 disabled:opacity-40 hover:bg-gold-50 cursor-pointer rounded-sm"
+                className="bg-white border border-gold-250 p-2.5 text-gold-600 disabled:opacity-40 hover:bg-gold-50 cursor-pointer rounded-sm"
               >
                 <FiChevronRight size={16} />
               </button>
@@ -527,9 +530,9 @@ export default function AdminProducts() {
       {/* 5. ADD PRODUCT MODAL / DRAWER */}
       {/* ========================================================================= */}
       {isAddOpen && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6 overflow-y-auto">
-          <div className="bg-white border border-gold-200 shadow-2xl max-w-3xl w-full max-h-[88vh] flex flex-col rounded-none animate-scale-up relative my-auto">
-            <div className="bg-[#FAF8F2] border-b border-gold-200/55 p-4 sm:px-6 flex justify-between items-center shrink-0">
+        <div className="scroll-lock fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-6 overflow-y-auto overscroll-contain">
+          <div className="bg-white border border-gold-200 shadow-2xl max-w-3xl w-full max-h-[calc(100dvh-1.5rem)] sm:max-h-[88dvh] flex flex-col rounded-none animate-scale-up relative my-auto">
+            <div className="bg-[#FAF8F2] border-b border-gold-200/55 p-4 sm:px-6 flex justify-between items-center gap-3 shrink-0">
               <h3 className="font-serif text-lg font-bold text-primary tracking-wide">Add Jewelry Product</h3>
               <button 
                 type="button"
@@ -542,7 +545,7 @@ export default function AdminProducts() {
             </div>
 
             <form onSubmit={handleAddSubmit} className="flex-1 flex flex-col overflow-hidden">
-              <div className="p-6 space-y-5 font-sans text-xs overflow-y-auto flex-1 text-left">
+              <div className="p-4 sm:p-6 space-y-5 font-sans text-xs overflow-y-auto overscroll-contain flex-1 text-left">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1.5">Design Name *</label>
@@ -699,8 +702,8 @@ export default function AdminProducts() {
                 </div>
               </div>
 
-              <div className="flex items-center space-x-6 py-2 bg-[#FAF8F2] border border-gold-200/50 px-4">
-                <label className="flex items-center font-bold tracking-wider uppercase cursor-pointer">
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-1 py-2 bg-[#FAF8F2] border border-gold-200/50 px-4">
+                <label className="flex items-center py-1.5 font-bold tracking-wider uppercase cursor-pointer">
                   <input
                     type="checkbox"
                     checked={formData.isTrending}
@@ -709,7 +712,7 @@ export default function AdminProducts() {
                   />
                   Trending Design
                 </label>
-                <label className="flex items-center font-bold tracking-wider uppercase cursor-pointer">
+                <label className="flex items-center py-1.5 font-bold tracking-wider uppercase cursor-pointer">
                   <input
                     type="checkbox"
                     checked={formData.isNewArrival}
@@ -737,7 +740,7 @@ export default function AdminProducts() {
                 </div>
 
                 {formData.images.length > 0 && (
-                  <div className="grid grid-cols-5 gap-3 mt-4">
+                  <div className="grid grid-cols-4 min-[400px]:grid-cols-5 gap-2 sm:gap-3 mt-4">
                     {formData.images.map((file, idx) => (
                       <div key={idx} className="relative border border-gold-200 p-1 bg-white">
                         <img 
@@ -759,7 +762,7 @@ export default function AdminProducts() {
               </div>
               </div>
 
-              <div className="bg-[#FAF8F2] border-t border-gold-200/55 px-6 py-4 flex justify-end space-x-3 shrink-0">
+              <div className="bg-[#FAF8F2] border-t border-gold-200/55 px-4 sm:px-6 py-3 sm:py-4 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsAddOpen(false)}
@@ -785,9 +788,9 @@ export default function AdminProducts() {
       {/* 6. EDIT PRODUCT MODAL / DRAWER */}
       {/* ========================================================================= */}
       {isEditOpen && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6 overflow-y-auto">
-          <div className="bg-white border border-gold-200 shadow-2xl max-w-3xl w-full max-h-[88vh] flex flex-col rounded-none animate-scale-up relative my-auto">
-            <div className="bg-[#FAF8F2] border-b border-gold-200/55 p-4 sm:px-6 flex justify-between items-center shrink-0">
+        <div className="scroll-lock fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-6 overflow-y-auto overscroll-contain">
+          <div className="bg-white border border-gold-200 shadow-2xl max-w-3xl w-full max-h-[calc(100dvh-1.5rem)] sm:max-h-[88dvh] flex flex-col rounded-none animate-scale-up relative my-auto">
+            <div className="bg-[#FAF8F2] border-b border-gold-200/55 p-4 sm:px-6 flex justify-between items-center gap-3 shrink-0">
               <h3 className="font-serif text-lg font-bold text-primary tracking-wide">Edit Product Attributes</h3>
               <button 
                 type="button"
@@ -800,7 +803,7 @@ export default function AdminProducts() {
             </div>
 
             <form onSubmit={handleEditSubmit} className="flex-1 flex flex-col overflow-hidden">
-              <div className="p-6 space-y-5 font-sans text-xs overflow-y-auto flex-1 text-left">
+              <div className="p-4 sm:p-6 space-y-5 font-sans text-xs overflow-y-auto overscroll-contain flex-1 text-left">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1.5">Design Name *</label>
@@ -950,8 +953,8 @@ export default function AdminProducts() {
                 </div>
               </div>
 
-              <div className="flex items-center space-x-6 py-2 bg-[#FAF8F2] border border-gold-200/50 px-4">
-                <label className="flex items-center font-bold tracking-wider uppercase cursor-pointer">
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-1 py-2 bg-[#FAF8F2] border border-gold-200/50 px-4">
+                <label className="flex items-center py-1.5 font-bold tracking-wider uppercase cursor-pointer">
                   <input
                     type="checkbox"
                     checked={formData.isTrending}
@@ -960,7 +963,7 @@ export default function AdminProducts() {
                   />
                   Trending Design
                 </label>
-                <label className="flex items-center font-bold tracking-wider uppercase cursor-pointer">
+                <label className="flex items-center py-1.5 font-bold tracking-wider uppercase cursor-pointer">
                   <input
                     type="checkbox"
                     checked={formData.isNewArrival}
@@ -975,7 +978,7 @@ export default function AdminProducts() {
               {existingImages.length > 0 && (
                 <div>
                   <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1.5">Currently Saved Images</label>
-                  <div className="grid grid-cols-5 gap-3">
+                  <div className="grid grid-cols-4 min-[400px]:grid-cols-5 gap-2 sm:gap-3">
                     {existingImages.map((img, idx) => (
                       <div key={idx} className="relative border border-gold-200 p-1 bg-white">
                         <img src={img} alt="saved" className="w-full h-16 object-cover" />
@@ -1010,7 +1013,7 @@ export default function AdminProducts() {
                 </div>
 
                 {formData.images.length > 0 && (
-                  <div className="grid grid-cols-5 gap-3 mt-4">
+                  <div className="grid grid-cols-4 min-[400px]:grid-cols-5 gap-2 sm:gap-3 mt-4">
                     {formData.images.map((file, idx) => (
                       <div key={idx} className="relative border border-gold-200 p-1 bg-white">
                         <img src={URL.createObjectURL(file)} alt="new preview" className="w-full h-16 object-cover" />
@@ -1028,7 +1031,7 @@ export default function AdminProducts() {
               </div>
               </div>
 
-              <div className="bg-[#FAF8F2] border-t border-gold-200/55 px-6 py-4 flex justify-end space-x-3 shrink-0">
+              <div className="bg-[#FAF8F2] border-t border-gold-200/55 px-4 sm:px-6 py-3 sm:py-4 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsEditOpen(false)}
@@ -1054,9 +1057,9 @@ export default function AdminProducts() {
       {/* 7. PRODUCT DETAIL PREVIEW MODAL */}
       {/* ========================================================================= */}
       {isPreviewOpen && selectedProduct && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6 overflow-y-auto">
-          <div className="bg-white border border-gold-200 shadow-2xl max-w-2xl w-full max-h-[88vh] flex flex-col rounded-none animate-scale-up relative my-auto">
-            <div className="bg-[#FAF8F2] border-b border-gold-200/55 p-4 sm:px-6 flex justify-between items-center shrink-0">
+        <div className="scroll-lock fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-6 overflow-y-auto overscroll-contain">
+          <div className="bg-white border border-gold-200 shadow-2xl max-w-2xl w-full max-h-[calc(100dvh-1.5rem)] sm:max-h-[88dvh] flex flex-col rounded-none animate-scale-up relative my-auto">
+            <div className="bg-[#FAF8F2] border-b border-gold-200/55 p-4 sm:px-6 flex justify-between items-center gap-3 shrink-0">
               <span className="text-[10px] font-bold tracking-[0.2em] text-gold-600 uppercase font-sans">Masterpiece Spec Sheet</span>
               <button 
                 type="button"
@@ -1068,13 +1071,13 @@ export default function AdminProducts() {
               </button>
             </div>
 
-            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 text-left font-sans text-xs overflow-y-auto flex-1">
+            <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-6 text-left font-sans text-xs overflow-y-auto overscroll-contain flex-1">
               {/* Left Images Carousel */}
               <div className="space-y-4">
                 <img 
                   src={selectedProduct.images?.[0] || 'https://via.placeholder.com/400?text=No+Image'} 
                   alt={selectedProduct.name} 
-                  className="w-full h-64 object-cover border border-gold-200 shadow-sm"
+                  className="w-full h-56 sm:h-64 object-cover border border-gold-200 shadow-sm"
                 />
                 <div className="grid grid-cols-4 gap-2">
                   {selectedProduct.images?.slice(1, 5).map((img, index) => (
@@ -1131,7 +1134,7 @@ export default function AdminProducts() {
               </div>
             </div>
 
-            <div className="bg-[#FAF8F2] border-t border-gold-150 p-4 flex justify-end shrink-0">
+            <div className="bg-[#FAF8F2] border-t border-gold-150 px-4 sm:px-6 py-3 sm:py-4 flex justify-end shrink-0">
               <button 
                 type="button"
                 onClick={() => setIsPreviewOpen(false)}

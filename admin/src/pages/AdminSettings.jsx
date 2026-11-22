@@ -1,26 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchSettings, updateSettingsThunk } from '../store/adminSlice';
 import { 
-  FiSettings, 
   FiBriefcase, 
-  FiDollarSign, 
   FiTruck, 
   FiShare2, 
   FiCreditCard, 
   FiSave,
-  FiUploadCloud,
   FiGift
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 
 export default function AdminSettings() {
   const dispatch = useDispatch();
-  const { settings, loading } = useSelector((state) => state.admin);
+  const { loading } = useSelector((state) => state.admin);
 
   const [formData, setFormData] = useState({
     storeName: 'Shambhavi Imitation',
-    contactEmail: 'contact@shambhaviimitation.com',
+    contactEmail: 'kadamshambhavi1@gmail.com',
     contactPhone: '+91 98765 43210',
     address: 'Mumbai, Maharashtra, India',
     currency: 'INR',
@@ -113,19 +110,19 @@ export default function AdminSettings() {
   ];
 
   return (
-    <div className="space-y-8 animate-fade-in text-left">
+    <div className="space-y-6 sm:space-y-8 animate-fade-in text-left">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0 border-b border-gold-100 pb-5">
         <div>
-          <h1 className="font-serif text-2xl font-bold tracking-wide text-primary m-0">Store Settings</h1>
+          <h1 className="font-serif text-xl sm:text-2xl font-bold tracking-wide text-primary m-0">Store Settings</h1>
           <p className="text-xs text-secondary/60 font-sans mt-1">Configure operational taxes, delivery policies, payment checkouts, and brand profiles.</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">
         
         {/* Navigation Sidebar Panel */}
-        <div className="space-y-2 lg:col-span-1">
+        <div className="flex lg:flex-col gap-2 overflow-x-auto overscroll-x-contain -mx-4 px-4 sm:mx-0 sm:px-0 pb-1 lg:pb-0 lg:overflow-visible lg:col-span-1">
           {sections.map((sec) => {
             const Icon = sec.icon;
             const isActive = activeSection === sec.id;
@@ -133,7 +130,7 @@ export default function AdminSettings() {
               <button
                 key={sec.id}
                 onClick={() => setActiveSection(sec.id)}
-                className={`w-full flex items-center px-4 py-3.5 text-xs font-semibold uppercase tracking-wider transition-all duration-300 border-l-4 cursor-pointer text-left ${
+                className={`shrink-0 lg:w-full flex items-center px-4 py-3 lg:py-3.5 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition-all duration-300 border-b-2 lg:border-b-0 lg:border-l-4 cursor-pointer text-left ${
                   isActive
                     ? 'bg-primary/5 text-gold-600 border-gold-500 shadow-[inset_1px_0_0_rgba(197,160,89,0.1)]'
                     : 'text-secondary/70 border-transparent hover:bg-gold-50/20 hover:text-primary'
@@ -147,7 +144,7 @@ export default function AdminSettings() {
         </div>
 
         {/* Configurations Form Panel */}
-        <form onSubmit={handleSubmit} className="lg:col-span-3 bg-white border border-gold-200/40 shadow-sm p-6 sm:p-8 space-y-8 font-sans text-xs">
+        <form onSubmit={handleSubmit} className="lg:col-span-3 min-w-0 bg-white border border-gold-200/40 shadow-sm p-4 sm:p-8 space-y-8 font-sans text-xs">
           
           {/* GENERAL: Boutique Profile */}
           {activeSection === "general" && (
@@ -349,7 +346,7 @@ export default function AdminSettings() {
 
               <div className="space-y-5 text-left">
                 {/* Enable/Disable Toggle */}
-                <div className="bg-[#faf9f6] border border-gold-200/50 p-4 flex items-center justify-between">
+                <div className="bg-[#faf9f6] border border-gold-200/50 p-4 flex items-center justify-between gap-4">
                   <div>
                     <span className="font-serif text-sm font-bold text-primary block">Display Special Offer Banner</span>
                     <span className="text-[10px] text-secondary/60 leading-normal block mt-0.5">Toggle whether the promotional discount banner is visible to customers on the homepage.</span>
@@ -492,11 +489,11 @@ export default function AdminSettings() {
           )}
 
           {/* Form Actions Footer */}
-          <div className="pt-6 border-t border-gold-100 flex justify-end space-x-3.5">
+          <div className="pt-6 border-t border-gold-100 flex justify-end">
             <button
               type="submit"
               disabled={loading}
-              className="bg-primary hover:bg-gold-600 text-white font-bold py-2.5 px-6 uppercase tracking-wider flex items-center transition-colors cursor-pointer"
+              className="w-full sm:w-auto justify-center bg-primary hover:bg-gold-600 text-white font-bold py-3 sm:py-2.5 px-6 uppercase tracking-wider flex items-center transition-colors cursor-pointer"
             >
               <FiSave className="mr-2" size={16} />
               {loading ? "Saving Settings..." : "Save Boutique Configurations"}
