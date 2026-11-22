@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { safeErrorMessage } from '../utils/redactSecrets.js';
 import dotenv from 'dotenv';
 import User from '../models/userModel.js';
 import Cart from '../models/Cart.js';
@@ -59,7 +60,7 @@ const createAdmin = async () => {
     await mongoose.disconnect();
     process.exit(0);
   } catch (error) {
-    console.error('❌ Seeder failed with error:', error.message);
+    console.error('❌ Seeder failed with error:', safeErrorMessage(error));
     if (mongoose.connection.readyState !== 0) {
       await mongoose.disconnect();
     }

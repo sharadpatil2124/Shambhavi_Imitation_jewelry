@@ -1,8 +1,18 @@
 import mongoose from 'mongoose';
+import dotenv from 'dotenv';
 import Order from './models/Order.js';
 import User from './models/userModel.js';
+import { safeErrorMessage } from './utils/redactSecrets.js';
 
-const uri = 'mongodb+srv://sharad01:VCtP9ugQpmFPv6yt@cluster0.oywl2so.mongodb.net/tsambhavi-imitation';
+dotenv.config();
+
+// Never hardcode the connection string: it holds the database password. It comes from MONGO_URI in .env.
+const uri = process.env.MONGO_URI;
+if (!uri) {
+  console.error('❌ MONGO_URI is missing in your .env environment variables.');
+  process.exit(1);
+}
+
 
 async function run() {
   console.log('Connecting to database...');
@@ -29,6 +39,6 @@ async function run() {
 }
 
 run().catch(err => {
-  console.error(err);
+  console.error(safeErrorMessage(err));
   process.exit(1);
 });

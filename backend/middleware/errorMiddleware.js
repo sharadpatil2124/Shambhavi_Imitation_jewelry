@@ -1,3 +1,5 @@
+import { redactSecrets } from '../utils/redactSecrets.js';
+
 // 404 Not Found router interceptor
 export const notFound = (req, res, next) => {
   const error = new Error(`Not Found - ${req.originalUrl}`);
@@ -47,11 +49,13 @@ export const errorHandler = (err, req, res, next) => {
     message = 'Secure session has expired: Please sign in again';
   }
 
-  console.error(`💥 [Error Log]: ${err.stack}`);
+  // Database errors can carry the connection string, so credentials are masked in logs and responses.
+  const safeStack = redactSecrets(err.stack);
+  console.error(`💥 [Error Log]: ${safeStack}`);
 
   res.status(statusCode).json({
     success: false,
-    message,
-    stack: process.env.NODE_ENV === 'production' ? null : err.stack
+    message: redactSecrets(message),
+    stack: process.env.NODE_ENV === 'production' ? null : safeStack
   });
 };
