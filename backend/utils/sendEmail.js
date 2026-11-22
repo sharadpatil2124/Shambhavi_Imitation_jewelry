@@ -48,110 +48,159 @@ const getResetEmailHtml = (otp) => `
 </div>
 `;
 
+// Shown to customers. Provider details (IPs, SMTP codes) stay in the server logs.
+const USER_FACING_EMAIL_ERROR = 'We could not send the email right now. Please try again in a few minutes or contact support.';
+const BREVO_AUTHORIZED_IPS_URL = 'https://app.brevo.com/security/authorised_ips';
+
+const clean = (val) => (val ? String(val).replace(/^['"]|['"]$/g, '').trim() : '');
+
 const getEmailConfig = () => {
-  const clean = (val) => val ? val.replace(/^['"]|['"]$/g, '').trim() : '';
+  const smtpUser = clean(process.env.BREVO_SMTP_USER || process.env.SMTP_USER || process.env.EMAIL_USER);
+  const gmailUser = clean(process.env.GMAIL_USER);
 
-  const host = clean(process.env.BREVO_SMTP_HOST || process.env.SMTP_HOST || process.env.EMAIL_HOST) || 'smtp-relay.brevo.com';
-  const port = parseInt(clean(process.env.BREVO_SMTP_PORT || process.env.SMTP_PORT || process.env.EMAIL_PORT) || '587', 10);
-  const user = clean(process.env.BREVO_SMTP_USER || process.env.SMTP_USER || process.env.EMAIL_USER || process.env.GMAIL_USER);
-  const pass = clean(process.env.BREVO_SMTP_PASSWORD || process.env.SMTP_PASS || process.env.EMAIL_PASS || process.env.GMAIL_PASS);
-  const fromEmail = clean(process.env.BREVO_EMAIL_FROM || process.env.EMAIL_FROM || process.env.GMAIL_USER) || user || 'kadamshambhavi1@gmail.com';
-  const fromName = clean(process.env.BREVO_EMAIL_FROM_NAME || process.env.EMAIL_FROM_NAME) || 'Shambhavi Imitation';
-  const apiKey = clean(process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY);
-
-  return { host, port, user, pass, fromEmail, fromName, apiKey };
+  return {
+    apiKey: clean(process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY),
+    smtp: {
+      host: clean(process.env.BREVO_SMTP_HOST || process.env.SMTP_HOST || process.env.EMAIL_HOST) || 'smtp-relay.brevo.com',
+      port: parseInt(clean(process.env.BREVO_SMTP_PORT || process.env.SMTP_PORT || process.env.EMAIL_PORT) || '587', 10),
+      user: smtpUser,
+      pass: clean(process.env.BREVO_SMTP_PASSWORD || process.env.SMTP_PASS || process.env.EMAIL_PASS),
+    },
+    gmail: {
+      user: gmailUser,
+      pass: clean(process.env.GMAIL_PASS).replace(/\s+/g, ''),
+    },
+    fromEmail: clean(process.env.BREVO_EMAIL_FROM || process.env.EMAIL_FROM) || gmailUser || smtpUser || 'kadamshambhavi1@gmail.com',
+    fromName: clean(process.env.BREVO_EMAIL_FROM_NAME || process.env.EMAIL_FROM_NAME) || 'Shambhavi Imitation',
+  };
 };
 
-const createTransporter = (host, port, user, pass) => {
-  const isGmail = host?.toLowerCase().includes('gmail') || user?.toLowerCase().includes('@gmail.com') || process.env.EMAIL_SERVICE === 'gmail';
+const SMTP_TIMEOUTS = { connectionTimeout: 10000, greetingTimeout: 8000, socketTimeout: 15000 };
+
+const createTransporter = ({ host, port, user, pass }) => {
+  const isGmail = host.toLowerCase().includes('gmail') || user.toLowerCase().endsWith('@gmail.com') || process.env.EMAIL_SERVICE === 'gmail';
 
   if (isGmail) {
     return nodemailer.createTransport({
       service: 'gmail',
-      auth: {
-        user,
-        pass: pass?.replace(/\s+/g, ''),
-      },
-      connectionTimeout: 10000,
-      greetingTimeout: 8000,
-      socketTimeout: 15000,
+      auth: { user, pass: pass.replace(/\s+/g, '') },
+      ...SMTP_TIMEOUTS,
     });
   }
 
   return nodemailer.createTransport({
-    host: host || 'smtp-relay.brevo.com',
-    port: port || 587,
+    host,
+    port,
     secure: port === 465,
-    auth: {
-      user,
-      pass,
-    },
-    connectionTimeout: 10000,
-    greetingTimeout: 8000,
-    socketTimeout: 15000,
-    tls: {
-      rejectUnauthorized: false
-    }
+    auth: { user, pass },
+    ...SMTP_TIMEOUTS,
+    tls: { rejectUnauthorized: false },
   });
 };
 
-const sendMailUniversal = async ({ to, subject, html, logType = 'Email' }) => {
-  const { host, port, user, pass, fromEmail, fromName, apiKey } = getEmailConfig();
-
-  // 1. If Brevo HTTP REST API Key (xkeysib-...) is configured: uses Port 443 HTTPS (Never blocked by Render Free Tier)
-  if (apiKey) {
-    try {
-      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-        method: 'POST',
-        headers: {
-          'accept': 'application/json',
-          'api-key': apiKey,
-          'content-type': 'application/json'
-        },
-        body: JSON.stringify({
-          sender: { name: fromName, email: fromEmail },
-          to: [{ email: to }],
-          subject,
-          htmlContent: html
-        })
-      });
-
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(data.message || `Brevo HTTPS API responded with status ${response.status}`);
-      }
-
-      console.log(`✅ [Brevo HTTPS API] ${logType} delivered to ${to} (ID: ${data.messageId || 'ok'})`);
-      return { messageId: data.messageId };
-    } catch (err) {
-      console.error(`❌ [Brevo HTTPS API Error] Failed to send ${logType}:`, err.message);
-      throw new Error(`Email delivery failed: ${err.message}`);
-    }
-  }
-
-  // 2. Nodemailer SMTP / Gmail fallback
-  if (!user || !pass) {
-    throw new Error('Email credentials are not configured. Email communication is unavailable.');
-  }
-
-  try {
-    const transporter = createTransporter(host, port, user, pass);
-    const mailOptions = {
-      from: `"${fromName}" <${fromEmail}>`,
-      to,
+// Brevo transactional API over HTTPS (port 443), which Render's free tier never blocks.
+const sendViaBrevoApi = async ({ apiKey, fromName, fromEmail }, { to, subject, html }) => {
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      accept: 'application/json',
+      'api-key': apiKey,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      sender: { name: fromName, email: fromEmail },
+      to: [{ email: to }],
       subject,
-      html,
-    };
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`✅ [Email Service] ${logType} delivered to ${to}`);
-    return info;
-  } catch (error) {
-    console.error(`\n❌ [EMAIL SERVICE ERROR] Failed to send ${logType}:`, error.message);
-    if (error.message.includes('timeout') || error.code === 'ETIMEDOUT') {
-      throw new Error('Email delivery failed: Connection timeout. (Render Free Tier blocks outbound SMTP ports 25, 465, and 587. Please add BREVO_API_KEY in Render to send via HTTPS Port 443).');
-    }
-    throw new Error(`Email delivery failed: ${error.message}`);
+      htmlContent: html,
+    }),
+    signal: AbortSignal.timeout(15000),
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const err = new Error(data.message || `Brevo API responded with HTTP ${response.status}`);
+    err.status = response.status;
+    throw err;
   }
+  return { messageId: data.messageId };
+};
+
+const sendViaSmtp = async (transportConfig, from, { to, subject, html }) =>
+  createTransporter(transportConfig).sendMail({ from, to, subject, html });
+
+// Every configured provider, in priority order. The next one is tried if the previous fails.
+const buildProviders = (cfg) => {
+  const providers = [];
+
+  if (cfg.apiKey) {
+    providers.push({ name: 'Brevo HTTPS API', kind: 'api', send: (msg) => sendViaBrevoApi(cfg, msg) });
+  }
+  if (cfg.smtp.user && cfg.smtp.pass) {
+    providers.push({
+      name: `SMTP ${cfg.smtp.host}:${cfg.smtp.port}`,
+      kind: 'smtp',
+      send: (msg) => sendViaSmtp(cfg.smtp, `"${cfg.fromName}" <${cfg.fromEmail}>`, msg),
+    });
+  }
+  if (cfg.gmail.user && cfg.gmail.pass && cfg.gmail.user !== cfg.smtp.user) {
+    providers.push({
+      name: 'Gmail SMTP',
+      kind: 'smtp',
+      // Gmail only sends as the authenticated account (or its verified aliases).
+      send: (msg) => sendViaSmtp(
+        { host: 'smtp.gmail.com', port: 465, user: cfg.gmail.user, pass: cfg.gmail.pass },
+        `"${cfg.fromName}" <${cfg.gmail.user}>`,
+        msg
+      ),
+    });
+  }
+
+  return providers;
+};
+
+// Turns provider errors into an actionable fix for the server logs.
+const diagnoseEmailError = (err, kind) => {
+  const text = `${err.message || ''} ${err.response || ''}`;
+
+  if (err.responseCode === 525 || /unauthori[sz]ed ip|unrecogni[sz]ed ip/i.test(text)) {
+    return `Brevo is blocking this server's IP address. Open ${BREVO_AUTHORIZED_IPS_URL} and deactivate "Authorized IPs" blocking (Render's outbound IPs change, so allowlisting a single IP is not reliable).`;
+  }
+  if (kind === 'api' && err.status === 401) {
+    return 'Brevo rejected BREVO_API_KEY. It must be an API key starting with "xkeysib-" (Brevo > SMTP & API > API Keys), not the SMTP key starting with "xsmtpsib-".';
+  }
+  if (kind === 'api' && /sender/i.test(text)) {
+    return `The sender address is not verified in Brevo. Add and verify it under Brevo > Senders, Domains & Dedicated IPs.`;
+  }
+  if (kind === 'smtp' && (['ETIMEDOUT', 'ESOCKET', 'ECONNECTION', 'ECONNREFUSED'].includes(err.code) || /timeout/i.test(text))) {
+    return 'Could not reach the SMTP server. Render\'s free tier blocks outbound ports 25/465/587; set BREVO_API_KEY to send over HTTPS instead.';
+  }
+  if (err.code === 'EAUTH') {
+    return 'The SMTP server rejected the login. Check the SMTP username and password/key.';
+  }
+  return null;
+};
+
+const sendMailUniversal = async ({ to, subject, html, logType = 'Email' }) => {
+  const providers = buildProviders(getEmailConfig());
+
+  if (providers.length === 0) {
+    console.error('❌ [Email Service] No email provider configured. Set BREVO_API_KEY, or BREVO_SMTP_USER + BREVO_SMTP_PASSWORD, or GMAIL_USER + GMAIL_PASS.');
+    throw new Error(USER_FACING_EMAIL_ERROR);
+  }
+
+  for (const provider of providers) {
+    try {
+      const info = await provider.send({ to, subject, html });
+      console.log(`✅ [${provider.name}] ${logType} delivered to ${to}${info?.messageId ? ` (ID: ${info.messageId})` : ''}`);
+      return info;
+    } catch (err) {
+      console.error(`❌ [${provider.name}] Failed to send ${logType}: ${err.message}`);
+      const fix = diagnoseEmailError(err, provider.kind);
+      if (fix) console.error(`   ↳ Fix: ${fix}`);
+    }
+  }
+
+  throw new Error(USER_FACING_EMAIL_ERROR);
 };
 
 export const sendOtpEmail = async (to, otp, type) => {
