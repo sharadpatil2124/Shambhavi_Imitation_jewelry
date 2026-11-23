@@ -1,45 +1,22 @@
-import mongoose from 'mongoose';
+import { Model } from '../db/model.js';
 
-const reviewSchema = new mongoose.Schema({
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  product: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Product',
-    required: true,
-    index: true
-  },
-  name: {
-    type: String,
-    required: true
-  },
-  rating: {
-    type: Number,
-    required: [true, 'Please provide a star rating'],
-    min: [1, 'Rating must be at least 1 star'],
-    max: [5, 'Rating cannot exceed 5 stars']
-  },
-  title: {
-    type: String,
-    trim: true
-  },
-  comment: {
-    type: String,
-    required: [true, 'Please provide review description comments'],
-    trim: true
-  },
-  isApproved: {
-    type: Boolean,
-    default: true
+// Table: reviews (one review per user per product, enforced by a unique key).
+const Review = Model.define('Review', {
+  table: 'reviews',
+  fields: {
+    user: { type: 'id', ref: 'User', column: 'user_id', required: true },
+    product: { type: 'id', ref: 'Product', column: 'product_id', required: true },
+    name: { type: 'string', required: true },
+    rating: {
+      type: 'number',
+      required: 'Please provide a star rating',
+      min: [1, 'Rating must be at least 1 star'],
+      max: [5, 'Rating cannot exceed 5 stars']
+    },
+    title: { type: 'string', trim: true },
+    comment: { type: 'string', required: 'Please provide review description comments', trim: true },
+    isApproved: { type: 'boolean', default: true }
   }
-}, {
-  timestamps: true
 });
 
-reviewSchema.index({ user: 1, product: 1 }, { unique: true });
-
-const Review = mongoose.model('Review', reviewSchema);
 export default Review;

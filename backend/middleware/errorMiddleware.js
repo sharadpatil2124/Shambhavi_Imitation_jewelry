@@ -18,20 +18,38 @@ export const errorHandler = (err, req, res, next) => {
     message = 'Invalid request: the request body is not valid JSON';
   }
 
-  // Handle Mongoose Bad ObjectId (Cast Error)
-  if (err.name === 'CastError' && err.kind === 'ObjectId') {
+  // Handle a malformed record ID (Cast Error)
+  if (err.name === 'CastError' && err.kind === 'ID') {
     statusCode = 400;
     message = 'Resource not found: Invalid database ID format';
   }
 
-  // Handle Mongoose Duplicate Key Error
-  if (err.code === 11000) {
+  // Handle MySQL Duplicate Key Error. Unique keys are named after the field
+  // ("Duplicate entry 'a@b.com' for key 'users.email'" -> email).
+  if (err.code === 'ER_DUP_ENTRY') {
     statusCode = 400;
-    const duplicatedField = Object.keys(err.keyValue)[0];
-    message = `Duplicate field value entered: An item with this ${duplicatedField} already exists`;
+    const keyName = /for key '(?:[^'.]+\.)?([^']+)'/.exec(err.sqlMessage || err.message || '')?.[1] || 'value';
+    message = `Duplicate field value entered: An item with this ${keyName} already exists`;
   }
 
-  // Handle Mongoose Validation Error
+  // Handle MySQL value too long for its column
+  if (err.code === 'ER_DATA_TOO_LONG') {
+    statusCode = 400;
+    const column = /column '([^']+)'/.exec(err.sqlMessage || err.message || '')?.[1] || 'value';
+    message = `The ${column.replace(/_/g, ' ')} entered is too long`;
+  }
+
+  // Handle MySQL reference to a record that does not exist (or is still in use)
+  if (err.code === 'ER_NO_REFERENCED_ROW_2' || err.code === 'ER_NO_REFERENCED_ROW') {
+    statusCode = 400;
+    message = 'Invalid reference: the linked record does not exist';
+  }
+  if (err.code === 'ER_ROW_IS_REFERENCED_2' || err.code === 'ER_ROW_IS_REFERENCED') {
+    statusCode = 400;
+    message = 'This record is still in use by other records and cannot be deleted';
+  }
+
+  // Handle Validation Error
   if (err.name === 'ValidationError') {
     statusCode = 400;
     message = Object.values(err.errors).map((val) => val.message).join(', ');

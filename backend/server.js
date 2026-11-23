@@ -26,23 +26,25 @@ if (!process.env.JWT_SECRET) {
   process.exit(1);
 }
 
-connectDB();
+// Connects to MySQL and creates any missing tables before the server accepts requests.
+await connectDB();
 
 const app = express();
 
-// Render (and Cloudflare in front of it) proxies every request. Without this, Express sees the proxy's
+// On Hostinger the app runs behind the hosting's web server, which forwards every request. Without this,
+// Express sees that proxy's
 // address instead of the visitor's, and every visitor shares one rate-limit allowance.
 // TRUST_PROXY_HOPS = number of proxies between the visitor and this server (default 1).
 app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS || 1));
 
 app.use(helmet({
   crossOriginResourcePolicy: false,
-  // Browsers must use HTTPS for this API for 1 year (Render already redirects http:// to https://).
+  // Browsers must use HTTPS for this API for 1 year (turn on "Force HTTPS" for the domain in Hostinger).
   strictTransportSecurity: { maxAge: 31536000, includeSubDomains: true }
 }));
 
 // CORS: only the store's own sites may call this API from a browser.
-// ALLOWED_ORIGINS = comma-separated list, e.g. "https://your-store.vercel.app,https://your-admin.vercel.app".
+// ALLOWED_ORIGINS = comma-separated list, e.g. "https://your-domain.com,https://admin.your-domain.com".
 // Local development addresses are always allowed outside production.
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
   .split(',')
@@ -51,7 +53,7 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
 const isDevOrigin = (origin) => process.env.NODE_ENV !== 'production' && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
 
 if (allowedOrigins.length === 0) {
-  console.warn('⚠️ ALLOWED_ORIGINS is not set: the API accepts browser requests from any website. Set it on Render to your storefront and admin URLs.');
+  console.warn("⚠️ ALLOWED_ORIGINS is not set: the API accepts browser requests from any website. Set it in backend/.env (or the hosting panel's environment variables) to your storefront and admin addresses.");
 }
 
 const corsOptions = {
@@ -134,7 +136,7 @@ app.get('/favicon.ico', (req, res) => res.status(204).end());
 app.get('/', (req, res) => {
   res.json({
     success: true,
-    message: '✨ Shambhavi Imitation Jewelry Premium MERN API is running successfully...'
+    message: '✨ Shambhavi Imitation Jewelry Premium API is running successfully...'
   });
 });
 

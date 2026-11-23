@@ -1,78 +1,67 @@
-import mongoose from 'mongoose';
+import { Model } from '../db/model.js';
 
-const orderItemSchema = new mongoose.Schema({
-  product: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Product',
-    required: true
-  },
-  name: { type: String, required: true },
-  quantity: { type: Number, required: true },
-  image: { type: String, required: true },
-  price: { type: Number, required: true },
-  color: { type: String },
-  size: { type: String }
-}, { _id: false });
+// Table: orders. shippingAddress and paymentResult are stored as columns of the order
+// (shipping_address_*, payment_result_*); the ordered items are in the child table order_items.
+const Order = Model.define('Order', {
+  table: 'orders',
+  fields: {
+    user: { type: 'id', ref: 'User', column: 'user_id', required: true },
+    'shippingAddress.street': { type: 'string', required: true },
+    'shippingAddress.city': { type: 'string', required: true },
+    'shippingAddress.state': { type: 'string', required: true },
+    'shippingAddress.pincode': { type: 'string', required: true },
+    'shippingAddress.phone': { type: 'string', required: true },
+    'shippingAddress.email': { type: 'string', required: true },
+    paymentMethod: { type: 'string', enum: ['COD', 'Razorpay'], required: true },
+    'paymentResult.id': 'string',
+    'paymentResult.status': 'string',
+    'paymentResult.email_address': 'string',
+    razorpayOrderId: 'string',
+    razorpayPaymentId: 'string',
+    razorpaySignature: 'string',
 
-const orderSchema = new mongoose.Schema({
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-    index: true
+    itemsPrice: { type: 'number', required: true, default: 0.0 },
+    taxPrice: { type: 'number', required: true, default: 0.0 },
+    shippingPrice: { type: 'number', required: true, default: 0.0 },
+    discountPrice: { type: 'number', required: true, default: 0.0 },
+    totalPrice: { type: 'number', required: true, default: 0.0 },
+
+    isPaid: { type: 'boolean', required: true, default: false },
+    paidAt: { type: 'date', keepNull: true }, // unpaid orders are saved with paidAt: null
+    orderStatus: {
+      type: 'string',
+      required: true,
+      enum: ['Pending', 'Confirmed', 'Processing', 'Dispatched', 'Shipped', 'OutForDelivery', 'Delivered', 'Cancelled', 'Refunded', 'Cancellation Requested'],
+      default: 'Processing'
+    },
+    cancellationReason: 'string',
+    // True once this order's items have been put back into stock (cancel or refund), so it never happens twice.
+    stockRestored: { type: 'boolean', default: false },
+    isRefunded: { type: 'boolean', default: false },
+    refundAmount: { type: 'number', default: 0.0 },
+    refundReason: { type: 'string', default: '' },
+    refundedAt: 'date',
+    refundTransactionId: { type: 'string', default: '' },
+    courierName: 'string',
+    trackingNumber: 'string',
+    trackingId: 'string',
+    deliveredAt: 'date'
   },
-  orderItems: [orderItemSchema],
-  shippingAddress: {
-    street: { type: String, required: true },
-    city: { type: String, required: true },
-    state: { type: String, required: true },
-    pincode: { type: String, required: true },
-    phone: { type: String, required: true },
-    email: { type: String, required: true }
-  },
-  paymentMethod: {
-    type: String,
-    enum: ['COD', 'Razorpay'],
-    required: true
-  },
-  paymentResult: {
-    id: { type: String },
-    status: { type: String },
-    email_address: { type: String }
-  },
-  razorpayOrderId: { type: String, index: true },
-  razorpayPaymentId: { type: String },
-  razorpaySignature: { type: String },
-  
-  itemsPrice: { type: Number, required: true, default: 0.0 },
-  taxPrice: { type: Number, required: true, default: 0.0 },
-  shippingPrice: { type: Number, required: true, default: 0.0 },
-  discountPrice: { type: Number, required: true, default: 0.0 },
-  totalPrice: { type: Number, required: true, default: 0.0 },
-  
-  isPaid: { type: Boolean, required: true, default: false },
-  paidAt: { type: Date },
-  orderStatus: {
-    type: String,
-    required: true,
-    enum: ['Pending', 'Confirmed', 'Processing', 'Dispatched', 'Shipped', 'OutForDelivery', 'Delivered', 'Cancelled', 'Refunded', 'Cancellation Requested'],
-    default: 'Processing'
-  },
-  cancellationReason: { type: String },
-  // True once this order's items have been put back into stock (cancel or refund), so it never happens twice.
-  stockRestored: { type: Boolean, default: false },
-  isRefunded: { type: Boolean, default: false },
-  refundAmount: { type: Number, default: 0.0 },
-  refundReason: { type: String, default: '' },
-  refundedAt: { type: Date },
-  refundTransactionId: { type: String, default: '' },
-  courierName: { type: String },
-  trackingNumber: { type: String },
-  trackingId: { type: String },
-  deliveredAt: { type: Date }
-}, {
-  timestamps: true
+  children: {
+    orderItems: {
+      table: 'order_items',
+      foreignKey: 'order_id',
+      fields: {
+        product: { type: 'id', ref: 'Product', column: 'product_id', required: true },
+        name: { type: 'string', required: true },
+        quantity: { type: 'number', required: true },
+        image: { type: 'string', required: true },
+        price: { type: 'number', required: true },
+        color: 'string',
+        size: 'string'
+      }
+    }
+  }
 });
 
-const Order = mongoose.model('Order', orderSchema);
 export default Order;

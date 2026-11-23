@@ -29,7 +29,7 @@ describe('Unit Tests: NoSQL Injection Sanitize Middleware', () => {
   });
 
   describe('Negative Test Cases (Injection Prevention)', () => {
-    it('should remove root-level MongoDB query operators ($gt, $ne, $where)', () => {
+    it('should remove root-level query operators ($gt, $ne, $where)', () => {
       const req = {
         body: {
           $gt: '',
@@ -47,7 +47,7 @@ describe('Unit Tests: NoSQL Injection Sanitize Middleware', () => {
       assert.strictEqual(req.body.username, 'admin', 'Legitimate field should remain intact');
     });
 
-    it('should remove deeply nested MongoDB operators in request body', () => {
+    it('should remove deeply nested query operators in request body', () => {
       const req = {
         body: {
           password: { $ne: null },

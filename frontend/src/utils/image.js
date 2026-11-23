@@ -3,10 +3,7 @@ export const getImageUrl = (url) => {
   if (url.startsWith('http://') || url.startsWith('https://')) {
     return url;
   }
-  const isProd = typeof import.meta !== 'undefined' && import.meta.env?.PROD;
-  const defaultApiUrl = isProd
-    ? 'https://shambhavi-backend-n0ud.onrender.com/api'
-    : 'http://localhost:5000/api';
+  const defaultApiUrl = 'http://localhost:5000/api'; // development; production builds set VITE_API_URL
   const apiUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) || defaultApiUrl;
   const backendBase = apiUrl.replace(/\/api$/, '');
   const cleanUrl = url.startsWith('/') ? url : `/${url}`;

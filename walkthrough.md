@@ -19,7 +19,7 @@ We have implemented a **White + Gold** theme engineered to invoke feelings of ab
 
 ## 📁 Clean Folder Structure
 
-All code is written using a scalable, component-based, clean MERN-frontend architecture:
+All code is written using a scalable, component-based, clean React frontend architecture:
 
 ```
 frontend/

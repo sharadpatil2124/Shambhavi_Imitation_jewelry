@@ -1,6 +1,6 @@
-import mongoose from 'mongoose';
-import { safeErrorMessage } from '../utils/redactSecrets.js';
 import dotenv from 'dotenv';
+import { closeDB, describeDbError } from '../config/db.js';
+import { prepareDatabase } from '../db/migrate.js';
 import Category from '../models/Category.js';
 
 dotenv.config();
@@ -34,16 +34,10 @@ const categoriesData = [
 ];
 
 const seedCatalog = async () => {
-  const uri = process.env.MONGO_URI;
-  if (!uri) {
-    console.error('❌ MONGO_URI is missing in your .env environment variables.');
-    process.exit(1);
-  }
-
   console.log('Connecting to database for catalog seeding...');
   try {
-    await mongoose.connect(uri);
-    console.log('✅ Connected to MongoDB Atlas successfully.');
+    await prepareDatabase();
+    console.log('✅ Connected to MySQL successfully.');
 
     for (const catData of categoriesData) {
       const exists = await Category.findOne({ name: catData.name });
@@ -56,13 +50,11 @@ const seedCatalog = async () => {
     }
 
     console.log('🎉 Catalog seeding completed successfully!');
-    await mongoose.disconnect();
+    await closeDB();
     process.exit(0);
   } catch (error) {
-    console.error('❌ Seeder failed with error:', safeErrorMessage(error));
-    if (mongoose.connection.readyState !== 0) {
-      await mongoose.disconnect();
-    }
+    console.error('❌ Seeder failed with error:', describeDbError(error));
+    await closeDB().catch(() => {});
     process.exit(1);
   }
 };

@@ -1,11 +1,11 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import mongoose from 'mongoose';
+import { newId } from '../db/ids.js';
 import Order from '../models/Order.js';
 
 describe('Unit Tests: Order Model & Status Enum Validation', () => {
-  const dummyUserId = new mongoose.Types.ObjectId();
-  const dummyProductId = new mongoose.Types.ObjectId();
+  const dummyUserId = newId();
+  const dummyProductId = newId();
 
   const getValidOrderData = () => ({
     user: dummyUserId,

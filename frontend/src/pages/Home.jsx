@@ -61,7 +61,7 @@ export default function Home() {
     }
   ];
 
-  // Fetch Landing Catalog from MERN backend
+  // Fetch Landing Catalog from the backend
   useEffect(() => {
     const fetchLandingCatalog = async () => {
       try {
@@ -78,7 +78,7 @@ export default function Home() {
     fetchLandingCatalog();
   }, []);
 
-  // Fetch Active Categories from MERN backend
+  // Fetch Active Categories from the backend
   useEffect(() => {
     const fetchCategories = async () => {
       try {

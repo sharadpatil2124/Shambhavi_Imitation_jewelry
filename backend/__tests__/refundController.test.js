@@ -1,17 +1,17 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import mongoose from 'mongoose';
+import { newId } from '../db/ids.js';
 import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import { refundOrder, updateOrderStatus, trackOrderPublicly } from '../controllers/orderController.js';
 
 describe('Unit Tests: Order Refund Operations & Dashboard Revenue Deduction', () => {
-  const dummyUserId = new mongoose.Types.ObjectId();
-  const dummyProductId = new mongoose.Types.ObjectId();
-  const validOrderId = new mongoose.Types.ObjectId().toString();
+  const dummyUserId = newId();
+  const dummyProductId = newId();
+  const validOrderId = newId();
 
   const createMockOrder = (overrides = {}) => ({
-    _id: new mongoose.Types.ObjectId(validOrderId),
+    _id: validOrderId,
     user: dummyUserId,
     orderItems: [{
       product: dummyProductId,

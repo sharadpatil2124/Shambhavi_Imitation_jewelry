@@ -14,6 +14,10 @@ build/
 *.env
 */.env
 */.env.*
+# Example files (no secrets) are kept in the repository
+!.env.example
+!*/.env.example
+!*/.env.*.example
 
 # Local Media & Uploads
 uploads/

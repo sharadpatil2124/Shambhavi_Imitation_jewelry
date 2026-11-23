@@ -1,12 +1,15 @@
 import Order from '../models/Order.js';
-import { escapeRegex, parsePagination, queryString } from '../utils/queryHelpers.js';
+import { query } from '../config/db.js';
+import { parsePagination, queryString } from '../utils/queryHelpers.js';
 import User from '../models/userModel.js';
 import Product from '../models/Product.js';
 import Review from '../models/Review.js';
 import Cart from '../models/Cart.js';
-import Wishlist from '../models/Wishlist.js';
 import Settings from '../models/Settings.js';
 import Enquiry from '../models/Enquiry.js';
+
+// Delivered orders that were not refunded (the orders that count as revenue).
+const ACTIVE_DELIVERED = "order_status = 'Delivered' AND (is_refunded <> 1 OR is_refunded IS NULL)";
 
 // @desc    Get dashboard analytics dashboard counters
 // @route   GET /api/admin/dashboard
@@ -20,19 +23,18 @@ export const getDashboardAnalytics = async (req, res, next) => {
     const totalReviews = await Review.countDocuments({});
 
     // 2. Compute Total Revenue strictly from active Delivered orders (refunded orders auto-deducted)
-    const revenueStats = await Order.aggregate([
-      { $match: { orderStatus: 'Delivered', isRefunded: { $ne: true } } },
-      { $group: { _id: null, totalRevenue: { $sum: '$totalPrice' } } }
-    ]);
-    const totalRevenue = revenueStats.length > 0 ? revenueStats[0].totalRevenue : 0;
+    const [revenueStats] = await query(
+      `SELECT COUNT(*) AS count, COALESCE(SUM(total_price), 0) AS totalRevenue FROM orders WHERE ${ACTIVE_DELIVERED}`
+    );
+    const totalRevenue = revenueStats.count > 0 ? Number(revenueStats.totalRevenue) : 0;
 
     // Compute Refund Statistics
-    const refundStats = await Order.aggregate([
-      { $match: { $or: [{ orderStatus: 'Refunded' }, { isRefunded: true }] } },
-      { $group: { _id: null, totalRefunded: { $sum: { $ifNull: ['$refundAmount', '$totalPrice'] } }, count: { $sum: 1 } } }
-    ]);
-    const totalRefunded = refundStats.length > 0 ? refundStats[0].totalRefunded : 0;
-    const refundedOrders = refundStats.length > 0 ? refundStats[0].count : 0;
+    const [refundStats] = await query(
+      `SELECT COUNT(*) AS count, COALESCE(SUM(COALESCE(refund_amount, total_price)), 0) AS totalRefunded
+       FROM orders WHERE order_status = 'Refunded' OR is_refunded = 1`
+    );
+    const totalRefunded = refundStats.count > 0 ? Number(refundStats.totalRefunded) : 0;
+    const refundedOrders = Number(refundStats.count);
 
     // 3. Order status segregation for all statuses including Refunded
     const pendingOrders = await Order.countDocuments({ orderStatus: 'Pending' });
@@ -84,20 +86,19 @@ export const getDashboardAnalytics = async (req, res, next) => {
 export const getSalesReport = async (req, res, next) => {
   try {
     // Aggregation: Group active delivered payments by month-year (excluding refunded)
-    const monthlySales = await Order.aggregate([
-      { $match: { orderStatus: 'Delivered', isRefunded: { $ne: true } } },
-      {
-        $group: {
-          _id: {
-            year: { $year: '$createdAt' },
-            month: { $month: '$createdAt' }
-          },
-          salesCount: { $sum: 1 },
-          totalSales: { $sum: '$totalPrice' }
-        }
-      },
-      { $sort: { '_id.year': -1, '_id.month': -1 } }
-    ]);
+    const rows = await query(
+      `SELECT YEAR(created_at) AS year, MONTH(created_at) AS month,
+              COUNT(*) AS salesCount, SUM(total_price) AS totalSales
+       FROM orders
+       WHERE ${ACTIVE_DELIVERED}
+       GROUP BY YEAR(created_at), MONTH(created_at)
+       ORDER BY year DESC, month DESC`
+    );
+    const monthlySales = rows.map((r) => ({
+      _id: { year: Number(r.year), month: Number(r.month) },
+      salesCount: Number(r.salesCount),
+      totalSales: Number(r.totalSales)
+    }));
 
     res.json({
       success: true,
@@ -132,18 +133,20 @@ export const getCustomerReport = async (req, res, next) => {
 // @access  Private/Admin
 export const getRevenueStats = async (req, res, next) => {
   try {
-    const dailyRevenue = await Order.aggregate([
-      { $match: { orderStatus: 'Delivered', isRefunded: { $ne: true } } },
-      {
-        $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
-          revenue: { $sum: '$totalPrice' },
-          orderCount: { $sum: 1 }
-        }
-      },
-      { $sort: { _id: 1 } },
-      { $limit: 30 }
-    ]);
+    const rows = await query(
+      `SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS day,
+              SUM(total_price) AS revenue, COUNT(*) AS orderCount
+       FROM orders
+       WHERE ${ACTIVE_DELIVERED}
+       GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d')
+       ORDER BY day ASC
+       LIMIT 30`
+    );
+    const dailyRevenue = rows.map((r) => ({
+      _id: r.day,
+      revenue: Number(r.revenue),
+      orderCount: Number(r.orderCount)
+    }));
 
     res.json({
       success: true,
@@ -161,19 +164,18 @@ export const getAllUsers = async (req, res, next) => {
   try {
     const search = queryString(req.query.search);
     const { page, limit, skip } = parsePagination(req.query.page, req.query.limit, { defaultLimit: 10, maxLimit: 100 });
-    const query = { role: 'customer', isVerified: true };
+    const filter = { role: 'customer', isVerified: true };
 
     if (search) {
-      const pattern = escapeRegex(search);
-      query.$or = [
-        { name: { $regex: pattern, $options: 'i' } },
-        { email: { $regex: pattern, $options: 'i' } },
-        { phone: { $regex: pattern, $options: 'i' } }
+      filter.$or = [
+        { name: { $contains: search } },
+        { email: { $contains: search } },
+        { phone: { $contains: search } }
       ];
     }
 
-    const total = await User.countDocuments(query);
-    const users = await User.find(query)
+    const total = await User.countDocuments(filter);
+    const users = await User.find(filter)
       .select('-password')
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -240,12 +242,13 @@ export const getUserDetails = async (req, res, next) => {
 export const getCartWishlistAnalytics = async (req, res, next) => {
   try {
     // 1. Most wishlisted products
-    const wishlistedProducts = await Wishlist.aggregate([
-      { $unwind: '$products' },
-      { $group: { _id: '$products', count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: 10 }
-    ]);
+    const wishlistedProducts = (await query(
+      `SELECT product_id AS productId, COUNT(*) AS count
+       FROM wishlist_items
+       GROUP BY product_id
+       ORDER BY count DESC, product_id
+       LIMIT 10`
+    )).map((r) => ({ _id: r.productId, count: Number(r.count) }));
     const populatedWishlisted = await Product.populate(wishlistedProducts, {
       path: '_id',
       select: 'name sku price images stock'
@@ -289,12 +292,13 @@ export const getCartWishlistAnalytics = async (req, res, next) => {
     });
 
     // 3. Popular products currently in user carts
-    const popularInCarts = await Cart.aggregate([
-      { $unwind: '$items' },
-      { $group: { _id: '$items.product', count: { $sum: '$items.quantity' } } },
-      { $sort: { count: -1 } },
-      { $limit: 10 }
-    ]);
+    const popularInCarts = (await query(
+      `SELECT product_id AS productId, SUM(quantity) AS count
+       FROM cart_items
+       GROUP BY product_id
+       ORDER BY count DESC, product_id
+       LIMIT 10`
+    )).map((r) => ({ _id: r.productId, count: Number(r.count) }));
     const populatedPopularInCarts = await Product.populate(popularInCarts, {
       path: '_id',
       select: 'name sku price images stock'

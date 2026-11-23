@@ -1,30 +1,15 @@
-import mongoose from 'mongoose';
+import { Model } from '../db/model.js';
 
-const bannerSchema = new mongoose.Schema({
-  title: {
-    type: String,
-    required: [true, 'Please specify the banner title'],
-    trim: true
-  },
-  subtitle: {
-    type: String,
-    trim: true
-  },
-  image: {
-    type: String, // Cloudinary high-res banner URL
-    required: [true, 'Please upload a banner graphic asset']
-  },
-  link: {
-    type: String, // Click navigation link path
-    default: '/shop'
-  },
-  isActive: {
-    type: Boolean,
-    default: true
+// Table: banners
+const Banner = Model.define('Banner', {
+  table: 'banners',
+  fields: {
+    title: { type: 'string', required: 'Please specify the banner title', trim: true },
+    subtitle: { type: 'string', trim: true },
+    image: { type: 'string', required: 'Please upload a banner graphic asset' }, // high-res banner URL
+    link: { type: 'string', default: '/shop' }, // Click navigation link path
+    isActive: { type: 'boolean', default: true }
   }
-}, {
-  timestamps: true
 });
 
-const Banner = mongoose.model('Banner', bannerSchema);
 export default Banner;

@@ -3,7 +3,7 @@ import { FaWhatsapp } from 'react-icons/fa';
 
 export default function WhatsAppButton() {
   const { settings } = useSelector((state) => state.settings);
-  const whatsappNumber = settings?.contactPhone ? settings.contactPhone.replace(/\D/g, '') : "917083874227";
+  const whatsappNumber = settings?.contactPhone ? settings.contactPhone.replace(/\D/g, '') : "917058915328";
   const message = "Hi Shambhavi Imitation! I am browsing your gorgeous online jewelry boutique and would love to ask a question or place an order.";
   const encodedMessage = encodeURIComponent(message);
   

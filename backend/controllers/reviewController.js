@@ -1,6 +1,6 @@
 import Review from '../models/Review.js';
 import Product from '../models/Product.js';
-import { escapeRegex, parsePagination, queryString } from '../utils/queryHelpers.js';
+import { parsePagination, queryString } from '../utils/queryHelpers.js';
 
 // Helper utility to recalculate and update product ratings and review counts
 const updateProductRatingStats = async (productId) => {
@@ -164,11 +164,10 @@ export const getAllReviews = async (req, res, next) => {
     const query = {};
 
     if (search) {
-      const pattern = escapeRegex(search);
       query.$or = [
-        { name: { $regex: pattern, $options: 'i' } },
-        { comment: { $regex: pattern, $options: 'i' } },
-        { title: { $regex: pattern, $options: 'i' } }
+        { name: { $contains: search } },
+        { comment: { $contains: search } },
+        { title: { $contains: search } }
       ];
     }
 

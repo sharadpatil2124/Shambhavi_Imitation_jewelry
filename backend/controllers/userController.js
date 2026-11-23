@@ -32,6 +32,8 @@ const MAX_OTP_ATTEMPTS = 5;
 const OTP_INVALID_MESSAGE = 'Invalid or expired verification code';
 const OTP_LOCKED_MESSAGE = 'Too many incorrect attempts. Please request a new verification code.';
 const OTP_GENERIC_SENT_MESSAGE = 'If an account exists for this email address, a verification code has been sent to it.';
+const ACCOUNT_NOT_FOUND_CODE = 'ACCOUNT_NOT_FOUND';
+const ACCOUNT_NOT_FOUND_MESSAGE = 'No account exists with this email address. Please create a new account first.';
 
 const OTP_FIELDS = {
   register: { code: 'otp', expires: 'otpExpires', attempts: 'otpAttempts' },
@@ -327,10 +329,17 @@ export const resendOtp = async (req, res, next) => {
       throw new Error('Please provide a valid email address');
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: email.trim().toLowerCase() });
 
-    // Same reply whether or not the account exists, so this cannot be used to discover registered emails.
     if (!user) {
+      // Password reset: never issue a code for an email with no account; tell the user to register.
+      if (type === 'reset') {
+        return res.status(404).json({
+          success: false,
+          code: ACCOUNT_NOT_FOUND_CODE,
+          message: ACCOUNT_NOT_FOUND_MESSAGE
+        });
+      }
       return res.json({ success: true, message: OTP_GENERIC_SENT_MESSAGE });
     }
 
@@ -372,33 +381,39 @@ export const resendOtp = async (req, res, next) => {
 // @access  Public
 export const forgotPassword = async (req, res, next) => {
   try {
-    const { email } = req.body;
+    // Emails are stored trimmed and lowercased, so validate and look them up the same way.
+    const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
 
-    if (typeof email !== 'string' || !isValidEmailFormat(email)) {
+    if (!email || !isValidEmailFormat(email)) {
       res.status(400);
       throw new Error('Please provide a valid email address');
     }
 
+    // Check the account exists BEFORE generating any OTP.
     const user = await User.findOne({ email });
 
-    // Same reply whether or not the account exists, so this cannot be used to discover registered emails.
-    if (user) {
-      // Generate 6-digit OTP code
-      const otp = crypto.randomInt(100000, 1000000).toString();
-
-      // Set to database fields with expiry of 10 minutes
-      user.resetPasswordOtp = otp;
-      user.resetPasswordOtpExpires = Date.now() + 10 * 60 * 1000; // 10 Minutes
-      user.resetPasswordOtpAttempts = 0;
-
-      await user.save();
-
-      await sendOtpEmail(email, otp, 'reset');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        code: ACCOUNT_NOT_FOUND_CODE,
+        message: ACCOUNT_NOT_FOUND_MESSAGE
+      });
     }
+
+    // Account exists: generate a 6-digit OTP valid for 10 minutes.
+    const otp = crypto.randomInt(100000, 1000000).toString();
+
+    user.resetPasswordOtp = otp;
+    user.resetPasswordOtpExpires = Date.now() + 10 * 60 * 1000; // 10 Minutes
+    user.resetPasswordOtpAttempts = 0;
+
+    await user.save();
+
+    await sendOtpEmail(email, otp, 'reset');
 
     res.json({
       success: true,
-      message: 'If an account exists for this email address, a password reset code has been sent to it.',
+      message: 'A password reset code has been sent to your email address.',
       email
     });
   } catch (error) {

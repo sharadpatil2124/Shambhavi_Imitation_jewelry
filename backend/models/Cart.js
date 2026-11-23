@@ -1,33 +1,23 @@
-import mongoose from 'mongoose';
+import { Model } from '../db/model.js';
 
-const cartItemSchema = new mongoose.Schema({
-  product: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Product',
-    required: true
+// Table: carts (one per user). Cart lines are in the child table cart_items.
+const Cart = Model.define('Cart', {
+  table: 'carts',
+  fields: {
+    user: { type: 'id', ref: 'User', column: 'user_id', required: true }
   },
-  quantity: {
-    type: Number,
-    required: true,
-    min: [1, 'Quantity must be at least 1'],
-    default: 1
-  },
-  color: { type: String, trim: true },
-  size: { type: String, trim: true }
-}, { _id: false });
-
-const cartSchema = new mongoose.Schema({
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-    unique: true, // One cart document per user
-    index: true
-  },
-  items: [cartItemSchema]
-}, {
-  timestamps: true
+  children: {
+    items: {
+      table: 'cart_items',
+      foreignKey: 'cart_id',
+      fields: {
+        product: { type: 'id', ref: 'Product', column: 'product_id', required: true },
+        quantity: { type: 'number', required: true, min: [1, 'Quantity must be at least 1'], default: 1 },
+        color: { type: 'string', trim: true },
+        size: { type: 'string', trim: true }
+      }
+    }
+  }
 });
 
-const Cart = mongoose.model('Cart', cartSchema);
 export default Cart;
