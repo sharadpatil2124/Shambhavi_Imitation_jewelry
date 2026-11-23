@@ -1,7 +1,7 @@
 import Product from '../models/Product.js';
 import Category from '../models/Category.js';
 import { uploadToImageKit } from '../utils/upload.js';
-import { escapeRegex, parsePagination, queryString } from '../utils/queryHelpers.js';
+import { parsePagination, queryString } from '../utils/queryHelpers.js';
 
 // @desc    Get all products (with pagination, search, sorting and filters)
 // @route   GET /api/products
@@ -27,17 +27,16 @@ export const getProducts = async (req, res, next) => {
 
     // 1. Text Search matching name or description (user text is matched literally)
     if (searchStr) {
-      const pattern = escapeRegex(searchStr);
       query.$or = [
-        { name: { $regex: pattern, $options: 'i' } },
-        { description: { $regex: pattern, $options: 'i' } },
-        { sku: { $regex: pattern, $options: 'i' } }
+        { name: { $contains: searchStr } },
+        { description: { $contains: searchStr } },
+        { sku: { $contains: searchStr } }
       ];
     }
 
-    // 2. Relational Category Matching (by Slug, Name, or ObjectId)
+    // 2. Relational Category Matching (by Slug, Name, or record ID)
     if (categoryStr) {
-      // Find category by slug/name first if it's not a direct MongoDB ID format
+      // Find category by slug/name first if it's not a direct record ID
       if (categoryStr.match(/^[0-9a-fA-F]{24}$/)) {
         query.category = categoryStr;
       } else {
@@ -50,7 +49,7 @@ export const getProducts = async (req, res, next) => {
           $or: [
             { slug: categoryStr },
             { slug: categorySlug },
-            { name: { $regex: new RegExp(`^${escapeRegex(categoryStr)}$`, 'i') } }
+            { name: categoryStr } // name comparison ignores upper/lower case
           ]
         });
 

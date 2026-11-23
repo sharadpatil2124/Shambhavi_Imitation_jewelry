@@ -78,7 +78,7 @@ export default function AdminProducts() {
       if (response.success) {
         let filtered = response.products;
         
-        // Manual stock filters since MERN backend GET /api/products might not support stock level filtering
+        // Manual stock filters since the backend GET /api/products might not support stock level filtering
         if (stockFilter === 'low') {
           filtered = filtered.filter(p => p.stock > 0 && p.stock < 5);
         } else if (stockFilter === 'out') {

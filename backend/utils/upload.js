@@ -46,8 +46,8 @@ export const uploadToImageKit = async (filePath, folder = '/sambhavi-imitation')
   };
 
   if (!process.env.IMAGEKIT_PUBLIC_KEY || !process.env.IMAGEKIT_PRIVATE_KEY) {
-    // Local development only: serve from the uploads folder. In production that folder is wiped on
-    // every Render redeploy, so images saved there would break later.
+    // Local development only: serve from the uploads folder. In production that folder can be wiped
+    // by a redeploy, so images saved there would break later.
     if (process.env.NODE_ENV === 'production') {
       removeTempFile();
       throw new Error('Image upload is not configured on the server (ImageKit keys are missing). Please contact the site administrator.');

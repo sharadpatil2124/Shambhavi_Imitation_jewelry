@@ -1,40 +1,22 @@
-import mongoose from 'mongoose';
+import { Model } from '../db/model.js';
 
-const categorySchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: [true, 'Please specify the category name'],
-    unique: true,
-    trim: true,
-    index: true
+// Table: categories
+const Category = Model.define('Category', {
+  table: 'categories',
+  fields: {
+    name: { type: 'string', required: 'Please specify the category name', trim: true },
+    description: { type: 'string', trim: true },
+    image: { type: 'string', required: 'Please upload a category catalog cover image' },
+    slug: { type: 'string', lowercase: true }
   },
-  description: {
-    type: String,
-    trim: true
-  },
-  image: {
-    type: String,
-    required: [true, 'Please upload a category catalog cover image']
-  },
-  slug: {
-    type: String,
-    unique: true,
-    lowercase: true,
-    index: true
+  preSave() {
+    if (this.isModified('name')) {
+      this.slug = this.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+    }
   }
-}, {
-  timestamps: true
 });
 
-categorySchema.pre('save', function (next) {
-  if (this.isModified('name')) {
-    this.slug = this.name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '');
-  }
-  next();
-});
-
-const Category = mongoose.model('Category', categorySchema);
 export default Category;

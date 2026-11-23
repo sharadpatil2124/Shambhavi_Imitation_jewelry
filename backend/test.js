@@ -71,7 +71,7 @@
  * @query   page (Number, default: 1)
  *          limit (Number, default: 12)
  *          search (String, matches name/description/SKU)
- *          category (Slug or MongoDB ObjectId)
+ *          category (Slug or record ID, 24 characters)
  *          minPrice (Number)
  *          maxPrice (Number)
  *          rating (Number, min average rating)
@@ -84,7 +84,7 @@
  * @route   GET /api/products/:id
  * @desc    Get detailed specifications of a single product
  * @access  Public
- * @params  id (Product MongoDB ObjectId)
+ * @params  id (Product record ID, 24 characters)
  */
 
 /**
@@ -112,7 +112,7 @@
  * @route   PUT /api/products/:id
  * @desc    Modify details or inventory levels of an existing product
  * @access  Protected (Admin Only)
- * @params  id (Product MongoDB ObjectId)
+ * @params  id (Product record ID, 24 characters)
  * @headers Content-Type: multipart/form-data or application/json
  * @body    Supports partial updates on fields (name, price, stock, images etc.)
  */
@@ -121,7 +121,7 @@
  * @route   DELETE /api/products/:id
  * @desc    Delete product from collection and restore stock
  * @access  Protected (Admin Only)
- * @params  id (Product MongoDB ObjectId)
+ * @params  id (Product record ID, 24 characters)
  */
 
 
@@ -151,14 +151,14 @@
  * @route   PUT /api/categories/:id
  * @desc    Update category metadata/cover photo
  * @access  Protected (Admin Only)
- * @params  id (Category MongoDB ObjectId)
+ * @params  id (Category record ID, 24 characters)
  */
 
 /**
  * @route   DELETE /api/categories/:id
  * @desc    Remove category
  * @access  Protected (Admin Only)
- * @params  id (Category MongoDB ObjectId)
+ * @params  id (Category record ID, 24 characters)
  */
 
 
@@ -231,7 +231,7 @@
  * @route   DELETE /api/wishlist/:productId
  * @desc    Remove product from wishlist
  * @access  Protected (User)
- * @params  productId (Product MongoDB ObjectId)
+ * @params  productId (Product record ID, 24 characters)
  */
 
 
@@ -283,14 +283,14 @@
  * @route   GET /api/orders/:id
  * @desc    Get order details
  * @access  Protected (User/Admin)
- * @params  id (Order MongoDB ObjectId)
+ * @params  id (Order record ID, 24 characters)
  */
 
 /**
  * @route   PUT /api/orders/:id/cancel
  * @desc    Cancel order and return items to inventory stock levels
  * @access  Protected (User/Admin)
- * @params  id (Order MongoDB ObjectId)
+ * @params  id (Order record ID, 24 characters)
  */
 
 /**
@@ -303,7 +303,7 @@
  * @route   PUT /api/orders/:id/status
  * @desc    Update order workflow status (e.g. Processing, Dispatched, Delivered)
  * @access  Protected (Admin Only)
- * @params  id (Order MongoDB ObjectId)
+ * @params  id (Order record ID, 24 characters)
  * @body    {
  *            "status": "Dispatched",
  *            "courierName": "BlueDart Express",
@@ -315,7 +315,7 @@
  * @route   PUT /api/orders/:id/refund
  * @desc    Mark a cancelled transaction refund as successful
  * @access  Protected (Admin Only)
- * @params  id (Order MongoDB ObjectId)
+ * @params  id (Order record ID, 24 characters)
  */
 
 
@@ -353,7 +353,7 @@
  * @route   GET /api/reviews/product/:productId
  * @desc    Get all reviews and ratings submitted for a specific product
  * @access  Public
- * @params  productId (Product MongoDB ObjectId)
+ * @params  productId (Product record ID, 24 characters)
  */
 
 /**
@@ -372,7 +372,7 @@
  * @route   PUT /api/reviews/:id
  * @desc    Edit a previously submitted review
  * @access  Protected (User)
- * @params  id (Review MongoDB ObjectId)
+ * @params  id (Review record ID, 24 characters)
  * @body    {
  *            "rating": 4,
  *            "title": "Beautiful but slightly heavy",
@@ -384,7 +384,7 @@
  * @route   DELETE /api/reviews/:id
  * @desc    Delete a review
  * @access  Protected (User/Admin)
- * @params  id (Review MongoDB ObjectId)
+ * @params  id (Review record ID, 24 characters)
  */
 
 

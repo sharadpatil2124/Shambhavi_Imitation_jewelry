@@ -65,7 +65,7 @@ export default function ProductDetails() {
     setZoomPos({ x, y });
   };
 
-  // Fetch product specifications from MERN backend
+  // Fetch product specifications from the backend
   useEffect(() => {
     const fetchDetails = async () => {
       setLoading(true);

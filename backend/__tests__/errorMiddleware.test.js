@@ -63,11 +63,11 @@ describe('Unit Tests: Error Handling Middleware', () => {
       });
     });
 
-    describe('Negative Test Cases (Specific Mongoose & JWT Errors)', () => {
-      it('should return 400 for CastError (Invalid MongoDB ObjectId)', () => {
-        const err = new Error('Cast to ObjectId failed');
+    describe('Negative Test Cases (Specific Database & JWT Errors)', () => {
+      it('should return 400 for CastError (malformed record ID)', () => {
+        const err = new Error('Cast to ID failed');
         err.name = 'CastError';
-        err.kind = 'ObjectId';
+        err.kind = 'ID';
 
         const req = {};
         const res = createMockRes(200);
@@ -78,10 +78,11 @@ describe('Unit Tests: Error Handling Middleware', () => {
         assert.strictEqual(res.payload.message, 'Resource not found: Invalid database ID format');
       });
 
-      it('should return 400 for MongoDB duplicate key error (code 11000)', () => {
-        const err = new Error('E11000 duplicate key error');
-        err.code = 11000;
-        err.keyValue = { email: 'duplicate@example.com' };
+      it('should return 400 for MySQL duplicate key error (ER_DUP_ENTRY)', () => {
+        const err = new Error("Duplicate entry 'duplicate@example.com' for key 'users.email'");
+        err.code = 'ER_DUP_ENTRY';
+        err.errno = 1062;
+        err.sqlMessage = err.message;
 
         const req = {};
         const res = createMockRes(200);
@@ -92,7 +93,7 @@ describe('Unit Tests: Error Handling Middleware', () => {
         assert.match(res.payload.message, /Duplicate field value entered: An item with this email already exists/i);
       });
 
-      it('should return 400 for Mongoose ValidationError', () => {
+      it('should return 400 for ValidationError', () => {
         const err = new Error('Validation failed');
         err.name = 'ValidationError';
         err.errors = {

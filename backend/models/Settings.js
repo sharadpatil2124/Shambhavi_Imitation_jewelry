@@ -1,89 +1,33 @@
-import mongoose from 'mongoose';
+import { Model } from '../db/model.js';
 
-const settingsSchema = new mongoose.Schema({
-  storeName: {
-    type: String,
-    default: 'Shambhavi Imitation'
-  },
-  contactEmail: {
-    type: String,
-    default: 'kadamshambhavi1@gmail.com'
-  },
-  contactPhone: {
-    type: String,
-    default: '+91 70838 74227'
-  },
-  address: {
-    type: String,
-    default: 'Mumbai, Maharashtra, India'
-  },
-  currency: {
-    type: String,
-    default: 'INR'
-  },
-  taxRate: {
-    type: Number,
-    default: 3 // 3% GST standard for jewelry
-  },
-  shippingCharge: {
-    type: Number,
-    default: 100
-  },
-  freeShippingThreshold: {
-    type: Number,
-    default: 1500
-  },
-  socialInstagram: {
-    type: String,
-    default: ''
-  },
-  socialFacebook: {
-    type: String,
-    default: ''
-  },
-  socialPinterest: {
-    type: String,
-    default: ''
-  },
-  codEnabled: {
-    type: Boolean,
-    default: true
-  },
-  onlinePaymentEnabled: {
-    type: Boolean,
-    default: true
-  },
-  logoUrl: {
-    type: String,
-    default: ''
-  },
-  showSpecialOffer: {
-    type: Boolean,
-    default: true
-  },
-  specialOfferTagline: {
-    type: String,
-    default: 'FESTIVAL SPECIAL OFFER'
-  },
-  specialOfferTitle: {
-    type: String,
-    default: 'Enjoy Extra 10% Off on All Prepaid Orders'
-  },
-  specialOfferSubtitle: {
-    type: String,
-    default: 'Save on jewelry sets for upcoming festivals! Apply our coupon code at checkout to claim additional discounts.'
-  },
-  specialOfferCouponCode: {
-    type: String,
-    default: 'SHAMBHAVI10'
-  },
-  specialOfferDiscountPercentage: {
-    type: Number,
-    default: 10
+// Table: settings (a single row with the store configuration).
+const Settings = Model.define('Settings', {
+  table: 'settings',
+  fields: {
+    storeName: { type: 'string', default: 'Shambhavi Imitation' },
+    contactEmail: { type: 'string', default: 'kadamshambhavi1@gmail.com' },
+    contactPhone: { type: 'string', default: '+91 70838 74227' },
+    address: { type: 'string', default: 'Mumbai, Maharashtra, India' },
+    currency: { type: 'string', default: 'INR' },
+    taxRate: { type: 'number', default: 3 }, // 3% GST standard for jewelry
+    shippingCharge: { type: 'number', default: 100 },
+    freeShippingThreshold: { type: 'number', default: 1500 },
+    socialInstagram: { type: 'string', default: '' },
+    socialFacebook: { type: 'string', default: '' },
+    socialPinterest: { type: 'string', default: '' },
+    codEnabled: { type: 'boolean', default: true },
+    onlinePaymentEnabled: { type: 'boolean', default: true },
+    logoUrl: { type: 'string', default: '' },
+    showSpecialOffer: { type: 'boolean', default: true },
+    specialOfferTagline: { type: 'string', default: 'FESTIVAL SPECIAL OFFER' },
+    specialOfferTitle: { type: 'string', default: 'Enjoy Extra 10% Off on All Prepaid Orders' },
+    specialOfferSubtitle: {
+      type: 'string',
+      default: 'Save on jewelry sets for upcoming festivals! Apply our coupon code at checkout to claim additional discounts.'
+    },
+    specialOfferCouponCode: { type: 'string', default: 'SHAMBHAVI10' },
+    specialOfferDiscountPercentage: { type: 'number', default: 10 }
   }
-}, {
-  timestamps: true
 });
 
-const Settings = mongoose.model('Settings', settingsSchema);
 export default Settings;

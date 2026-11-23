@@ -33,7 +33,7 @@ export default function AdminLogin() {
 
     setLoading(true);
     try {
-      // Connect to MERN auth login endpoint
+      // Connect to the backend auth login endpoint
       const response = await adminService.adminLogin(email, password);
       
       if (response.success) {

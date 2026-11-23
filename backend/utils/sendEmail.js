@@ -98,7 +98,7 @@ const createTransporter = ({ host, port, user, pass }) => {
   });
 };
 
-// Brevo transactional API over HTTPS (port 443), which Render's free tier never blocks.
+// Brevo transactional API over HTTPS (port 443), which hosting providers do not block.
 const sendViaBrevoApi = async ({ apiKey, fromName, fromEmail }, { to, subject, html }) => {
   const response = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
@@ -163,7 +163,7 @@ const diagnoseEmailError = (err, kind) => {
   const text = `${err.message || ''} ${err.response || ''}`;
 
   if (err.responseCode === 525 || /unauthori[sz]ed ip|unrecogni[sz]ed ip/i.test(text)) {
-    return `Brevo is blocking this server's IP address. Open ${BREVO_AUTHORIZED_IPS_URL} and deactivate "Authorized IPs" blocking (Render's outbound IPs change, so allowlisting a single IP is not reliable).`;
+    return `Brevo is blocking this server's IP address. Open ${BREVO_AUTHORIZED_IPS_URL} and deactivate "Authorized IPs" blocking (the server's outbound IP can change, so allowlisting a single IP is not reliable).`;
   }
   if (kind === 'api' && err.status === 401) {
     return 'Brevo rejected BREVO_API_KEY. It must be an API key starting with "xkeysib-" (Brevo > SMTP & API > API Keys), not the SMTP key starting with "xsmtpsib-".';
@@ -172,7 +172,7 @@ const diagnoseEmailError = (err, kind) => {
     return `The sender address is not verified in Brevo. Add and verify it under Brevo > Senders, Domains & Dedicated IPs.`;
   }
   if (kind === 'smtp' && (['ETIMEDOUT', 'ESOCKET', 'ECONNECTION', 'ECONNREFUSED'].includes(err.code) || /timeout/i.test(text))) {
-    return 'Could not reach the SMTP server. Render\'s free tier blocks outbound ports 25/465/587; set BREVO_API_KEY to send over HTTPS instead.';
+    return 'Could not reach the SMTP server. Some hosting plans block outbound ports 25/465/587; set BREVO_API_KEY to send over HTTPS instead.';
   }
   if (err.code === 'EAUTH') {
     return 'The SMTP server rejected the login. Check the SMTP username and password/key.';
@@ -577,7 +577,7 @@ export const sendCancellationRejectedEmail = async (to, order, reason) => {
   }
 };
 
-// Live storefront address for links in emails. Set STOREFRONT_URL on Render (e.g. https://your-store.vercel.app);
+// Live storefront address for links in emails. Set STOREFRONT_URL in backend/.env (e.g. https://your-domain.com);
 // falls back to the first CLIENT_URL entry.
 const getStorefrontUrl = () => {
   const configured = clean(process.env.STOREFRONT_URL) || clean((process.env.CLIENT_URL || '').split(',')[0]);

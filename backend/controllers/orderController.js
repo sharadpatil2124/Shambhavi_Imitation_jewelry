@@ -5,7 +5,7 @@ import User from '../models/userModel.js';
 import razorpayInstance from '../config/razorpay.js';
 import { priceOrder, PricingError, toPaise } from '../utils/orderPricing.js';
 import { isValidRazorpaySignature } from './paymentController.js';
-import { escapeRegex, parsePagination, queryString } from '../utils/queryHelpers.js';
+import { parsePagination, queryString } from '../utils/queryHelpers.js';
 import {
   sendOrderConfirmationEmail,
   sendOrderCancellationEmail,
@@ -269,12 +269,11 @@ export const getOrders = async (req, res, next) => {
       if (/^[0-9a-fA-F]{24}$/.test(search)) {
         query._id = search;
       } else {
-        const pattern = escapeRegex(search);
         const users = await User.find({
           isVerified: true,
           $or: [
-            { name: { $regex: pattern, $options: 'i' } },
-            { email: { $regex: pattern, $options: 'i' } }
+            { name: { $contains: search } },
+            { email: { $contains: search } }
           ]
         }).select('_id');
 
@@ -282,9 +281,8 @@ export const getOrders = async (req, res, next) => {
 
         query.$or = [
           { user: { $in: userIds } },
-          { 'shippingAddress.name': { $regex: pattern, $options: 'i' } },
-          { 'shippingAddress.email': { $regex: pattern, $options: 'i' } },
-          { 'shippingAddress.phone': { $regex: pattern, $options: 'i' } }
+          { 'shippingAddress.email': { $contains: search } },
+          { 'shippingAddress.phone': { $contains: search } }
         ];
       }
     }

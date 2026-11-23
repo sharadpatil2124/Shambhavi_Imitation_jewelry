@@ -1,10 +1,10 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import mongoose from 'mongoose';
+import { newId } from '../db/ids.js';
 import Product from '../models/Product.js';
 
 describe('Unit Tests: Product Model & Inventory Pricing Validation', () => {
-  const dummyCategoryId = new mongoose.Types.ObjectId();
+  const dummyCategoryId = newId();
 
   describe('Positive Test Cases (Happy Path)', () => {
     it('should validate successfully when all required product fields are provided', () => {

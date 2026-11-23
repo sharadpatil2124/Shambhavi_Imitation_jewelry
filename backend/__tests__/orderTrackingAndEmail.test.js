@@ -1,19 +1,19 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import mongoose from 'mongoose';
+import { newId } from '../db/ids.js';
 import Order from '../models/Order.js';
 import { trackOrderPublicly } from '../controllers/orderController.js';
 import { sendOrderShippedEmail } from '../utils/sendEmail.js';
 
 describe('Unit Tests: Order Tracking & Shipped Notification Email', () => {
-  const dummyUserId = new mongoose.Types.ObjectId();
-  const validOrderId = new mongoose.Types.ObjectId().toString();
+  const dummyUserId = newId();
+  const validOrderId = newId();
 
   const mockOrderData = {
     _id: validOrderId,
     user: dummyUserId,
     orderItems: [{
-      product: new mongoose.Types.ObjectId(),
+      product: newId(),
       name: 'Kundan Choker Necklace',
       quantity: 1,
       image: 'https://example.com/necklace.jpg',
@@ -201,7 +201,7 @@ describe('Unit Tests: Order Tracking & Shipped Notification Email', () => {
       try {
         const req = {
           body: {
-            orderId: new mongoose.Types.ObjectId().toString(),
+            orderId: newId(),
             identifier: 'test@example.com'
           }
         };

@@ -1,5 +1,5 @@
-import mongoose from 'mongoose';
 import Product from '../models/Product.js';
+import { isValidId } from '../db/ids.js';
 import Settings from '../models/Settings.js';
 
 export const MAX_LINE_QUANTITY = 100;
@@ -33,7 +33,7 @@ export const priceOrder = async ({ orderItems, couponCode }) => {
     const productId = String(item?.product ?? '');
     const quantity = Number(item?.quantity);
 
-    if (!mongoose.Types.ObjectId.isValid(productId)) {
+    if (!isValidId(productId)) {
       throw new PricingError('Order contains an invalid product');
     }
     if (!Number.isInteger(quantity) || quantity < 1 || quantity > MAX_LINE_QUANTITY) {

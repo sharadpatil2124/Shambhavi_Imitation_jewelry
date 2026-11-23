@@ -54,7 +54,7 @@ export default function Shop() {
     }
   }, [searchParams, dispatch]);
 
-  // Fetch products dynamically from MERN backend
+  // Fetch products dynamically from the backend
   useEffect(() => {
     const fetchCatalog = async () => {
       setLoading(true);

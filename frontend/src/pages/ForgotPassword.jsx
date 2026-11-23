@@ -8,23 +8,31 @@ export default function ForgotPassword() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  // Set when the entered email has no account; shows the "create an account" notice.
+  const [accountNotFound, setAccountNotFound] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email) {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
       toast.warning("Please enter your email address.");
       return;
     }
 
     setLoading(true);
+    setAccountNotFound("");
     try {
-      const response = await api.post('/users/forgot-password', { email });
+      const response = await api.post('/users/forgot-password', { email: trimmedEmail });
       if (response.success) {
         toast.success(response.message || "Reset OTP sent successfully to your email.", { position: "bottom-center" });
-        navigate(`/reset-password?email=${encodeURIComponent(email)}`);
+        navigate(`/reset-password?email=${encodeURIComponent(response.email || trimmedEmail)}`);
       }
     } catch (error) {
-      toast.error(error.message || "Failed to process forgot password request.");
+      if (error.code === 'ACCOUNT_NOT_FOUND') {
+        setAccountNotFound(error.message);
+      } else {
+        toast.error(error.message || "Failed to process forgot password request.");
+      }
     } finally {
       setLoading(false);
     }
@@ -57,12 +65,28 @@ export default function ForgotPassword() {
                 type="email"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (accountNotFound) setAccountNotFound("");
+                }}
                 placeholder="Enter Email Address"
                 className="w-full bg-[#faf9f6] dark:bg-[#100d07] border border-gold-300 dark:border-gold-900/60 py-3 pl-12 pr-4 text-sm font-sans focus:border-gold-500 text-primary dark:text-white outline-none"
               />
             </div>
           </div>
+
+          {/* No account for this email: ask the user to register first */}
+          {accountNotFound && (
+            <div role="alert" className="border border-red-300 dark:border-red-900/60 bg-red-50 dark:bg-red-950/30 p-4 text-left">
+              <p className="text-xs font-sans text-red-700 dark:text-red-300 m-0">{accountNotFound}</p>
+              <Link
+                to="/register"
+                className="mt-3 inline-block text-[11px] font-bold tracking-widest uppercase text-gold-700 dark:text-gold-400 hover:underline"
+              >
+                Create a New Account
+              </Link>
+            </div>
+          )}
 
           {/* Send OTP Button */}
           <button

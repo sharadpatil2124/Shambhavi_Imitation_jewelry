@@ -26,23 +26,22 @@ if (!process.env.JWT_SECRET) {
   process.exit(1);
 }
 
-connectDB();
-
 const app = express();
 
-// Render (and Cloudflare in front of it) proxies every request. Without this, Express sees the proxy's
+// On Hostinger the app runs behind the hosting's web server, which forwards every request. Without this,
+// Express sees that proxy's
 // address instead of the visitor's, and every visitor shares one rate-limit allowance.
 // TRUST_PROXY_HOPS = number of proxies between the visitor and this server (default 1).
 app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS || 1));
 
 app.use(helmet({
   crossOriginResourcePolicy: false,
-  // Browsers must use HTTPS for this API for 1 year (Render already redirects http:// to https://).
+  // Browsers must use HTTPS for this API for 1 year (turn on "Force HTTPS" for the domain in Hostinger).
   strictTransportSecurity: { maxAge: 31536000, includeSubDomains: true }
 }));
 
 // CORS: only the store's own sites may call this API from a browser.
-// ALLOWED_ORIGINS = comma-separated list, e.g. "https://your-store.vercel.app,https://your-admin.vercel.app".
+// ALLOWED_ORIGINS = comma-separated list, e.g. "https://your-domain.com,https://admin.your-domain.com".
 // Local development addresses are always allowed outside production.
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
   .split(',')
@@ -51,7 +50,7 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
 const isDevOrigin = (origin) => process.env.NODE_ENV !== 'production' && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
 
 if (allowedOrigins.length === 0) {
-  console.warn('⚠️ ALLOWED_ORIGINS is not set: the API accepts browser requests from any website. Set it on Render to your storefront and admin URLs.');
+  console.warn("⚠️ ALLOWED_ORIGINS is not set: the API accepts browser requests from any website. Set it in backend/.env (or the hosting panel's environment variables) to your storefront and admin addresses.");
 }
 
 const corsOptions = {
@@ -134,7 +133,7 @@ app.get('/favicon.ico', (req, res) => res.status(204).end());
 app.get('/', (req, res) => {
   res.json({
     success: true,
-    message: '✨ Shambhavi Imitation Jewelry Premium MERN API is running successfully...'
+    message: '✨ Shambhavi Imitation Jewelry Premium API is running successfully...'
   });
 });
 
@@ -143,16 +142,28 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-const server = app.listen(PORT, () => {
-  console.log(`🚀 Shambhavi Luxury Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
-});
+// No top-level await here: Hostinger's Node runner (lsnode.js) loads this file with require(),
+// which fails with ERR_REQUIRE_ASYNC_MODULE on modules that use top-level await.
+const startServer = async () => {
+  // Connects to MySQL and creates any missing tables before the server accepts requests.
+  await connectDB();
 
-server.on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error(`\n❌ [PORT IN USE] Port ${PORT} is already occupied by another process.`);
-    console.error(`👉 Close the process using port ${PORT} or run 'npx kill-port ${PORT}'.\n`);
-  } else {
-    console.error('❌ Server startup error:', err.message);
-  }
+  const server = app.listen(PORT, () => {
+    console.log(`🚀 Shambhavi Luxury Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+  });
+
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`\n❌ [PORT IN USE] Port ${PORT} is already occupied by another process.`);
+      console.error(`👉 Close the process using port ${PORT} or run 'npx kill-port ${PORT}'.\n`);
+    } else {
+      console.error('❌ Server startup error:', err.message);
+    }
+    process.exit(1);
+  });
+};
+
+startServer().catch((err) => {
+  console.error('❌ Server startup error:', err.message);
   process.exit(1);
 });

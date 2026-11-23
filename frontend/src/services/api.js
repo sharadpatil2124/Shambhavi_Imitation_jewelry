@@ -1,17 +1,16 @@
 import axios from 'axios';
 
-const isProd = typeof import.meta !== 'undefined' && import.meta.env?.PROD;
-const defaultApiUrl = isProd
-  ? 'https://shambhavi-backend-n0ud.onrender.com/api'
-  : 'http://localhost:5000/api';
+// Backend address: VITE_API_URL (required for production builds, see .env.production.example),
+// or the local backend during development.
+const defaultApiUrl = 'http://localhost:5000/api';
 
-// Instantiate global Axios client configured for our MERN backend port
+// Instantiate global Axios client configured for our backend port
 const api = axios.create({
   baseURL: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) || defaultApiUrl,
   headers: {
     'Content-Type': 'application/json'
   },
-  timeout: 60000 // 60 seconds (allows for Render cold starts if sleeping)
+  timeout: 60000 // 60 seconds
 });
 
 // Request Interceptor: Automatically inject secure JWT Bearer authorization header if token exists
@@ -50,7 +49,10 @@ api.interceptors.response.use(
     }
 
     console.error('⚠️ [API Request Error]:', errorMessage, error);
-    return Promise.reject(new Error(errorMessage));
+    const apiError = new Error(errorMessage);
+    apiError.status = error.response?.status;
+    apiError.code = error.response?.data?.code;
+    return Promise.reject(apiError);
   }
 );
 

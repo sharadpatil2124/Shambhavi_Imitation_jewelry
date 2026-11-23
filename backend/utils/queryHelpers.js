@@ -1,8 +1,5 @@
 // Helpers for turning raw query-string input into safe database queries.
-
-// Escapes characters that have special meaning in regular expressions, so user text like "(" or "a+"
-// is searched literally instead of crashing the query or running a slow pattern.
-export const escapeRegex = (text) => String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+// (Search text is matched literally by the { $contains: text } filter, see db/model.js.)
 
 // First value of a query parameter as a trimmed string ("?search=a&search=b" arrives as an array).
 export const queryString = (value) => {
