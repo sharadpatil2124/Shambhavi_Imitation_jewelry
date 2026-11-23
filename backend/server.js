@@ -26,9 +26,6 @@ if (!process.env.JWT_SECRET) {
   process.exit(1);
 }
 
-// Connects to MySQL and creates any missing tables before the server accepts requests.
-await connectDB();
-
 const app = express();
 
 // On Hostinger the app runs behind the hosting's web server, which forwards every request. Without this,
@@ -145,16 +142,28 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-const server = app.listen(PORT, () => {
-  console.log(`🚀 Shambhavi Luxury Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
-});
+// No top-level await here: Hostinger's Node runner (lsnode.js) loads this file with require(),
+// which fails with ERR_REQUIRE_ASYNC_MODULE on modules that use top-level await.
+const startServer = async () => {
+  // Connects to MySQL and creates any missing tables before the server accepts requests.
+  await connectDB();
 
-server.on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error(`\n❌ [PORT IN USE] Port ${PORT} is already occupied by another process.`);
-    console.error(`👉 Close the process using port ${PORT} or run 'npx kill-port ${PORT}'.\n`);
-  } else {
-    console.error('❌ Server startup error:', err.message);
-  }
+  const server = app.listen(PORT, () => {
+    console.log(`🚀 Shambhavi Luxury Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+  });
+
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`\n❌ [PORT IN USE] Port ${PORT} is already occupied by another process.`);
+      console.error(`👉 Close the process using port ${PORT} or run 'npx kill-port ${PORT}'.\n`);
+    } else {
+      console.error('❌ Server startup error:', err.message);
+    }
+    process.exit(1);
+  });
+};
+
+startServer().catch((err) => {
+  console.error('❌ Server startup error:', err.message);
   process.exit(1);
 });
